@@ -14,4 +14,14 @@
     <string name="osm_disclaimer">Map visualisation uses OpenStreetMap (OSM). Copyright disclaimer: https://www.openstreetmap.org/copyright</string>
     <string name="loading">loading</string>
     <string name="app_version">App version:</string>
+
+    <string name="preset_high">High frequency (high battery usage)</string>
+    <string name="preset_medium">Medium frequency (medium battery usage)</string>
+    <string name="preset_low">Low frequency (low battery usage)</string>
+    <string name="preset_passive">Passive (no additional battery usage)</string>
+    <string name="tracking_settings">Tracking settings</string>
+
+    <string name="tracking_settings_title">Tracking settings</string>
+    <string name="tracking_settings_confirm">Confirm</string>
+    <string name="tracking_settings_cancel">Cancel</string>
 </resources>

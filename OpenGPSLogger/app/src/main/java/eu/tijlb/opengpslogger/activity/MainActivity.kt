@@ -1,32 +1,40 @@
 package eu.tijlb.opengpslogger.activity
 
+import android.app.ActivityManager
 import android.app.AlertDialog
+import android.app.Service
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.database.settings.PRESET_HIGH
+import eu.tijlb.opengpslogger.database.settings.PRESET_HIGHEST
+import eu.tijlb.opengpslogger.database.settings.PRESET_LOW
+import eu.tijlb.opengpslogger.database.settings.PRESET_MEDIUM
+import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
+import eu.tijlb.opengpslogger.database.settings.SettingsHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private lateinit var settingsHelper: SettingsHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
+        settingsHelper = SettingsHelper(this)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
@@ -48,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_about -> openAboutDialog()
+            R.id.action_trackingSettings -> openTrackingSettingsDialog()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -56,6 +65,40 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
+    }
+
+    private fun openTrackingSettingsDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_tracking_settings, null)
+        val spinner = dialogView.findViewById<Spinner>(R.id.spinner_presets)
+        val presets = listOf(PRESET_HIGHEST, PRESET_HIGH, PRESET_MEDIUM, PRESET_LOW, PRESET_PASSIVE)
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            presets
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        val selectedPreset = settingsHelper.getSelectedPreset()
+        selectedPreset
+            ?.let { presets.indexOf(it) }
+            ?.takeIf { it >= 0 }
+            ?.let { spinner.setSelection(it) }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.tracking_settings_title))
+            .setView(dialogView)
+            .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
+                val selection = spinner.selectedItem.toString()
+                settingsHelper.setPresetTrackingSettings(selection)
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
     }
 
     private fun openAboutDialog(): Boolean {
@@ -77,4 +120,16 @@ class MainActivity : AppCompatActivity() {
             .show()
         return true
     }
+
+    private fun isServiceRunning(serviceClass: Class<out Service>): Boolean {
+        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningServices = activityManager.getRunningServices(Int.MAX_VALUE)
+        for (service in runningServices) {
+            if (service.service.className == serviceClass.name) {
+                return true
+            }
+        }
+        return false
+    }
+
 }
