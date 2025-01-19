@@ -2,6 +2,18 @@
 
 ## Releases
 
+### 0.2.0
+[apk](release/opengpslogger-0-2-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Add tracking settings with highest, high, medium, low and passive presets
+
+#### Fixes
+- When swiping away notification, tracking is terminated
+- Tracking status is stored (correctly show start / stop tracking)
+
 ### 0.1.0
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.

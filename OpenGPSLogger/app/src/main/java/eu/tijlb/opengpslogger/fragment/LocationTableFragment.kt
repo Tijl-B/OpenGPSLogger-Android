@@ -17,8 +17,8 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import eu.tijlb.opengpslogger.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.R
-import eu.tijlb.opengpslogger.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.database.location.LocationDatabaseFileProvider
+import eu.tijlb.opengpslogger.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
 import java.time.Instant
