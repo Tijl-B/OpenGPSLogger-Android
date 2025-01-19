@@ -6,6 +6,8 @@
     <string name="home_fragment_label">Home</string>
     <string name="database_fragment_label">Database</string>
 
+    <string name="about_title">About</string>
+    <string name="about_confirm">Ok</string>
     <string name="author">Author: Tijl Bormans, 2025</string>
     <string name="open_source_license_disclaimer">This app is open source under the AGPL-3.0 license.</string>
     <string name="git_url">https://github.com/Tijl-B/OpenGPSLogger-Android</string>

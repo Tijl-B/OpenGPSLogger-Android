@@ -68,9 +68,9 @@ class MainActivity : AppCompatActivity() {
         textViewVersion.text = versionName
 
         AlertDialog.Builder(this)
-            .setTitle("About")
+            .setTitle(getString(R.string.about_title))
             .setView(dialogView)
-            .setPositiveButton("Ok") { dialog, _ ->
+            .setPositiveButton(R.string.about_confirm) { dialog, _ ->
                 dialog.dismiss()
             }
             .create()
