@@ -24,7 +24,7 @@ const val PRESET_MEDIUM = "MEDIUM"
 const val PRESET_LOW = "LOW"
 const val PRESET_PASSIVE = "PASSIVE"
 
-class SettingsHelper(val context: Context) {
+class LocationRequestSettingsHelper(val context: Context) {
 
     private val highestPresetAccuracy = Priority.PRIORITY_HIGH_ACCURACY
     private val highestPresetIntervalMillis = TimeUnit.SECONDS.toMillis(3)
@@ -107,18 +107,21 @@ class SettingsHelper(val context: Context) {
             PRESET_MEDIUM -> setMediumPreset()
             PRESET_LOW -> setLowPreset()
             PRESET_PASSIVE -> setPassivePreset()
-            else -> Log.w("ogl-settingshelper", "Unknown preset $preset, not updating settings.")
+            else -> Log.w(
+                "ogl-locationrequestsettingshelper",
+                "Unknown preset $preset, not updating settings."
+            )
         }
     }
 
     fun registerPresetChangedListener(function: (String) -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
-        Log.d("ogl-settingshelper", "Registering preset changed listener")
+        Log.d("ogl-locationrequestsettingshelper", "Registering preset changed listener")
         val preferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
 
         val preferencesListener =
             SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
                 Log.d(
-                    "ogl-settingshelper",
+                    "ogl-locationrequestsettingshelper",
                     "SharedPreferences.OnSharedPreferenceChangeListener called for key $key"
                 )
                 if (key == PRESET) {

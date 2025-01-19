@@ -18,20 +18,20 @@ import eu.tijlb.opengpslogger.database.settings.PRESET_HIGHEST
 import eu.tijlb.opengpslogger.database.settings.PRESET_LOW
 import eu.tijlb.opengpslogger.database.settings.PRESET_MEDIUM
 import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
-import eu.tijlb.opengpslogger.database.settings.SettingsHelper
+import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
-    private lateinit var settingsHelper: SettingsHelper
+    private lateinit var locationRequestSettingsHelper: LocationRequestSettingsHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        settingsHelper = SettingsHelper(this)
+        locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
@@ -86,7 +86,7 @@ class MainActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
 
-        val selectedPreset = settingsHelper.getSelectedPreset()
+        val selectedPreset = locationRequestSettingsHelper.getSelectedPreset()
         selectedPreset
             ?.let { presets.indexOf(it) }
             ?.takeIf { it >= 0 }
@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
                 val selection = presets[spinner.selectedItemPosition]
-                settingsHelper.setPresetTrackingSettings(selection)
+                locationRequestSettingsHelper.setPresetTrackingSettings(selection)
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->

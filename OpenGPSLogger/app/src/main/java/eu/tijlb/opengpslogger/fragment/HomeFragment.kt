@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -34,6 +35,7 @@ import eu.tijlb.opengpslogger.OsmHelper
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.database.boundingbox.BoundingBoxDbHelper
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.query.PointsQuery
@@ -57,6 +59,9 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
     private lateinit var pointsProgressBar: ProgressBar
     private lateinit var tilesProgressBar: ProgressBar
     private lateinit var imageRendererView: ImageRendererView
+
+    private lateinit var trackingStatusHelper: TrackingStatusHelper
+    private lateinit var trackingActiveChangedListener: OnSharedPreferenceChangeListener
 
     private var selectedDataSource = DATASOURCE_ALL
         set(value) {
@@ -92,6 +97,10 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
     private lateinit var locationDbHelper: LocationDbHelper
     private lateinit var boundingBoxDbHelper: BoundingBoxDbHelper
     private var requestingLocation = false
+        set(value) {
+            field = value
+            updateRequestLocationButton()
+        }
 
     private var _binding: FragmentHomeBinding? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -118,7 +127,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         }
 
         binding.buttonRequestLocation.setOnClickListener {
-            startLocationTracking()
+            toggleLocationTracking()
         }
 
         binding.buttonSaveImage.setOnClickListener {
@@ -171,6 +180,16 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         dataSourcesSpinner = view.findViewById(R.id.spinner_datasources)
         pointsProgressBar = view.findViewById(R.id.pointsProgressBar)
         tilesProgressBar = view.findViewById(R.id.tilesProgressBar)
+
+        trackingStatusHelper = TrackingStatusHelper(requireContext())
+        requestingLocation = trackingStatusHelper.isActive()
+        if(requestingLocation) {
+            startPollingLocation()
+        }
+        updateRequestLocationButton()
+        trackingActiveChangedListener = trackingStatusHelper.registerActiveChangedListener {
+            requestingLocation = it
+        }
 
         imageRendererView.onPointProgressUpdateListener =
             object : ImageRendererView.OnPointProgressUpdateListener {
@@ -254,7 +273,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         _binding = null
     }
 
-    private fun startLocationTracking() {
+    private fun toggleLocationTracking() {
         requestLocationButton.text = "Starting tracking"
         if (checkAndRequestPermission(Manifest.permission.ACCESS_FINE_LOCATION, 101)) {
             requestLocationButton.text = "Location permission missing"
@@ -266,21 +285,27 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         }
 
         if (!requestingLocation) {
-            Log.d("ogl-homefragment-location", "Start polling location")
-            val intent = Intent(requireContext(), LocationNotificationService::class.java)
-            ContextCompat.startForegroundService(requireContext(), intent)
-
-            requestingLocation = true
-            requestLocationButton.text = "Stop tracking"
+            startPollingLocation()
         } else {
-            Log.d("ogl-homefragment-location", "Stop polling location")
-            val stopIntent = Intent(requireContext(), LocationNotificationService::class.java)
-            requireContext().stopService(stopIntent)
-
-            requestingLocation = false
-            requestLocationButton.text = "Start tracking"
+            stopPollingLocation()
         }
 
+    }
+
+    private fun stopPollingLocation() {
+        Log.d("ogl-homefragment-location", "Stop polling location")
+        val stopIntent = Intent(requireContext(), LocationNotificationService::class.java)
+        requireContext().stopService(stopIntent)
+
+        requestingLocation = false
+    }
+
+    private fun startPollingLocation() {
+        Log.d("ogl-homefragment-location", "Start polling location")
+        val intent = Intent(requireContext(), LocationNotificationService::class.java)
+        ContextCompat.startForegroundService(requireContext(), intent)
+
+        requestingLocation = true
     }
 
     private fun checkAndRequestPermission(permission: String, requestCode: Int): Boolean {
@@ -449,4 +474,13 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         tilesProgressBar.progress = 0
         tilesProgressBar.max = 10000000
     }
+
+    private fun updateRequestLocationButton() {
+        if (requestingLocation) {
+            requestLocationButton.text = "Stop tracking"
+        } else {
+            requestLocationButton.text = "Start tracking"
+        }
+    }
+
 }

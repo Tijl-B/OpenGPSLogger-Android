@@ -21,7 +21,8 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
-import eu.tijlb.opengpslogger.database.settings.SettingsHelper
+import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
+import eu.tijlb.opengpslogger.database.settings.TrackingStatusHelper
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -33,9 +34,10 @@ class LocationNotificationService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
-    private lateinit var settingsHelper: SettingsHelper
-    private lateinit var presetName: String
+    private lateinit var locationRequestSettingsHelper: LocationRequestSettingsHelper
+    private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var presetChangedListener: OnSharedPreferenceChangeListener
+    private lateinit var presetName: String
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
@@ -44,9 +46,11 @@ class LocationNotificationService : Service() {
         super.onCreate()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        settingsHelper = SettingsHelper(this)
+        locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
+        trackingStatusHelper = TrackingStatusHelper(this)
 
-        presetChangedListener = settingsHelper.registerPresetChangedListener { updateLocationRequest() }
+        presetChangedListener =
+            locationRequestSettingsHelper.registerPresetChangedListener { updateLocationRequest() }
 
         setLocationRequest()
 
@@ -76,7 +80,7 @@ class LocationNotificationService : Service() {
     }
 
     private fun setLocationRequest() {
-        val (preset, request) = settingsHelper.getTrackingSettings()
+        val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
         locationRequest = request
         presetName = preset
     }
@@ -84,8 +88,7 @@ class LocationNotificationService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == STOP_SERVICE) {
             Log.d("ogl-locationnotificationservice", "Stopping location polling from delete intent")
-            settingsHelper.deregisterPresetChangedListener(presetChangedListener)
-            stopLocationUpdates()
+            stop()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -95,11 +98,13 @@ class LocationNotificationService : Service() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e("LocationService", "Permission not granted for notifications.")
+            Log.e("ogl-locationnotificationservice", "Permission not granted for notifications.")
             toast("Permission not granted for notifications, not tracking.")
             return START_NOT_STICKY
         }
 
+        Log.d("ogl-locationnotificationservice", "Setting active to true")
+        trackingStatusHelper.setActive(true)
         notificationBuilder = createNotificationBuilder()
         startForeground(1, notificationBuilder.build())
 
@@ -109,12 +114,18 @@ class LocationNotificationService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        settingsHelper.deregisterPresetChangedListener(presetChangedListener)
-        stopLocationUpdates()
+        stop()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
+    }
+
+    private fun stop() {
+        locationRequestSettingsHelper.deregisterPresetChangedListener(presetChangedListener)
+        Log.d("ogl-locationnotificationservice", "Setting active to false")
+        trackingStatusHelper.setActive(false)
+        stopLocationUpdates()
     }
 
     private fun startLocationUpdates() {
@@ -123,7 +134,7 @@ class LocationNotificationService : Service() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e("LocationService", "Permission not granted for location updates.")
+            Log.e("ogl-locationnotificationservice", "Permission not granted for location updates.")
             toast("Permission not granted for location updates, not tracking.")
             return
         }
