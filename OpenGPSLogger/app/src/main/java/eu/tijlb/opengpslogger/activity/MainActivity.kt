@@ -1,15 +1,22 @@
 package eu.tijlb.opengpslogger.activity
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -40,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_about -> openAboutDialog()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -49,5 +56,25 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
+    }
+
+    private fun openAboutDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_about, null)
+
+        val textViewVersion = dialogView.findViewById<TextView>(R.id.textView_versionNumber)
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val versionName = packageInfo.versionName
+
+        textViewVersion.text = versionName
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.about_title))
+            .setView(dialogView)
+            .setPositiveButton(R.string.about_confirm) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
     }
 }
