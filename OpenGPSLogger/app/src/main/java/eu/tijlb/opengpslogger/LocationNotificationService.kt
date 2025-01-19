@@ -196,11 +196,11 @@ class LocationNotificationService : Service() {
             .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
 
-        notificationBuilder.setContentText("Tracked ${++savedPoints} points this session.")
+        notificationBuilder.setContentText("Tracked ${++savedPoints} points this session (polling mode: $presetName).")
         notificationBuilder.setStyle(
             NotificationCompat.BigTextStyle().bigText(
                 """
-                Tracked $savedPoints points this session (polling mode: ${presetName}). 
+                Tracked $savedPoints points this session (polling mode: $presetName). 
                 Last update $formattedTime.
                 """.trimIndent()
             )
