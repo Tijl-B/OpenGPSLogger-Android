@@ -1,9 +1,6 @@
 package eu.tijlb.opengpslogger.activity
 
-import android.app.ActivityManager
 import android.app.AlertDialog
-import android.app.Service
-import android.content.Context
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -120,16 +117,4 @@ class MainActivity : AppCompatActivity() {
             .show()
         return true
     }
-
-    private fun isServiceRunning(serviceClass: Class<out Service>): Boolean {
-        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val runningServices = activityManager.getRunningServices(Int.MAX_VALUE)
-        for (service in runningServices) {
-            if (service.service.className == serviceClass.name) {
-                return true
-            }
-        }
-        return false
-    }
-
 }

@@ -31,9 +31,9 @@ class LocationNotificationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationRequest: LocationRequest
-    private lateinit var presetName: String
     private lateinit var locationCallback: LocationCallback
     private lateinit var settingsHelper: SettingsHelper
+    private lateinit var presetName: String
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
