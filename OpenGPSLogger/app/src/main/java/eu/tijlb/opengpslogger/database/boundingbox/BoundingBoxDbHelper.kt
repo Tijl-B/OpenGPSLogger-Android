@@ -113,6 +113,16 @@ class BoundingBoxDbHelper(context: Context) :
             }
     }
 
+    fun delete(name: String) {
+        val whereClause = "${BoundingBoxDbContract.COLUMN_NAME_NAME} = ?"
+        val db = writableDatabase
+        db.delete(
+            BoundingBoxDbContract.TABLE_NAME,
+            whereClause,
+            arrayOf(name)
+        )
+    }
+
     companion object {
         const val DATABASE_VERSION = 1
         const val DATABASE_NAME = "boundingbox.sqlite"
