@@ -23,7 +23,6 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Spinner
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -41,7 +40,6 @@ import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
 import eu.tijlb.opengpslogger.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.query.PointsQuery
-import eu.tijlb.opengpslogger.view.ZoomableImageView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -53,6 +51,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private const val DATASOURCE_ALL = "All"
+
+private const val BOUNDING_BOX_NONE = "None"
 
 class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
 
@@ -188,7 +188,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
 
         trackingStatusHelper = TrackingStatusHelper(requireContext())
         requestingLocation = trackingStatusHelper.isActive()
-        if(requestingLocation) {
+        if (requestingLocation) {
             startPollingLocation()
         }
         updateRequestLocationButton()
@@ -408,14 +408,14 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         val bottomRightEditText = dialogView.findViewById<EditText>(R.id.text_bottomRight)
         val nameEditText = dialogView.findViewById<EditText>(R.id.name)
         val spinner = dialogView.findViewById<Spinner>(R.id.spinner_presets)
+        val deleteButton = dialogView.findViewById<ImageButton>(R.id.button_presets_delete)
 
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            listOf("None") + boundingBoxDbHelper.getNames()
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
+        populateBoundingBoxSprinner(spinner, deleteButton)
+
+        deleteButton.setOnClickListener {
+            boundingBoxDbHelper.delete(spinner.selectedItem.toString())
+            populateBoundingBoxSprinner(spinner, deleteButton)
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle("Enter coordinates")
@@ -431,7 +431,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
                         "ogl-homefragment-coords",
                         "TopLeft input: $topLeftValue, BottomRight input: $bottomRightValue, Name input: $nameValue, Spinner input: $spinnerValue"
                     )
-                    if (topLeftValue.isEmpty() && bottomRightValue.isEmpty() && spinnerValue != "None") {
+                    if (topLeftValue.isEmpty() && bottomRightValue.isEmpty() && spinnerValue != BOUNDING_BOX_NONE) {
                         val bbox = boundingBoxDbHelper.get(spinnerValue)
                         bbox?.let {
                             topLeftValue =
@@ -453,6 +453,41 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             }
             .create()
             .show()
+    }
+
+    private fun populateBoundingBoxSprinner(spinner: Spinner, deleteButton: ImageButton) {
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            listOf(BOUNDING_BOX_NONE) + boundingBoxDbHelper.getNames()
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val selectedItem = parent?.getItemAtPosition(position)
+                Log.d("ogl-homefragment", "Selected item: $selectedItem")
+                selectedItem?.toString()
+                    ?.let {
+                        if (it != BOUNDING_BOX_NONE) {
+                            deleteButton.visibility = View.VISIBLE
+                        } else {
+                            deleteButton.visibility = View.INVISIBLE
+                        }
+                    }
+                parent?.post { parent.clearFocus() }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                parent?.post { parent.clearFocus() }
+            }
+        }
     }
 
     private fun getInputBbox(topLeft: String, bottomRight: String): BBoxDto? {
@@ -493,7 +528,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
     }
 
     private fun showZoomableImage() {
-        if(!showingZoomableImage) {
+        if (!showingZoomableImage) {
             showingZoomableImage = true
             val width = 4000
             val aspectRatio = imageRendererView.aspectRatio

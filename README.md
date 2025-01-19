@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.4.0
+[apk](release/opengpslogger-0-4-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Allow deleting user provided bounding boxes
+
 ### 0.3.0
 [apk](release/opengpslogger-0-3-0.apk)
 
