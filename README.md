@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.3.0
+[apk](release/opengpslogger-0-3-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- When clicking on the preview image, a popup opens allowing to zoom in
+
 ### 0.2.0
 [apk](release/opengpslogger-0-2-0.apk)
 

@@ -23,13 +23,14 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Spinner
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import eu.tijlb.opengpslogger.ImageRendererView
+import eu.tijlb.opengpslogger.view.ImageRendererView
 import eu.tijlb.opengpslogger.LocationNotificationService
 import eu.tijlb.opengpslogger.OsmHelper
 import eu.tijlb.opengpslogger.R
@@ -37,8 +38,10 @@ import eu.tijlb.opengpslogger.database.boundingbox.BoundingBoxDbHelper
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
+import eu.tijlb.opengpslogger.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.query.PointsQuery
+import eu.tijlb.opengpslogger.view.ZoomableImageView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -101,6 +104,8 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             field = value
             updateRequestLocationButton()
         }
+
+    private var showingZoomableImage = false
 
     private var _binding: FragmentHomeBinding? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -214,6 +219,10 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
                     tilesProgressBar.progress = progress
                 }
             }
+
+        imageRendererView.setOnClickListener {
+            showZoomableImage()
+        }
 
         initializeBeginAndEndTime()
         setUpDataSourcesSpinner()
@@ -483,4 +492,25 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         }
     }
 
+    private fun showZoomableImage() {
+        if(!showingZoomableImage) {
+            showingZoomableImage = true
+            val width = 4000
+            val aspectRatio = imageRendererView.aspectRatio
+            val height = (width / aspectRatio).toInt()
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            CoroutineScope(Dispatchers.Default).launch {
+                withContext(Dispatchers.IO) {
+                    imageRendererView.draw(canvas)
+                    val dialog = ZoomableImageDialog(bitmap) {
+                        showingZoomableImage = false
+                    }
+                    dialog.show(parentFragmentManager, "zoomableImageDialog")
+                }
+            }
+        }
+
+
+    }
 }
