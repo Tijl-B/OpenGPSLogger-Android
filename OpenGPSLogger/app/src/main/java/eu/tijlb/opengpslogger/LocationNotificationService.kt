@@ -84,6 +84,7 @@ class LocationNotificationService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == STOP_SERVICE) {
             Log.d("ogl-locationnotificationservice", "Stopping location polling from delete intent")
+            settingsHelper.deregisterPresetChangedListener(presetChangedListener)
             stopLocationUpdates()
             stopSelf()
             return START_NOT_STICKY
