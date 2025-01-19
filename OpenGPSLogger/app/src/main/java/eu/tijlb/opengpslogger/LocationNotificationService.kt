@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.IBinder
@@ -34,6 +35,7 @@ class LocationNotificationService : Service() {
     private lateinit var locationCallback: LocationCallback
     private lateinit var settingsHelper: SettingsHelper
     private lateinit var presetName: String
+    private lateinit var presetChangedListener: OnSharedPreferenceChangeListener
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
@@ -44,9 +46,9 @@ class LocationNotificationService : Service() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         settingsHelper = SettingsHelper(this)
 
-        val (preset, request) = settingsHelper.getTrackingSettings()
-        locationRequest = request
-        presetName = preset
+        presetChangedListener = settingsHelper.registerPresetChangedListener { updateLocationRequest() }
+
+        setLocationRequest()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -62,6 +64,21 @@ class LocationNotificationService : Service() {
                 }
             }
         }
+    }
+
+    private fun updateLocationRequest() {
+        Log.d("ogl-locationnotificationservice", "Updating location request")
+        stopLocationUpdates()
+        setLocationRequest()
+        notificationBuilder = createNotificationBuilder()
+        startForeground(1, notificationBuilder.build())
+        startLocationUpdates()
+    }
+
+    private fun setLocationRequest() {
+        val (preset, request) = settingsHelper.getTrackingSettings()
+        locationRequest = request
+        presetName = preset
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -90,6 +107,7 @@ class LocationNotificationService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        settingsHelper.deregisterPresetChangedListener(presetChangedListener)
         stopLocationUpdates()
     }
 
@@ -142,7 +160,7 @@ class LocationNotificationService : Service() {
             .apply { action = STOP_SERVICE }
 
         val deletePendingIntent =
-            PendingIntent.getService(this, 0, deleteIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+            PendingIntent.getService(this, 0, deleteIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
             .setContentTitle("Location Service")

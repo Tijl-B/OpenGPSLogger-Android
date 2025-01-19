@@ -1,6 +1,7 @@
 package eu.tijlb.opengpslogger.database.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.location.LocationRequest.PASSIVE_INTERVAL
 import android.util.Log
 import com.google.android.gms.location.LocationRequest
@@ -65,7 +66,8 @@ class SettingsHelper(val context: Context) {
             context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
         val preset = locationRequestPreferences.getString(PRESET, PRESET_MEDIUM)!!
         val accuracy = locationRequestPreferences.getInt(ACCURACY, mediumPresetAccuracy)
-        val intervalMillis = locationRequestPreferences.getLong(INTERVAL_MILLIS, mediumPresetIntervalMillis)
+        val intervalMillis =
+            locationRequestPreferences.getLong(INTERVAL_MILLIS, mediumPresetIntervalMillis)
         val minUpdateIntervalMillis = locationRequestPreferences.getLong(
             MIN_UPDATE_INTERVAL_MILLIS,
             mediumPresetMinUpdateIntervalMillis
@@ -109,8 +111,33 @@ class SettingsHelper(val context: Context) {
         }
     }
 
+    fun registerPresetChangedListener(function: (String) -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
+        Log.d("ogl-settingshelper", "Registering preset changed listener")
+        val preferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+
+        val preferencesListener =
+            SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+                Log.d(
+                    "ogl-settingshelper",
+                    "SharedPreferences.OnSharedPreferenceChangeListener called for key $key"
+                )
+                if (key == PRESET) {
+                    sharedPreferences.getString(PRESET, PRESET_MEDIUM)
+                        ?.let { function(it) }
+                }
+            }
+        preferences.registerOnSharedPreferenceChangeListener(preferencesListener)
+        return preferencesListener
+    }
+
+    fun deregisterPresetChangedListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        val preferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+        preferences.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
     private fun setHighestPreset() {
-        val locationRequestPreferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+        val locationRequestPreferences =
+            context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putString(PRESET, PRESET_HIGHEST)
             putInt(ACCURACY, highestPresetAccuracy)
@@ -124,7 +151,8 @@ class SettingsHelper(val context: Context) {
     }
 
     private fun setHighPreset() {
-        val locationRequestPreferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+        val locationRequestPreferences =
+            context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putString(PRESET, PRESET_HIGH)
             putInt(ACCURACY, highPresetAccuracy)
@@ -138,7 +166,8 @@ class SettingsHelper(val context: Context) {
     }
 
     private fun setMediumPreset() {
-        val locationRequestPreferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+        val locationRequestPreferences =
+            context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putString(PRESET, PRESET_MEDIUM)
             putInt(ACCURACY, mediumPresetAccuracy)
@@ -152,7 +181,8 @@ class SettingsHelper(val context: Context) {
     }
 
     private fun setLowPreset() {
-        val locationRequestPreferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+        val locationRequestPreferences =
+            context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putString(PRESET, PRESET_LOW)
             putInt(ACCURACY, lowPresetAccuracy)
@@ -166,7 +196,8 @@ class SettingsHelper(val context: Context) {
     }
 
     private fun setPassivePreset() {
-        val locationRequestPreferences = context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
+        val locationRequestPreferences =
+            context.getSharedPreferences(LOCATION_REQUEST, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putString(PRESET, PRESET_PASSIVE)
             putInt(ACCURACY, passivePresetAccuracy)

@@ -68,10 +68,20 @@ class MainActivity : AppCompatActivity() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_tracking_settings, null)
         val spinner = dialogView.findViewById<Spinner>(R.id.spinner_presets)
         val presets = listOf(PRESET_HIGHEST, PRESET_HIGH, PRESET_MEDIUM, PRESET_LOW, PRESET_PASSIVE)
+        val presetsText = presets.map {
+            when(it) {
+                PRESET_HIGHEST -> getString(R.string.preset_highest)
+                PRESET_HIGH -> getString(R.string.preset_high)
+                PRESET_MEDIUM -> getString(R.string.preset_medium)
+                PRESET_LOW -> getString(R.string.preset_low)
+                PRESET_PASSIVE -> getString(R.string.preset_passive)
+                else -> it
+            }
+        }
         val adapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            presets
+            presetsText
         )
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
@@ -86,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle(getString(R.string.tracking_settings_title))
             .setView(dialogView)
             .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
-                val selection = spinner.selectedItem.toString()
+                val selection = presets[spinner.selectedItemPosition]
                 settingsHelper.setPresetTrackingSettings(selection)
                 dialog.dismiss()
             }

@@ -15,6 +15,7 @@
     <string name="loading">loading</string>
     <string name="app_version">App version:</string>
 
+    <string name="preset_highest">Highest frequency (highest battery usage)</string>
     <string name="preset_high">High frequency (high battery usage)</string>
     <string name="preset_medium">Medium frequency (medium battery usage)</string>
     <string name="preset_low">Low frequency (low battery usage)</string>
