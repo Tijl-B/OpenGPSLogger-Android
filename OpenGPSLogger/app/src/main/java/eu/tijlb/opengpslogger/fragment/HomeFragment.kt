@@ -29,7 +29,6 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import eu.tijlb.opengpslogger.view.ImageRendererView
 import eu.tijlb.opengpslogger.LocationNotificationService
 import eu.tijlb.opengpslogger.OsmHelper
 import eu.tijlb.opengpslogger.R
@@ -41,6 +40,7 @@ import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
 import eu.tijlb.opengpslogger.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.query.PointsQuery
+import eu.tijlb.opengpslogger.view.ImageRendererView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope

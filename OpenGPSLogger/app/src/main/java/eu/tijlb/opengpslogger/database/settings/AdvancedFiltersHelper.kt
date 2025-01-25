@@ -7,8 +7,6 @@ import android.util.Log
 private const val ADVANCED_FILTERS = "ADVANCED_FILTERS"
 
 private const val MIN_ACCURACY = "MIN_ACCURACY"
-private const val MIN_SPEED = "MIN_SPEED"
-private const val MAX_SPEED = "MAX_SPEED"
 
 private const val NO_MIN_ACCURACY = -1F
 private const val DEFAULT_MIN_ACCURACY = NO_MIN_ACCURACY
@@ -26,7 +24,7 @@ class AdvancedFiltersHelper(val context: Context) {
         val locationRequestPreferences =
             context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
-            putFloat(MIN_ACCURACY, accuracy?:NO_MIN_ACCURACY)
+            putFloat(MIN_ACCURACY, accuracy ?: NO_MIN_ACCURACY)
             apply()
         }
     }

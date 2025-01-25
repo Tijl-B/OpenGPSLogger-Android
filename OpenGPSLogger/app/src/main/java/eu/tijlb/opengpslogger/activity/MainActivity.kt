@@ -15,12 +15,12 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.database.settings.AdvancedFiltersHelper
+import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.database.settings.PRESET_HIGH
 import eu.tijlb.opengpslogger.database.settings.PRESET_HIGHEST
 import eu.tijlb.opengpslogger.database.settings.PRESET_LOW
 import eu.tijlb.opengpslogger.database.settings.PRESET_MEDIUM
 import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
-import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
