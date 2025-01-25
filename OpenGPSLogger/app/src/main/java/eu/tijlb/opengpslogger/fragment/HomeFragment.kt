@@ -35,6 +35,7 @@ import eu.tijlb.opengpslogger.OsmHelper
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.database.boundingbox.BoundingBoxDbHelper
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.database.settings.AdvancedFiltersHelper
 import eu.tijlb.opengpslogger.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
 import eu.tijlb.opengpslogger.dialog.ZoomableImageDialog
@@ -64,7 +65,9 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
     private lateinit var imageRendererView: ImageRendererView
 
     private lateinit var trackingStatusHelper: TrackingStatusHelper
+    private lateinit var advancedFiltersHelper: AdvancedFiltersHelper
     private lateinit var trackingActiveChangedListener: OnSharedPreferenceChangeListener
+    private lateinit var minAccuracyChangedListener: OnSharedPreferenceChangeListener
 
     private var selectedDataSource = DATASOURCE_ALL
         set(value) {
@@ -73,6 +76,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             initializeBeginAndEndTime()
             resetProgressBars()
             updateDataSourceDeleteButtonVisibility()
+            imageRendererView.resetIfDrawn()
         }
 
     private var startTime = LocalDate.MIN
@@ -95,6 +99,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             imageRendererView.inputBbox = value
             initializeBeginAndEndTime()
             resetProgressBars()
+            imageRendererView.resetIfDrawn()
         }
 
     private lateinit var locationDbHelper: LocationDbHelper
@@ -187,6 +192,10 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         tilesProgressBar = view.findViewById(R.id.tilesProgressBar)
 
         trackingStatusHelper = TrackingStatusHelper(requireContext())
+        advancedFiltersHelper = AdvancedFiltersHelper(requireContext())
+
+        imageRendererView.minAccuracy = advancedFiltersHelper.getMinAccuracy()
+
         requestingLocation = trackingStatusHelper.isActive()
         if (requestingLocation) {
             startPollingLocation()
@@ -194,6 +203,13 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         updateRequestLocationButton()
         trackingActiveChangedListener = trackingStatusHelper.registerActiveChangedListener {
             requestingLocation = it
+        }
+        minAccuracyChangedListener = advancedFiltersHelper.registerMinAccuracyChangedListener {
+            Log.d("ogl-homefragment", "AdvancedFiltersCahngedLister triggered")
+            imageRendererView.minAccuracy = it
+            initializeBeginAndEndTime()
+            resetProgressBars()
+            imageRendererView.resetIfDrawn()
         }
 
         imageRendererView.onPointProgressUpdateListener =
@@ -227,6 +243,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         initializeBeginAndEndTime()
         setUpDataSourcesSpinner()
         imageRendererView.pointsRenderWidth = 4000
+        imageRendererView.resetIfDrawn()
     }
 
     private fun setUpDataSourcesSpinner() {
@@ -264,7 +281,8 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             startDateMillis = 0,
             endDateMillis = Long.MAX_VALUE,
             dataSource = selectedDataSource,
-            bbox = inputBbox
+            bbox = inputBbox,
+            minAccuracy = advancedFiltersHelper.getMinAccuracy()
         )
         val (youngestPointUnix, oldestPointUnix) = locationDbHelper.getTimeRange(query)
 
@@ -274,11 +292,12 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         endTime = Instant.ofEpochMilli(oldestPointUnix)
             .atZone(ZoneId.systemDefault())
             .toLocalDate()
-        imageRendererView.resetIfDrawn()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        trackingStatusHelper.deregisterActiveChangedListener(trackingActiveChangedListener)
+        advancedFiltersHelper.deregisterAdvancedFiltersChangedListener(minAccuracyChangedListener)
         _binding = null
     }
 

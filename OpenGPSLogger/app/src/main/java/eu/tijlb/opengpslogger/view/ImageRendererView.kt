@@ -72,6 +72,8 @@ class ImageRendererView(
     var beginTime: LocalDate? = null
     var endTime: LocalDate? = null
 
+    var minAccuracy: Float? = null
+
     private var pointsRenderHeight = height
     private val osmHelper: OsmHelper = OsmHelper()
 
@@ -232,7 +234,8 @@ class ImageRendererView(
                                     pointsQuery.dataSource,
                                     it.second.first,
                                     it.second.second,
-                                    pointsQuery.bbox
+                                    pointsQuery.bbox,
+                                    pointsQuery.minAccuracy
                                 )
                             )
                         }
@@ -271,7 +274,8 @@ class ImageRendererView(
         startDateMillis = getStartDateMillis(),
         endDateMillis = getEndDateMillis(),
         dataSource = dataSource,
-        bbox = bbox
+        bbox = bbox,
+        minAccuracy = minAccuracy
     )
 
     private fun loadOsmBackgroundAsync(bbox: BBoxDto) {
@@ -396,36 +400,6 @@ class ImageRendererView(
         Log.d("ogl-imagerendererview-point", "Done drawing points...")
         invalidate()
         onPointsLoadedListener?.onPointsLoaded()
-    }
-
-    private fun drawPoints(
-        points: List<Triple<Double, Double, Long>?>,
-        currentMonth: Long,
-        canvas: Canvas,
-        latConverter: (Double) -> Double,
-        lonConverter: (Double) -> Double
-    ): Long? {
-        var cMonth = currentMonth
-        return points.filterNotNull()
-            .also {
-                Log.d(
-                    "ogl-imagerendererview-point",
-                    "Drawing batch of ${it.count()} points"
-                )
-            }
-            .map {
-                cMonth = drawPoint(
-                    it.first,
-                    it.second,
-                    it.third,
-                    cMonth,
-                    canvas,
-                    latConverter,
-                    lonConverter
-                )
-                cMonth
-            }
-            .lastOrNull()
     }
 
     private fun drawPoint(
