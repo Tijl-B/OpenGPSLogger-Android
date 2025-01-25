@@ -10,8 +10,14 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_advancedFilters"
+        android:id="@+id/action_visualisationSettings"
         android:orderInCategory="101"
+        android:title="@string/visualisationSettings"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_advancedFilters"
+        android:orderInCategory="102"
         android:title="@string/advanced_filters"
         app:showAsAction="never" />
 

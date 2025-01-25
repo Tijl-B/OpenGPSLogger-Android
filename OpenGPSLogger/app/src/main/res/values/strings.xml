@@ -29,4 +29,10 @@
     <string name="tracking_notification_bigtext">"Tracked %1$s points this session (polling mode: %2$s).\nLast update %3$s."</string>
     <string name="advanced_filters">Advanced Filters</string>
     <string name="min_accuracy">Min. accuracy (meters):</string>
+    <string name="visualisationSettings">Visualisation settings</string>
+    <string name="dot_size">Dot radius (px):</string>
+    <string name="line_size">Line width (px):</string>
+    <string name="enable_lines">Enable lines:</string>
+    <string name="auto">Auto</string>
+    <string name="connect_lines_max_time_delta_minutes">Connect lines max time delta (minutes):</string>
 </resources>

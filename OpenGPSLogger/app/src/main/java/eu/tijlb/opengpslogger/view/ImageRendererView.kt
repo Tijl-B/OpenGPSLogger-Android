@@ -2,6 +2,7 @@ package eu.tijlb.opengpslogger.view
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -13,7 +14,9 @@ import android.view.ViewGroup
 import eu.tijlb.opengpslogger.OsmHelper
 import eu.tijlb.opengpslogger.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.dto.BBoxDto
+import eu.tijlb.opengpslogger.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.query.PointsQuery
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,15 +28,23 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
+import kotlin.math.abs
 import kotlin.math.ln
+import kotlin.math.max
 
-private const val BASEMAP_CATRODB_LIGHT = "https://cartodb-basemaps-b.global.ssl.fastly.net/light_all/%s/%s/%s.png"
+private const val BASEMAP_CATRODB_LIGHT =
+    "https://cartodb-basemaps-b.global.ssl.fastly.net/light_all/%s/%s/%s.png"
 
 class ImageRendererView(
     context: Context,
     attrs: AttributeSet? = null,
 ) : View(context, attrs) {
+
+
+    private var visualisationSettingsHelper: VisualisationSettingsHelper
+    private var visualisationSettingsChangedListener: OnSharedPreferenceChangeListener
 
     var onTilesLoadedListener: OnTilesLoadedListener? = null
     var onPointsLoadedListener: OnPointsLoadedListener? = null
@@ -93,6 +104,29 @@ class ImageRendererView(
     private var xRange = 1.0
     private var yRange = 1.0
     private var pointRadius = 5F
+    private var visualisationSettings: VisualisationSettingsDto
+    private var maxTimeDeltaMillis: Long
+
+    init {
+        visualisationSettingsHelper = VisualisationSettingsHelper(context)
+        visualisationSettingsChangedListener =
+            visualisationSettingsHelper.registerVisualisationSettingsChangedListener {
+                Log.d(
+                    "ogl-imagerendererview",
+                    "Executing callback on visualisation settings changed."
+                )
+                visualisationSettings = it
+                maxTimeDeltaMillis = TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
+                CoroutineScope(Dispatchers.Default)
+                    .launch {
+                        resetPointDrawing()
+                        invalidate()
+                    }
+            }
+        visualisationSettings = visualisationSettingsHelper.getVisualisationSettings()
+        maxTimeDeltaMillis =
+            TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
+    }
 
     fun resetIfDrawn() {
         if (isDrawn) {
@@ -127,10 +161,16 @@ class ImageRendererView(
         }
     }
 
-    private val paint = Paint().apply {
+    private val dotPaint = Paint().apply {
         isAntiAlias = true
         color = Color.RED
         alpha = 125
+    }
+    private val linePaint = Paint().apply {
+        isAntiAlias = true
+        color = Color.RED
+        alpha = 125
+        strokeWidth = 5F
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -142,6 +182,13 @@ class ImageRendererView(
         isDrawn = true
         drawMap(canvas)
         Log.d("ogl-imagerendererview", "Finished onDraw")
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        visualisationSettingsHelper.deregisterAdvancedFiltersChangedListener(
+            visualisationSettingsChangedListener
+        )
     }
 
     private fun drawMap(canvas: Canvas) {
@@ -204,6 +251,7 @@ class ImageRendererView(
                 }
                 if (pointsBitMaps == null) {
                     Log.d("ogl-imagerendererview", "Loading points")
+                    updateVisualisationSettings()
                     val pointThreads = 1
                     val pointsQuery = pointsQuery(realBbox)
                     pointsBitMaps = MutableList(pointThreads) { null }
@@ -329,9 +377,10 @@ class ImageRendererView(
         pointsBitMaps!![threadIndex] = clusterBitmap
         var currentMonth: Long = 0
 
-        val pointsBufferSize = 100000
-        var pointsBuffer: MutableList<Triple<Double, Double, Long>?>? =
-            MutableList(pointsBufferSize) { null }
+        var prevLat: Double? = null
+        var prevLon: Double? = null
+        var prevTime = 0L
+
         var i = 0
 
         locationDbHelper.getPointsCursor(query)
@@ -350,11 +399,13 @@ class ImageRendererView(
                         onPointProgressUpdateListener?.onPointProgressMax(
                             amountOfPointsToLoad
                         )
-                        pointRadius = when {
+                        pointRadius = visualisationSettings.dotSize ?: when {
                             amountOfPointsToLoad < 10000 -> 10F
                             amountOfPointsToLoad < 100000 -> 5F
                             else -> 2F
                         }
+
+                        linePaint.strokeWidth = visualisationSettings.lineSize ?: (pointRadius * 2)
 
                         val latColumnIndex =
                             cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
@@ -376,15 +427,21 @@ class ImageRendererView(
                             val time = cursor.getLong(timeColumnIndex)
 
 
-                            currentMonth = drawPoint(
+                            currentMonth = draw(
                                 latitude,
                                 longitude,
+                                prevLat,
+                                prevLon,
                                 time,
+                                prevTime,
                                 currentMonth,
                                 canvas,
                                 latConverter,
                                 lonConverter
                             )
+                            prevLat = latitude
+                            prevLon = longitude
+                            prevTime = time
                             if (++i >= 10000) {
                                 Log.d("ogl-imagerendererview-point", "refreshing points bitmap $i")
                                 onPointProgressUpdateListener?.onPointProgressUpdate(i)
@@ -402,10 +459,13 @@ class ImageRendererView(
         onPointsLoadedListener?.onPointsLoaded()
     }
 
-    private fun drawPoint(
+    private fun draw(
         latitude: Double,
         longitude: Double,
+        prevLatitude: Double?,
+        prevLongitude: Double?,
         time: Long,
+        prevTime: Long,
         currentMonth: Long,
         canvas: Canvas,
         latConverter: (Double) -> Double,
@@ -416,7 +476,8 @@ class ImageRendererView(
         if (monthBucket != mCurrentMonth) {
             mCurrentMonth = monthBucket
             val newColor = generateColor(monthBucket)
-            paint.color = newColor // todo multi threaded paint
+            dotPaint.color = newColor // todo multi threaded paint
+            linePaint.color = newColor
             Log.d(
                 "ogl-imagerendererview-point-color",
                 "Changed color to $newColor in month $mCurrentMonth (timestamp $time)"
@@ -428,8 +489,20 @@ class ImageRendererView(
         val y = latConverter(latitude).toFloat()
 
         if (x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height) {
-            canvas.drawCircle(x, y, pointRadius, paint)
+            canvas.drawCircle(x, y, pointRadius, dotPaint)
         }
+
+        if (visualisationSettings.drawLines
+            && prevLongitude != null && prevLatitude != null
+            && abs(time - prevTime) < maxTimeDeltaMillis
+        ) {
+            val prevX = lonConverter(prevLongitude).toFloat()
+            val prevY = latConverter(prevLatitude).toFloat()
+            if (max(abs(x - prevX) / height, abs(y - prevY) / width) < 0.25) {
+                canvas.drawLine(prevX, prevY, x, y, linePaint)
+            }
+        }
+
         return mCurrentMonth
     }
 
@@ -479,6 +552,13 @@ class ImageRendererView(
         Log.d("ogl-imagerendererview-zoom", "Calculated zoom $finalZoom for range $range")
         return finalZoom
     }
+
+    private fun updateVisualisationSettings() {
+        visualisationSettings = visualisationSettingsHelper.getVisualisationSettings()
+        maxTimeDeltaMillis =
+            TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
+    }
+
 
     interface OnTilesLoadedListener {
         fun onTilesLoaded()
