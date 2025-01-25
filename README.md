@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 0.4.1
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Fix notification sometimes showing 0 points tracked instead of actual amount
+
 ### 0.4.0
 [apk](release/opengpslogger-0-4-0.apk)
 

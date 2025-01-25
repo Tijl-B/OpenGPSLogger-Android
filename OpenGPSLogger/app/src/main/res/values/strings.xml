@@ -25,4 +25,6 @@
     <string name="tracking_settings_title">Tracking settings</string>
     <string name="tracking_settings_confirm">Confirm</string>
     <string name="tracking_settings_cancel">Cancel</string>
+    <string name="tracking_notification_content">Tracked %1$s points this session (polling mode: %2$s).</string>
+    <string name="tracking_notification_bigtext">"Tracked %1$s points this session (polling mode: %2$s).\nLast update %3$s."</string>
 </resources>

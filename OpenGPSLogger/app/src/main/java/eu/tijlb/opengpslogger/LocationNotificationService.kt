@@ -176,8 +176,8 @@ class LocationNotificationService : Service() {
             PendingIntent.getService(this, 0, deleteIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
-            .setContentTitle("Location Service")
-            .setContentText("Tracked 0 points this session (polling mode: ${presetName}).")
+            .setContentTitle("OpenGPSLogger Location Service")
+            .setContentText(getNotificationContent())
             .setSmallIcon(R.drawable.ic_launcher_background)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setDeleteIntent(deletePendingIntent)
@@ -186,7 +186,6 @@ class LocationNotificationService : Service() {
     }
 
     private fun saveToDb(location: Location) {
-        // TODO put in separate thread or listener?
         val dbHelper = LocationDbHelper.getInstance(baseContext)
         dbHelper.save(location, "app::OpenGpsLogger")
 
@@ -196,16 +195,26 @@ class LocationNotificationService : Service() {
             .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
 
-        notificationBuilder.setContentText("Tracked ${++savedPoints} points this session (polling mode: $presetName).")
+        notificationBuilder.setContentText(getNotificationContent())
         notificationBuilder.setStyle(
             NotificationCompat.BigTextStyle().bigText(
-                """
-                Tracked $savedPoints points this session (polling mode: $presetName). 
-                Last update $formattedTime.
-                """.trimIndent()
+                getNotificationBigText(formattedTime)
             )
         )
 
         startForeground(1, notificationBuilder.build())
     }
+
+    private fun getNotificationContent() = getString(
+        R.string.tracking_notification_content,
+        savedPoints.toString(),
+        presetName
+    )
+
+    private fun getNotificationBigText(formattedTime: String) = getString(
+        R.string.tracking_notification_bigtext,
+        savedPoints.toString(),
+        presetName,
+        formattedTime
+    )
 }
