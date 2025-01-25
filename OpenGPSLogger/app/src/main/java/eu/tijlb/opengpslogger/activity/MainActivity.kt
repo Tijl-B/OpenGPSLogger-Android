@@ -7,12 +7,14 @@ import android.view.MenuItem
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
+import android.widget.Switch
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
+import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.database.settings.AdvancedFiltersHelper
 import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
@@ -21,7 +23,9 @@ import eu.tijlb.opengpslogger.database.settings.PRESET_HIGHEST
 import eu.tijlb.opengpslogger.database.settings.PRESET_LOW
 import eu.tijlb.opengpslogger.database.settings.PRESET_MEDIUM
 import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
+import eu.tijlb.opengpslogger.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
+import eu.tijlb.opengpslogger.dto.VisualisationSettingsDto
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var locationRequestSettingsHelper: LocationRequestSettingsHelper
     private lateinit var advancedFiltersHelper: AdvancedFiltersHelper
+    private lateinit var visualisationSettingsHelper: VisualisationSettingsHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
         advancedFiltersHelper = AdvancedFiltersHelper(this)
+        visualisationSettingsHelper = VisualisationSettingsHelper(this)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
@@ -52,13 +58,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_about -> openAboutDialog()
             R.id.action_trackingSettings -> openTrackingSettingsDialog()
             R.id.action_advancedFilters -> openAdvancedFiltersDialog()
+            R.id.action_visualisationSettings -> openVisualisationSettingsDialog()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -69,12 +73,52 @@ class MainActivity : AppCompatActivity() {
                 || super.onSupportNavigateUp()
     }
 
+    private fun openVisualisationSettingsDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_visualisation_settings, null)
+        val dotSizeEditText = dialogView.findViewById<EditText>(R.id.editText_dotSize)
+        val lineSizeEditText = dialogView.findViewById<EditText>(R.id.editText_lineSize)
+        val lineMaxMinsDeltaEditText =
+            dialogView.findViewById<EditText>(R.id.editText_connectLinesMaxTimeDelta)
+        val lineSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_lines)
+
+        val settings = visualisationSettingsHelper.getVisualisationSettings()
+        dotSizeEditText.setText(settings.dotSize?.toString() ?: getString(R.string.auto))
+        lineSizeEditText.setText(settings.lineSize?.toString() ?: getString(R.string.auto))
+        lineMaxMinsDeltaEditText.setText(settings.connectLinesMaxMinutesDelta.toString())
+        lineSwitch.isChecked = settings.drawLines
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.tracking_settings_title))
+            .setView(dialogView)
+            .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
+                val dotSize = dotSizeEditText.text.toString().toFloatOrNull()
+                val lineSize = lineSizeEditText.text.toString().toFloatOrNull()
+                val lineMaxMinsDelta = lineMaxMinsDeltaEditText.text.toString().toLongOrNull()
+                    ?: settings.connectLinesMaxMinutesDelta
+                val drawLines = lineSwitch.isChecked
+                val settingsDto = VisualisationSettingsDto(
+                    drawLines,
+                    lineSize,
+                    dotSize,
+                    lineMaxMinsDelta
+                )
+                visualisationSettingsHelper.setVisualisationSettings(settingsDto)
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
+    }
+
     private fun openAdvancedFiltersDialog(): Boolean {
         val dialogView = layoutInflater.inflate(R.layout.dialog_advanced_filters, null)
         val minAccuracyEditText = dialogView.findViewById<EditText>(R.id.editText_minAccuracy)
 
         var minAccuracy = advancedFiltersHelper.getMinAccuracy()
-        minAccuracyEditText.setText(minAccuracy?.toString()?:"")
+        minAccuracyEditText.setText(minAccuracy?.toString() ?: "")
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.tracking_settings_title))

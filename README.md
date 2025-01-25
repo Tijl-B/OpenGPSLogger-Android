@@ -2,6 +2,17 @@
 
 ## Releases
 
+### 0.6.0
+[apk](release/opengpslogger-0-6-0.apk)
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Add visualisation settings
+  - specify point size
+  - toggle lines (new)
+  - specify line size
+  - specify line disconnection by time
+
 ### 0.5.0
 [apk](release/opengpslogger-0-5-0.apk)
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
