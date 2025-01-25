@@ -182,7 +182,7 @@ class LocationDbHelper(context: Context) :
                     val minLon = cursor.getDouble(cursor.getColumnIndexOrThrow("lonMin"))
                     val maxLon = cursor.getDouble(cursor.getColumnIndexOrThrow("lonMax"))
                     Log.d("7895", "Got min lon $minLon, max lon $maxLon")
-                    if(minLon == maxLon || minLat == maxLat) {
+                    if (minLon == maxLon || minLat == maxLat) {
                         return BBoxDto.defaultBbox()
                     }
                     return BBoxDto(
@@ -228,19 +228,35 @@ class LocationDbHelper(context: Context) :
               ${LocationDbContract.COLUMN_NAME_LONGITUDE} >= ${it.minLon} AND ${LocationDbContract.COLUMN_NAME_LONGITUDE} <= ${it.maxLon}
             )
             AND
-                """.trimIndent()
+                """
             } ?: ""
-        val filter = """
-             $bboxFilter
-              (
+        val accuracyFilter =
+            query.minAccuracy?.let {
+                """
+            (
+                ${LocationDbContract.COLUMN_NAME_ACCURACY} <= $it
+            )
+            AND
+            """
+            } ?: ""
+        val timestampFilter =
+            """
+             (
                 ( 
                 ${LocationDbContract.COLUMN_NAME_TIMESTAMP} >= ${query.startDateMillis}
                 AND ${LocationDbContract.COLUMN_NAME_TIMESTAMP} <= ${query.endDateMillis}
                 ) 
               OR ${LocationDbContract.COLUMN_NAME_TIMESTAMP} IS NULL
               )
+              """
+
+        val filter = """
+             $bboxFilter
+             $accuracyFilter
+             $timestampFilter
               ${if (query.dataSource != "All") "AND ${LocationDbContract.COLUMN_NAME_SOURCE} = '${query.dataSource}'" else ""}
             """.trimIndent()
+        Log.d("ogl-locationdbhelper-filter", "Using filter $filter")
         return filter
     }
 

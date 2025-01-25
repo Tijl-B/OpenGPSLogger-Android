@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -13,12 +14,13 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.database.settings.AdvancedFiltersHelper
+import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.database.settings.PRESET_HIGH
 import eu.tijlb.opengpslogger.database.settings.PRESET_HIGHEST
 import eu.tijlb.opengpslogger.database.settings.PRESET_LOW
 import eu.tijlb.opengpslogger.database.settings.PRESET_MEDIUM
 import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
-import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -26,12 +28,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var locationRequestSettingsHelper: LocationRequestSettingsHelper
+    private lateinit var advancedFiltersHelper: AdvancedFiltersHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
+        advancedFiltersHelper = AdvancedFiltersHelper(this)
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
@@ -54,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.action_about -> openAboutDialog()
             R.id.action_trackingSettings -> openTrackingSettingsDialog()
+            R.id.action_advancedFilters -> openAdvancedFiltersDialog()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -64,12 +69,35 @@ class MainActivity : AppCompatActivity() {
                 || super.onSupportNavigateUp()
     }
 
+    private fun openAdvancedFiltersDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_advanced_filters, null)
+        val minAccuracyEditText = dialogView.findViewById<EditText>(R.id.editText_minAccuracy)
+
+        var minAccuracy = advancedFiltersHelper.getMinAccuracy()
+        minAccuracyEditText.setText(minAccuracy?.toString()?:"")
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.tracking_settings_title))
+            .setView(dialogView)
+            .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
+                minAccuracy = minAccuracyEditText.text.toString().toFloatOrNull()
+                advancedFiltersHelper.setMinAccuracy(minAccuracy)
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
+    }
+
     private fun openTrackingSettingsDialog(): Boolean {
         val dialogView = layoutInflater.inflate(R.layout.dialog_tracking_settings, null)
         val spinner = dialogView.findViewById<Spinner>(R.id.spinner_presets)
         val presets = listOf(PRESET_HIGHEST, PRESET_HIGH, PRESET_MEDIUM, PRESET_LOW, PRESET_PASSIVE)
         val presetsText = presets.map {
-            when(it) {
+            when (it) {
                 PRESET_HIGHEST -> getString(R.string.preset_highest)
                 PRESET_HIGH -> getString(R.string.preset_high)
                 PRESET_MEDIUM -> getString(R.string.preset_medium)

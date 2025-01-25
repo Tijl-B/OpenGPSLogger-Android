@@ -6,5 +6,6 @@ data class PointsQuery(
     val dataSource: String,
     val startDateMillis: Long,
     val endDateMillis: Long,
-    var bbox: BBoxDto? = null
+    var bbox: BBoxDto? = null,
+    var minAccuracy: Float? = null
 )
