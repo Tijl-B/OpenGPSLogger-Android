@@ -2,8 +2,15 @@
 
 ## Releases
 
+### 0.7.0
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Store angle and distance to neighbors for future outlier detection
+
 ### 0.6.0
 [apk](release/opengpslogger-0-6-0.apk)
+
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
 #### Features
@@ -15,6 +22,7 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 
 ### 0.5.0
 [apk](release/opengpslogger-0-5-0.apk)
+
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
 #### Features
