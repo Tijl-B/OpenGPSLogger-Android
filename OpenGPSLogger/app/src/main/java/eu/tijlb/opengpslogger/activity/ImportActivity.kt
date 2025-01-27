@@ -131,6 +131,7 @@ class ImportActivity : AppCompatActivity() {
 
     private fun parseRecordsJsonLocations(reader: JsonReader, importStart: Long) {
         reader.beginArray()
+
         while (reader.hasNext()) {
             reader.beginObject()
 
@@ -149,16 +150,18 @@ class ImportActivity : AppCompatActivity() {
                 }
             }
 
-           if (longitude != null && latitude != null && timestamp != null) {
+            if (longitude != null && latitude != null && timestamp != null) {
                 val timestampMillis = iso8601ToUnixMillis(timestamp)
+                val point = Point(
+                    lat = latitude.toDouble(),
+                    lon = longitude.toDouble(),
+                    unixTime = timestampMillis,
+                    accuracy = accuracy?.toFloat()
+                )
                 storePointInDatabase(
-                    latitude.toString(),
-                    longitude.toString(),
-                    timestampMillis.toString(),
-                    "0",
+                    point,
                     importStart,
-                    "records_json_import",
-                    accuracy?.toFloat()
+                    "records_json_import"
                 )
             } else {
                 Log.w(
@@ -183,7 +186,7 @@ class ImportActivity : AppCompatActivity() {
             var eventType = parser.eventType
             var latitude: String? = null
             var longitude: String? = null
-            var time: String? = null
+            var time: Long? = null
             var speed: String? = null
 
             locationDbHelper.writableDatabase.beginTransaction()
@@ -196,21 +199,21 @@ class ImportActivity : AppCompatActivity() {
                                 latitude = parser.getAttributeValue(null, GPX_ATTR_LAT)
                                 longitude = parser.getAttributeValue(null, GPX_ATTR_LON)
                             }
-
-                            GPX_FIELD_TIME -> time =
-                                iso8601ToUnixMillis(parser.nextText()).toString()
-
+                            GPX_FIELD_TIME -> time = iso8601ToUnixMillis(parser.nextText())
                             GPX_FIELD_SPEED -> speed = parser.nextText()
                         }
                     }
 
                     XmlPullParser.END_TAG -> {
                         if (tagName == GPX_FIELD_TRACKPOINT && latitude != null && longitude != null) {
+                            val point = Point(
+                                lat = latitude.toDouble(),
+                                lon = longitude.toDouble(),
+                                unixTime = time,
+                                gpsSpeed = speed?.toFloat()
+                            )
                             storePointInDatabase(
-                                latitude,
-                                longitude,
-                                time,
-                                speed,
+                                point,
                                 importStart,
                                 "gpx_import"
                             )
@@ -231,20 +234,16 @@ class ImportActivity : AppCompatActivity() {
     }
 
     private fun storePointInDatabase(
-        lat: String,
-        lon: String,
-        unixTime: String?,
-        gpsSpeed: String?,
+        point: Point,
         importStart: Long,
         source: String,
-        mAccuracy: Float? = null
     ) {
         var location = Location(source).apply {
-            latitude = lat.toDouble()
-            longitude = lon.toDouble()
-            unixTime?.let { time = it.toLong() }
-            gpsSpeed?.let { speed = it.toFloat() }
-            mAccuracy?.let { accuracy = it }
+            latitude = point.lat
+            longitude = point.lon
+            point.unixTime?.let { time = it }
+            point.gpsSpeed?.let { speed = it }
+            point.accuracy?.let { accuracy = it }
         }
         locationDbHelper.save(location, "$source::$importStart")
     }
@@ -258,4 +257,12 @@ class ImportActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
+
+    private data class Point(
+        val lat: Double,
+        val lon: Double,
+        val unixTime: Long?,
+        val gpsSpeed: Float? = null,
+        val accuracy: Float? = null
+    )
 }
