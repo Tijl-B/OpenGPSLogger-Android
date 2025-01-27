@@ -7,7 +7,6 @@ import android.view.MenuItem
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
-import android.widget.Switch
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
@@ -16,6 +15,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.database.settings.AdvancedFiltersHelper
 import eu.tijlb.opengpslogger.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.database.settings.PRESET_HIGH
@@ -26,6 +26,9 @@ import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
 import eu.tijlb.opengpslogger.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 import eu.tijlb.opengpslogger.dto.VisualisationSettingsDto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var locationRequestSettingsHelper: LocationRequestSettingsHelper
     private lateinit var advancedFiltersHelper: AdvancedFiltersHelper
     private lateinit var visualisationSettingsHelper: VisualisationSettingsHelper
+    private lateinit var locationDbHelper: LocationDbHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +46,8 @@ class MainActivity : AppCompatActivity() {
         locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
         advancedFiltersHelper = AdvancedFiltersHelper(this)
         visualisationSettingsHelper = VisualisationSettingsHelper(this)
+        locationDbHelper = LocationDbHelper.getInstance(this)
+
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
@@ -49,6 +55,11 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
+
+        CoroutineScope(Dispatchers.IO)
+            .launch {
+                locationDbHelper.updateDistAngleIfNeeded()
+            }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

@@ -8,72 +8,38 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
+import android.widget.Toast
 import eu.tijlb.opengpslogger.database.location.migration.MigrationV8
+import eu.tijlb.opengpslogger.database.location.migration.MigrationV9
+import eu.tijlb.opengpslogger.database.location.util.LocationDbCreationUtil
+import eu.tijlb.opengpslogger.database.location.util.LocationDbFilterUtil.Companion.getFilter
+import eu.tijlb.opengpslogger.database.location.util.LocationDbNeighborsUtil
+import eu.tijlb.opengpslogger.database.location.util.LocationDbRangeUtil
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.query.PointsQuery
 import kotlin.math.cos
 
-class LocationDbHelper(context: Context) :
+class LocationDbHelper(val context: Context) :
     SQLiteOpenHelper(context, LocationDbContract.FILE_NAME, null, DATABASE_VERSION) {
 
-    private val createTableSql =
-        """
-            CREATE TABLE IF NOT EXISTS ${LocationDbContract.TABLE_NAME}  
-            (${BaseColumns._ID} INTEGER PRIMARY KEY,
-            ${LocationDbContract.COLUMN_NAME_TIMESTAMP} INTEGER,
-            ${LocationDbContract.COLUMN_NAME_LATITUDE} DOUBLE,
-            ${LocationDbContract.COLUMN_NAME_LONGITUDE} DOUBLE,
-            ${LocationDbContract.COLUMN_NAME_SPEED} DOUBLE,
-            ${LocationDbContract.COLUMN_NAME_SPEED_ACCURACY} DOUBLE,
-            ${LocationDbContract.COLUMN_NAME_ACCURACY} DOUBLE,
-            ${LocationDbContract.COLUMN_NAME_SOURCE} TEXT,
-            ${LocationDbContract.COLUMN_NAME_CREATED_ON} INTEGER,
-            ${LocationDbContract.COLUMN_NAME_HASH_50M_1D} LONG,
-            ${LocationDbContract.COLUMN_NAME_HASH_250M_1D} LONG,
-            UNIQUE(${LocationDbContract.COLUMN_NAME_TIMESTAMP}, ${LocationDbContract.COLUMN_NAME_SOURCE})
-            )
-        """.trimIndent()
-
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(createTableSql)
-        db.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS idx_timestamp 
-            ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_TIMESTAMP})
-            """
-        )
-        db.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS idx_latitude_longitude 
-            ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_LATITUDE}, ${LocationDbContract.COLUMN_NAME_LONGITUDE})
-            """
-        )
-        db.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS idx_data_source 
-            ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_SOURCE})
-            """
-        )
-        db.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS idx_hash_50m_1d 
-            ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_HASH_50M_1D})
-            """
-        )
-        db.execSQL(
-            """
-            CREATE INDEX IF NOT EXISTS idx_hash_250m_1d 
-            ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_HASH_250M_1D})
-            """
-        )
+        LocationDbCreationUtil.create(db, DATABASE_VERSION)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        Toast.makeText(
+            context,
+            "Starting database migration. Do not close the app ($oldVersion -> $newVersion).",
+            Toast.LENGTH_LONG
+        ).show()
         if (oldVersion < 8) {
             MigrationV8.migrate(db)
         }
+        if (oldVersion < 9) {
+            MigrationV9(context).migrate(db)
+        }
+        Toast.makeText(context, "Done migrating database.", Toast.LENGTH_SHORT).show()
     }
-
 
     override fun onConfigure(db: SQLiteDatabase) {
         super.onConfigure(db)
@@ -81,7 +47,7 @@ class LocationDbHelper(context: Context) :
         db.execSQL("PRAGMA synchronous = NORMAL")
     }
 
-    fun save(location: Location, source: String) {
+    fun save(location: Location, source: String): Long {
         val hashes = calculateHashes(location.latitude, location.longitude, location.time)
 
         val values = ContentValues().apply {
@@ -103,34 +69,11 @@ class LocationDbHelper(context: Context) :
         }
 
         val db = writableDatabase
-        val newRowId = db?.replace(LocationDbContract.TABLE_NAME, null, values)
-        if ((newRowId ?: 1L) % 1000 == 0L) {
+        val newRowId = db.replace(LocationDbContract.TABLE_NAME, null, values)
+        if (newRowId % 1000 == 0L) {
             Log.d("ogl-locationdbhelper", "Saved $newRowId: $values to database")
         }
-    }
-
-    fun getTimeRange(query: PointsQuery): Pair<Long, Long> {
-        val db = readableDatabase
-        val query = """
-            SELECT MIN(${LocationDbContract.COLUMN_NAME_TIMESTAMP}) AS minTimestamp,
-             MAX(${LocationDbContract.COLUMN_NAME_TIMESTAMP}) AS maxTimestamp
-            FROM ${LocationDbContract.TABLE_NAME}
-            WHERE ${getFilter(query)}
-        """.trimIndent()
-        db.rawQuery(query, null)
-            .use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val lowestTimestamp =
-                        cursor.getLong(cursor.getColumnIndexOrThrow("minTimestamp"))
-                    var highestTimestamp =
-                        cursor.getLong(cursor.getColumnIndexOrThrow("maxTimestamp"))
-                    cursor.close()
-                    Log.d("ogl-locationdbhelper", "Got oldest timestamp $lowestTimestamp")
-                    if (highestTimestamp == 0L) highestTimestamp = System.currentTimeMillis()
-                    return Pair(lowestTimestamp, highestTimestamp)
-                }
-            }
-        return Pair(0L, System.currentTimeMillis())
+        return newRowId
     }
 
     fun getPointsCursor(query: PointsQuery): Cursor {
@@ -163,37 +106,14 @@ class LocationDbHelper(context: Context) :
         )
     }
 
+    fun getTimeRange(query: PointsQuery): Pair<Long, Long> {
+        val db = readableDatabase
+        return LocationDbRangeUtil.getTimeRange(db, query)
+    }
+
     fun getCoordsRange(query: PointsQuery): BBoxDto {
         val db = this.readableDatabase
-        val query = """
-            SELECT MIN(${LocationDbContract.COLUMN_NAME_LONGITUDE}) AS lonMin, 
-                MAX(${LocationDbContract.COLUMN_NAME_LONGITUDE}) AS lonMax,
-                MIN(${LocationDbContract.COLUMN_NAME_LATITUDE}) AS latMin, 
-                MAX(${LocationDbContract.COLUMN_NAME_LATITUDE}) AS latMax 
-            FROM ${LocationDbContract.TABLE_NAME}
-            WHERE ${getFilter(query)}
-        """.trimIndent()
-
-        db.rawQuery(query, null)
-            .use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val minLat = cursor.getDouble(cursor.getColumnIndexOrThrow("latMin"))
-                    val maxLat = cursor.getDouble(cursor.getColumnIndexOrThrow("latMax"))
-                    val minLon = cursor.getDouble(cursor.getColumnIndexOrThrow("lonMin"))
-                    val maxLon = cursor.getDouble(cursor.getColumnIndexOrThrow("lonMax"))
-                    Log.d("7895", "Got min lon $minLon, max lon $maxLon")
-                    if (minLon == maxLon || minLat == maxLat) {
-                        return BBoxDto.defaultBbox()
-                    }
-                    return BBoxDto(
-                        minLat = minLat,
-                        maxLat = maxLat,
-                        minLon = minLon,
-                        maxLon = maxLon
-                    )
-                }
-            }
-        return BBoxDto.defaultBbox()
+        return LocationDbRangeUtil.getCoordsRange(db, query)
     }
 
     fun getDataSources(): List<String> {
@@ -218,48 +138,6 @@ class LocationDbHelper(context: Context) :
         return list
     }
 
-    private fun getFilter(query: PointsQuery): String {
-        val bboxFilter =
-            query.bbox?.let {
-                """
-            (
-              ${LocationDbContract.COLUMN_NAME_LATITUDE} >= ${it.minLat} AND ${LocationDbContract.COLUMN_NAME_LATITUDE} <= ${it.maxLat}
-              AND 
-              ${LocationDbContract.COLUMN_NAME_LONGITUDE} >= ${it.minLon} AND ${LocationDbContract.COLUMN_NAME_LONGITUDE} <= ${it.maxLon}
-            )
-            AND
-                """
-            } ?: ""
-        val accuracyFilter =
-            query.minAccuracy?.let {
-                """
-            (
-                ${LocationDbContract.COLUMN_NAME_ACCURACY} <= $it
-            )
-            AND
-            """
-            } ?: ""
-        val timestampFilter =
-            """
-             (
-                ( 
-                ${LocationDbContract.COLUMN_NAME_TIMESTAMP} >= ${query.startDateMillis}
-                AND ${LocationDbContract.COLUMN_NAME_TIMESTAMP} <= ${query.endDateMillis}
-                ) 
-              OR ${LocationDbContract.COLUMN_NAME_TIMESTAMP} IS NULL
-              )
-              """
-
-        val filter = """
-             $bboxFilter
-             $accuracyFilter
-             $timestampFilter
-              ${if (query.dataSource != "All") "AND ${LocationDbContract.COLUMN_NAME_SOURCE} = '${query.dataSource}'" else ""}
-            """.trimIndent()
-        Log.d("ogl-locationdbhelper-filter", "Using filter $filter")
-        return filter
-    }
-
     fun deleteData(dataSource: String) {
         val db = writableDatabase
         val whereClause = "${LocationDbContract.COLUMN_NAME_SOURCE} = ?"
@@ -269,9 +147,16 @@ class LocationDbHelper(context: Context) :
         Log.d("ogl-locationdbhelper", "Deleted $deletedRows rows from datasource $dataSource")
     }
 
+    fun updateDistAngleIfNeeded() {
+        val db = writableDatabase
+        while (LocationDbNeighborsUtil.updateBatch(db) > 0) {
+            Log.d("ogl-locationdbhelper", "Batch updating distance and angle in progress")
+        }
+    }
+
     companion object {
-        private const val DATABASE_VERSION = 8 // Increment on schema change
-        private const val millisInDay = 24 * 60 * 60 * 1000
+        private const val DATABASE_VERSION = 9 // Increment on schema change
+        private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000
 
         private var instance: LocationDbHelper? = null
 
@@ -286,7 +171,7 @@ class LocationDbHelper(context: Context) :
             longitude: Double,
             timestamp: Long
         ): Pair<Long, Long> {
-            val dayHash = timestamp / millisInDay
+            val dayHash = timestamp / MILLIS_PER_DAY
 
             val equatorCircumference = 111_320.0
             val latCircumference = equatorCircumference
