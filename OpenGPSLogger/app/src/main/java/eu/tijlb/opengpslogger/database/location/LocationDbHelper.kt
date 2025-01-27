@@ -1,6 +1,5 @@
 package eu.tijlb.opengpslogger.database.location
 
-import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
@@ -14,12 +13,10 @@ import eu.tijlb.opengpslogger.database.location.migration.MigrationV8
 import eu.tijlb.opengpslogger.database.location.migration.MigrationV9
 import eu.tijlb.opengpslogger.database.location.util.LocationDbCreationUtil
 import eu.tijlb.opengpslogger.database.location.util.LocationDbFilterUtil.Companion.getFilter
+import eu.tijlb.opengpslogger.database.location.util.LocationDbNeighborsUtil
 import eu.tijlb.opengpslogger.database.location.util.LocationDbRangeUtil
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.query.PointsQuery
-import eu.tijlb.opengpslogger.util.OutlierUtil
-import eu.tijlb.opengpslogger.util.OutlierUtil.Companion.calculateAngle
-import eu.tijlb.opengpslogger.util.OutlierUtil.Companion.calculateDistance
 import kotlin.math.cos
 
 class LocationDbHelper(val context: Context) :
@@ -151,154 +148,10 @@ class LocationDbHelper(val context: Context) :
     }
 
     fun updateDistAngleIfNeeded() {
-        while (batchUpdateDistAngle() > 0) {
+        val db = writableDatabase
+        while (LocationDbNeighborsUtil.updateBatch(db) > 0) {
             Log.d("ogl-locationdbhelper", "Batch updating distance and angle in progress")
         }
-    }
-
-    @SuppressLint("Range")
-    private fun batchUpdateDistAngle(): Int {
-        val db = writableDatabase
-        val cursor = db.rawQuery(
-            """
-                SELECT ${LocationDbContract.COLUMN_NAME_SOURCE}, 
-                       ${LocationDbContract.COLUMN_NAME_TIMESTAMP}
-                FROM ${LocationDbContract.TABLE_NAME}
-                WHERE ${LocationDbContract.COLUMN_NAME_NEIGHBOR_DISTANCE} IS NULL
-                    AND ${LocationDbContract.COLUMN_NAME_SOURCE} IS NOT NULL
-                LIMIT 1000
-                """.trimIndent(), null
-        )
-
-        val rowsToUpdate = mutableListOf<Pair<String, Long>>()
-
-        cursor.use {
-            if (cursor.moveToFirst()) {
-                val columnIndexSource = it.getColumnIndex(LocationDbContract.COLUMN_NAME_SOURCE)
-                val columnIndexTimestamp =
-                    it.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
-                while (it.moveToNext()) {
-                    val source = it.getString(columnIndexSource)
-                    val timestamp = it.getLong(columnIndexTimestamp)
-                    rowsToUpdate.add(Pair(source, timestamp))
-                }
-            }
-        }
-
-        Log.d("ogl-locationdbhelper", "Updating distance and angle for ${rowsToUpdate.size} points")
-        db.beginTransaction()
-        try {
-            rowsToUpdate.forEach {
-                updateDistAngle(db, it.first, it.second)
-            }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
-        }
-        Log.d(
-            "ogl-locationdbhelper",
-            "Done updating distance and angle for ${rowsToUpdate.size} points"
-        )
-        return rowsToUpdate.size
-    }
-
-    private fun updateDistAngle(db: SQLiteDatabase, source: String, timestamp: Long) {
-        val last3 = findNeighbors(source, timestamp)
-        if (last3.size == 3) {
-            val prevPoint = last3[0]
-            val middlePoint = last3[1]
-            val nextPoint = last3[2]
-            val distance = calculateDistance(prevPoint, middlePoint, nextPoint)
-            val angle = calculateAngle(prevPoint, middlePoint, nextPoint)
-
-            db.execSQL(
-                """
-                UPDATE ${LocationDbContract.TABLE_NAME}
-                SET ${LocationDbContract.COLUMN_NAME_NEIGHBOR_DISTANCE} = $distance,
-                    ${LocationDbContract.COLUMN_NAME_NEIGHBOR_ANGLE} = $angle
-                WHERE ${BaseColumns._ID} = ${middlePoint.id}
-                """
-            )
-        }
-
-    }
-
-    @SuppressLint("Range")
-    private fun findNeighbors(source: String, timestamp: Long): MutableList<OutlierUtil.Point> {
-        val db = readableDatabase
-
-        val cursor = db.rawQuery(
-        """
-        SELECT * FROM (
-            SELECT ${BaseColumns._ID}, 
-                   ${LocationDbContract.COLUMN_NAME_LATITUDE},
-                   ${LocationDbContract.COLUMN_NAME_LONGITUDE},
-                   ${LocationDbContract.COLUMN_NAME_TIMESTAMP}
-            FROM ${LocationDbContract.TABLE_NAME}
-            WHERE ${LocationDbContract.COLUMN_NAME_SOURCE} = ? 
-              AND ${LocationDbContract.COLUMN_NAME_TIMESTAMP} < ?
-            ORDER BY ${LocationDbContract.COLUMN_NAME_TIMESTAMP} DESC
-            LIMIT 1
-        )
-        UNION SELECT * FROM
-        (
-            SELECT ${BaseColumns._ID}, 
-                   ${LocationDbContract.COLUMN_NAME_LATITUDE},
-                   ${LocationDbContract.COLUMN_NAME_LONGITUDE},
-                   ${LocationDbContract.COLUMN_NAME_TIMESTAMP}
-            FROM ${LocationDbContract.TABLE_NAME}
-            WHERE ${LocationDbContract.COLUMN_NAME_SOURCE} = ? 
-              AND ${LocationDbContract.COLUMN_NAME_TIMESTAMP} = ?
-            LIMIT 1
-        )
-        UNION SELECT * FROM
-        (
-            SELECT ${BaseColumns._ID}, 
-                   ${LocationDbContract.COLUMN_NAME_LATITUDE},
-                   ${LocationDbContract.COLUMN_NAME_LONGITUDE},
-                   ${LocationDbContract.COLUMN_NAME_TIMESTAMP}
-            FROM ${LocationDbContract.TABLE_NAME}
-            WHERE ${LocationDbContract.COLUMN_NAME_SOURCE} = ? 
-              AND ${LocationDbContract.COLUMN_NAME_TIMESTAMP} > ?
-            ORDER BY ${LocationDbContract.COLUMN_NAME_TIMESTAMP} ASC
-            LIMIT 1
-        )
-        """.trimIndent(),
-            arrayOf(
-                source,
-                timestamp.toString(),
-                source,
-                timestamp.toString(),
-                source,
-                timestamp.toString()
-            )
-        )
-
-        val last3Points = mutableListOf<OutlierUtil.Point>()
-        cursor.use {
-            while (it.moveToNext()) {
-                val columnIndexId = it.getColumnIndex(BaseColumns._ID)
-                val columnIndexLatitude = it.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
-                val columnIndexLongitude =
-                    it.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
-                val columnIndexTimestamp =
-                    it.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
-
-                val id = it.getLong(columnIndexId)
-                val latitude = it.getDouble(columnIndexLatitude)
-                val longitude = it.getDouble(columnIndexLongitude)
-                val time = it.getLong(columnIndexTimestamp)
-
-                val point = OutlierUtil.Point(
-                    id = id,
-                    latitude = latitude,
-                    longitude = longitude,
-                    timestamp = time
-                )
-                last3Points.add(point)
-            }
-        }
-        return last3Points
     }
 
     companion object {
