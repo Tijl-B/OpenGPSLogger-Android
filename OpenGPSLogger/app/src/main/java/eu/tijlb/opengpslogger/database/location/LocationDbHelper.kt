@@ -229,7 +229,7 @@ class LocationDbHelper(val context: Context) :
 
         val cursor = db.rawQuery(
         """
-        (
+        SELECT * FROM (
             SELECT ${BaseColumns._ID}, 
                    ${LocationDbContract.COLUMN_NAME_LATITUDE},
                    ${LocationDbContract.COLUMN_NAME_LONGITUDE},
@@ -240,7 +240,7 @@ class LocationDbHelper(val context: Context) :
             ORDER BY ${LocationDbContract.COLUMN_NAME_TIMESTAMP} DESC
             LIMIT 1
         )
-        UNION
+        UNION SELECT * FROM
         (
             SELECT ${BaseColumns._ID}, 
                    ${LocationDbContract.COLUMN_NAME_LATITUDE},
@@ -251,7 +251,7 @@ class LocationDbHelper(val context: Context) :
               AND ${LocationDbContract.COLUMN_NAME_TIMESTAMP} = ?
             LIMIT 1
         )
-        UNION
+        UNION SELECT * FROM
         (
             SELECT ${BaseColumns._ID}, 
                    ${LocationDbContract.COLUMN_NAME_LATITUDE},

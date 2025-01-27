@@ -14,7 +14,7 @@ class OutlierUtil {
     companion object {
         fun calculateAngle(prev: Point, middle: Point, next: Point): Double? {
             val vector1 = Pair(middle.latitude - prev.latitude, middle.longitude - prev.longitude)
-            val vector2 = Pair(next.latitude - middle.latitude, next.longitude - middle.longitude)
+            val vector2 = Pair(middle.latitude - next.latitude, middle.longitude - next.longitude)
 
             val dotProduct = vector1.first * vector2.first + vector1.second * vector2.second
             val magnitude1 = sqrt(vector1.first * vector1.first + vector1.second * vector1.second)
