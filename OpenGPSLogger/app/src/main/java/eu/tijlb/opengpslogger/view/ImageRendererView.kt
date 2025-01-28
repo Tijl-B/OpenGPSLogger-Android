@@ -84,6 +84,7 @@ class ImageRendererView(
     var endTime: LocalDate? = null
 
     var minAccuracy: Float? = null
+    var minAngle = 0F
 
     private var pointsRenderHeight = height
     private val osmHelper: OsmHelper = OsmHelper()
@@ -283,7 +284,8 @@ class ImageRendererView(
                                     it.second.first,
                                     it.second.second,
                                     pointsQuery.bbox,
-                                    pointsQuery.minAccuracy
+                                    pointsQuery.minAccuracy,
+                                    minAngle
                                 )
                             )
                         }
@@ -323,7 +325,8 @@ class ImageRendererView(
         endDateMillis = getEndDateMillis(),
         dataSource = dataSource,
         bbox = bbox,
-        minAccuracy = minAccuracy
+        minAccuracy = minAccuracy,
+        minAngle = minAngle
     )
 
     private fun loadOsmBackgroundAsync(bbox: BBoxDto) {

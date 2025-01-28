@@ -9,7 +9,7 @@ class LocationDbFilterUtil {
         fun getFilter(query: PointsQuery): String {
             val bboxFilter =
                 query.bbox?.let {
-            """
+                    """
             (
               ${LocationDbContract.COLUMN_NAME_LATITUDE} >= ${it.minLat} AND ${LocationDbContract.COLUMN_NAME_LATITUDE} <= ${it.maxLat}
               AND 
@@ -27,6 +27,19 @@ class LocationDbFilterUtil {
             AND
             """
                 } ?: ""
+            val angleFilter =
+                query.minAngle
+                    .takeUnless { it == 0F }
+                    ?.let {
+                        """
+                       (
+                            ${LocationDbContract.COLUMN_NAME_NEIGHBOR_ANGLE} >= $it
+                            OR ${LocationDbContract.COLUMN_NAME_NEIGHBOR_ANGLE} IS NULL
+                        )
+                        AND
+                        """.trimIndent()
+                    } ?: ""
+
             val timestampFilter =
                 """
              (
@@ -41,6 +54,7 @@ class LocationDbFilterUtil {
             val filter = """
              $bboxFilter
              $accuracyFilter
+             $angleFilter
              $timestampFilter
               ${if (query.dataSource != "All") "AND ${LocationDbContract.COLUMN_NAME_SOURCE} = '${query.dataSource}'" else ""}
             """.trimIndent()

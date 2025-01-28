@@ -127,16 +127,23 @@ class MainActivity : AppCompatActivity() {
     private fun openAdvancedFiltersDialog(): Boolean {
         val dialogView = layoutInflater.inflate(R.layout.dialog_advanced_filters, null)
         val minAccuracyEditText = dialogView.findViewById<EditText>(R.id.editText_minAccuracy)
+        val minAngleEditText = dialogView.findViewById<EditText>(R.id.editText_minAngle)
 
         var minAccuracy = advancedFiltersHelper.getMinAccuracy()
         minAccuracyEditText.setText(minAccuracy?.toString() ?: "")
+
+        var minAngle: Float? = advancedFiltersHelper.getMinAngle()
+        minAngleEditText.setText(minAngle.toString())
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.tracking_settings_title))
             .setView(dialogView)
             .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
                 minAccuracy = minAccuracyEditText.text.toString().toFloatOrNull()
+                minAngle = minAngleEditText.text.toString().toFloatOrNull()
+
                 advancedFiltersHelper.setMinAccuracy(minAccuracy)
+                advancedFiltersHelper.setMinAngle(minAngle)
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
