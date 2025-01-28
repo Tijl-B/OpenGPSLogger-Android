@@ -148,8 +148,7 @@ class LocationDbHelper(val context: Context) :
     }
 
     fun updateDistAngleIfNeeded() {
-        val db = writableDatabase
-        while (LocationDbNeighborsUtil.updateBatch(db) > 0) {
+        while (LocationDbNeighborsUtil.updateBatch(readableDatabase, writableDatabase) > 0) {
             Log.d("ogl-locationdbhelper", "Batch updating distance and angle in progress")
         }
     }
