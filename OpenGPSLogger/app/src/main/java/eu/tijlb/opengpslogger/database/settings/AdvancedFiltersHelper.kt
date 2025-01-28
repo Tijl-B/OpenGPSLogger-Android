@@ -7,9 +7,11 @@ import android.util.Log
 private const val ADVANCED_FILTERS = "ADVANCED_FILTERS"
 
 private const val MIN_ACCURACY = "MIN_ACCURACY"
+private const val MIN_ANGLE = "MIN_ANGLE"
 
 private const val NO_MIN_ACCURACY = -1F
 private const val DEFAULT_MIN_ACCURACY = NO_MIN_ACCURACY
+private const val DEFAULT_MIN_ANGLE = 0F
 
 class AdvancedFiltersHelper(val context: Context) {
 
@@ -25,6 +27,23 @@ class AdvancedFiltersHelper(val context: Context) {
             context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putFloat(MIN_ACCURACY, accuracy ?: NO_MIN_ACCURACY)
+            apply()
+        }
+    }
+
+    fun getMinAngle(): Float {
+        val locationRequestPreferences =
+            context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        val accuracy = locationRequestPreferences.getFloat(MIN_ANGLE, DEFAULT_MIN_ANGLE)
+        return accuracy
+    }
+
+    fun setMinAngle(angle: Float?) {
+        val boundedAngle = angle?.coerceIn(0F, 180F)
+        val locationRequestPreferences =
+            context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        with(locationRequestPreferences.edit()) {
+            putFloat(MIN_ANGLE, boundedAngle ?: DEFAULT_MIN_ANGLE)
             apply()
         }
     }
