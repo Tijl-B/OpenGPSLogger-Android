@@ -188,6 +188,7 @@ class LocationNotificationService : Service() {
     private fun saveToDb(location: Location) {
         val dbHelper = LocationDbHelper.getInstance(baseContext)
         dbHelper.save(location, "app::OpenGpsLogger")
+        savedPoints++
 
         val formattedTime = Instant.ofEpochMilli(System.currentTimeMillis())
             .atZone(ZoneId.systemDefault())
