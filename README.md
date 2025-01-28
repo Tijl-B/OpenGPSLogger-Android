@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.8.0
+[apk](release/opengpslogger-0-8-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Add minimum angle filter to filter out outliers
+
 ### 0.7.2
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 

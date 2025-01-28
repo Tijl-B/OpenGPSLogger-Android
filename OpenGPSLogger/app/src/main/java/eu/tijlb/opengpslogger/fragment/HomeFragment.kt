@@ -195,6 +195,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         advancedFiltersHelper = AdvancedFiltersHelper(requireContext())
 
         imageRendererView.minAccuracy = advancedFiltersHelper.getMinAccuracy()
+        imageRendererView.minAngle = advancedFiltersHelper.getMinAngle()
 
         requestingLocation = trackingStatusHelper.isActive()
         if (requestingLocation) {
@@ -205,8 +206,9 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             requestingLocation = it
         }
         minAccuracyChangedListener = advancedFiltersHelper.registerMinAccuracyChangedListener {
-            Log.d("ogl-homefragment", "AdvancedFiltersCahngedLister triggered")
-            imageRendererView.minAccuracy = it
+            Log.d("ogl-homefragment", "AdvancedFiltersChangedLister triggered")
+            imageRendererView.minAccuracy = advancedFiltersHelper.getMinAccuracy()
+            imageRendererView.minAngle = advancedFiltersHelper.getMinAngle()
             initializeBeginAndEndTime()
             resetProgressBars()
             imageRendererView.resetIfDrawn()
@@ -278,11 +280,12 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
 
     private fun initializeBeginAndEndTime() {
         val query = PointsQuery(
+            dataSource = selectedDataSource,
             startDateMillis = 0,
             endDateMillis = Long.MAX_VALUE,
-            dataSource = selectedDataSource,
             bbox = inputBbox,
-            minAccuracy = advancedFiltersHelper.getMinAccuracy()
+            minAccuracy = advancedFiltersHelper.getMinAccuracy(),
+            minAngle = advancedFiltersHelper.getMinAngle()
         )
         val (youngestPointUnix, oldestPointUnix) = locationDbHelper.getTimeRange(query)
 

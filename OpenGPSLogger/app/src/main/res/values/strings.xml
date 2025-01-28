@@ -35,5 +35,5 @@
     <string name="enable_lines">Enable lines:</string>
     <string name="auto">Auto</string>
     <string name="connect_lines_max_time_delta_minutes">Connect lines max time delta (minutes):</string>
-    <string name="filter_outliers_angle">Filter outliers max angle:</string>
+    <string name="filter_outliers_angle">Filter outliers, min angle:</string>
 </resources>

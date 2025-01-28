@@ -48,21 +48,17 @@ class AdvancedFiltersHelper(val context: Context) {
         }
     }
 
-    fun registerMinAccuracyChangedListener(function: (Float?) -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
+    fun registerMinAccuracyChangedListener(function: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
         Log.d("ogl-advancedfiltershelper", "Registering active changed listener")
         val preferences = context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
 
         val preferencesListener =
-            SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+            SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                 Log.d(
                     "ogl-advancedfiltershelper",
                     "SharedPreferences.OnSharedPreferenceChangeListener called for key $key"
                 )
-                if (key == MIN_ACCURACY) {
-                    sharedPreferences.getFloat(MIN_ACCURACY, DEFAULT_MIN_ACCURACY)
-                        .takeUnless { it == NO_MIN_ACCURACY }
-                        .let { function(it) }
-                }
+                function()
             }
         preferences.registerOnSharedPreferenceChangeListener(preferencesListener)
         return preferencesListener
