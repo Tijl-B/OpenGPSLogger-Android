@@ -2,10 +2,16 @@
 
 ## Releases
 
+### 0.7.2
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Fix notification counter being stuck on 0
+
 ### 0.7.1
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
-#### Features
+#### Fixes
 - Improve back filling neighbor distance and angle to reduce database usage
 
 ### 0.7.0
