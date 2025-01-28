@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 0.7.1
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Improve back filling neighbor distance and angle to reduce database usage
+
 ### 0.7.0
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
