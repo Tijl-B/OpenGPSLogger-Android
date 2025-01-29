@@ -33,7 +33,7 @@
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/json" />
                 <data android:pathPattern=".*\\.gpx" />
-                <data android:pathPattern=".*\\Records.json" />
+                <data android:pathPattern=".*\\.json" />
             </intent-filter>
 
             <intent-filter>
@@ -46,7 +46,7 @@
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/json" />
                 <data android:pathPattern=".*\\.gpx" />
-                <data android:pathPattern=".*\\Records.json" />
+                <data android:pathPattern=".*\\.json" />
             </intent-filter>
 
             <intent-filter>
@@ -62,7 +62,7 @@
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/json" />
                 <data android:pathPattern=".*\\.gpx" />
-                <data android:pathPattern=".*\\Records.json" />
+                <data android:pathPattern=".*\\.json" />
 
             </intent-filter>
         </activity>
