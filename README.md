@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.9.0
+[apk](release/opengpslogger-0-9-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Allow importing json from local (phone) export of Google Maps Timeline data
+
 ### 0.8.0
 [apk](release/opengpslogger-0-8-0.apk)
 
