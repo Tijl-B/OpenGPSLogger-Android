@@ -9,6 +9,8 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
 private const val REC_JSON_FIELD_LOCATIONS = "locations"
+private const val TL_JSON_FIELD_RAW_SIGNALS = "rawSignals"
+private const val TL_JSON_FIELD_SEGMENTS = "semanticSegments"
 
 class JsonParserUtil {
     companion object {
@@ -38,12 +40,13 @@ class JsonParserUtil {
             reader: JsonReader,
             save: (Point, importStart: Long, source: String) -> Unit
         ) {
-            val importStart = System.currentTimeMillis()
 
             reader.beginObject()
             while (reader.hasNext()) {
                 when (val nextName = reader.nextName()) {
-                    REC_JSON_FIELD_LOCATIONS -> RecordsJsonParserUtil.parse(reader, importStart, save)
+                    REC_JSON_FIELD_LOCATIONS -> RecordsJsonParserUtil.parse(reader, save)
+                    TL_JSON_FIELD_RAW_SIGNALS -> TimelineJsonRawParser.parse(reader, save)
+                    TL_JSON_FIELD_SEGMENTS -> TimelineJsonSegmentParser.parse(reader, save)
                     else -> {
                         Log.d(
                             "ogl-jsonparserutil-parsejsonobject",

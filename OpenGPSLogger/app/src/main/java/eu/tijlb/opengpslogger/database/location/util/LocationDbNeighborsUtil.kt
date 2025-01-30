@@ -96,7 +96,7 @@ class LocationDbNeighborsUtil {
             }
             Log.d(
                 "ogl-locationdbneighborsutil",
-                "Done updating distance and angle for ${rowsToUpdate.size} points (wrote ${idDistAngle.size}, checked id ${rowsToUpdate.first()} to ${rowsToUpdate.last()})"
+                "Done updating distance and angle for ${rowsToUpdate.size} points (wrote ${idDistAngle.size}, checked id ${rowsToUpdate.firstOrNull()} to ${rowsToUpdate.lastOrNull()})"
             )
             return idDistAngle.size
         }

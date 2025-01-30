@@ -13,9 +13,11 @@ private const val REC_JSON_FIELD_ACCURACY = "accuracy"
 class RecordsJsonParserUtil {
     companion object {
         fun parse(
-            reader: JsonReader, importStart: Long,
+            reader: JsonReader,
             save: (Point, importStart: Long, source: String) -> Unit
         ) {
+            val importStart = System.currentTimeMillis()
+
             reader.beginArray()
 
             while (reader.hasNext()) {
