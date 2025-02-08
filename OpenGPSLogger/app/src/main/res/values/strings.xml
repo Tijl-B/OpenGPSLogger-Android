@@ -36,4 +36,11 @@
     <string name="auto">Auto</string>
     <string name="connect_lines_max_time_delta_minutes">Connect lines max time delta (minutes):</string>
     <string name="filter_outliers_angle">Filter outliers, min angle:</string>
+    <string name="mapSettings">Map settings</string>
+    <string name="name">Name:</string>
+    <string name="url">URL:</string>
+    <string name="see_raster_tile_providers_url">See https://wiki.openstreetmap.org/wiki/Raster_tile_providers</string>
+    <string name="tile_server_url_hint">https://example.com/dir/{z}/{x}/{y}.png</string>
+    <string name="tile_server_settings_title">Tile server settings</string>
+    <string name="tile_server_settings_confirm">Confirm</string>
 </resources>

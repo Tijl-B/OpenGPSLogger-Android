@@ -16,8 +16,14 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_advancedFilters"
+        android:id="@+id/action_mapSettings"
         android:orderInCategory="102"
+        android:title="@string/mapSettings"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_advancedFilters"
+        android:orderInCategory="103"
         android:title="@string/advanced_filters"
         app:showAsAction="never" />
 

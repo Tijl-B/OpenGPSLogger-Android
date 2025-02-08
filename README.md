@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.11.0
+[apk](release/opengpslogger-0-11-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- New settings menu with the ability to select one of the default tile servers, or to add custom tile servers
+
 ### 0.10.0
 [apk](release/opengpslogger-0-10-0.apk)
 

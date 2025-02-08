@@ -1,0 +1,5 @@
+{
+  "servers": [
+    ["OSM Standard tile layer", "https://tile.openstreetmap.org/{z}/{x}/{y}.png"]
+  ]
+}

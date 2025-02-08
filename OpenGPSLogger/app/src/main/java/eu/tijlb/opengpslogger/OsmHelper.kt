@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.net.URL
 import kotlin.coroutines.coroutineContext
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.max
@@ -53,8 +54,13 @@ class OsmHelper {
         val realXRange = xmax - xmin
         val realYRange = ymax - ymin
 
-        val width = (realXRange * imgSizePx).toInt()
-        val height = (realYRange * imgSizePx).toInt()
+        val width = ceil(realXRange * imgSizePx).toInt()
+        val height = ceil(realYRange * imgSizePx).toInt()
+
+        if(width == 0 || height == 0) {
+            Log.e("ogl-osmhelper", "Cannot get image cluster, width $width ($xmax - $xmin) and / or height $height ($ymax - $ymin) is 0")
+            return
+        }
 
         val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         assignBitmap(clusterBitmap)
@@ -74,7 +80,9 @@ class OsmHelper {
         for (xtile in xmin.toInt()..xmax.toInt()) {
             for (ytile in ymin.toInt()..ymax.toInt()) {
                 try {
-                    val imgUrl = smurl.format(zoom, xtile, ytile)
+                    val imgUrl = smurl.replace("{z}", zoom.toString())
+                        .replace("{x}", xtile.toString())
+                        .replace("{y}", ytile.toString())
                     Log.d("ogl-osmhelper", "Requesting osm url $imgUrl")
                     val tileBitmap = downloadImage(imgUrl)
 
