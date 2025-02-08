@@ -1,4 +1,4 @@
-package eu.tijlb.opengpslogger.signleton
+package eu.tijlb.opengpslogger.singleton
 
 import android.os.Handler
 import android.os.Looper
@@ -20,9 +20,15 @@ object ImageRendererViewSingleton {
         viewRef = WeakReference(view)
     }
 
-    fun resetPoints() {
+    fun redrawPoints() {
         Handler(Looper.getMainLooper()).post {
-            viewRef?.get()?.resetIfDrawn()
+            viewRef?.get()?.redrawPoints = true
+        }
+    }
+
+    fun redrawOsm() {
+        Handler(Looper.getMainLooper()).post {
+            viewRef?.get()?.redrawOsm = true
         }
     }
 }

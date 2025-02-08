@@ -221,7 +221,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
                 }
 
                 override fun onPointProgressUpdate(progress: Int) {
-                    pointsProgressBar.progress += progress
+                    pointsProgressBar.progress = progress
                 }
             }
 

@@ -169,7 +169,7 @@ class OsmHelper {
                 inputStream.close()
                 bitmap
             } catch (e: Exception) {
-                Log.e("ogl-osmhelper", "Error downloading image: $e")
+                Log.e("ogl-osmhelper", "Error downloading image: $e", e)
                 null
             }
         }
