@@ -7,9 +7,10 @@
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
-#### Fixes
+#### Minor improvements
 - Improve invalidation and redrawing of map
 - Redraw map on tile server change
+- Add glide caching for images
 
 ### 0.11.0
 [apk](release/opengpslogger-0-11-0.apk)
