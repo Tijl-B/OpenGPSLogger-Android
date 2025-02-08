@@ -2,6 +2,15 @@
 
 ## Releases
 
+### 0.11.1
+[apk](release/opengpslogger-0-11-1.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Improve invalidation and redrawing of map
+- Redraw map on tile server change
+
 ### 0.11.0
 [apk](release/opengpslogger-0-11-0.apk)
 

@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
         locationDbHelper = LocationDbHelper.getInstance(this)
         tileServerDbHelper = TileServerDbHelper(this)
 
-
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
