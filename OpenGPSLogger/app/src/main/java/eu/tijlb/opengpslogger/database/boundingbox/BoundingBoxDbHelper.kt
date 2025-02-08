@@ -96,6 +96,7 @@ class BoundingBoxDbHelper(context: Context) :
         val query = """
             SELECT ${BoundingBoxDbContract.COLUMN_NAME_NAME} AS name
             FROM ${BoundingBoxDbContract.TABLE_NAME}
+            ORDER BY ${BoundingBoxDbContract.COLUMN_NAME_NAME} ASC
         """.trimIndent()
         val db = readableDatabase
         db.rawQuery(query, null)
