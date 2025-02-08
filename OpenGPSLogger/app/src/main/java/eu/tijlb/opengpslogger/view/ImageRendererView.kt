@@ -101,7 +101,7 @@ class ImageRendererView(
 
     private var pointsRenderHeight = height
 
-    private val osmHelper: OsmHelper = OsmHelper()
+    private val osmHelper: OsmHelper = OsmHelper(context)
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
     private val millisPerMonth = 30L * 24 * 60 * 60 * 1000
