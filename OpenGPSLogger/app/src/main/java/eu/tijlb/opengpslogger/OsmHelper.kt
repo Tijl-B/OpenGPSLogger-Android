@@ -1,12 +1,18 @@
 package eu.tijlb.opengpslogger
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import android.util.Log
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.target.SimpleTarget
+import com.bumptech.glide.request.transition.Transition
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
@@ -22,7 +28,7 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.tan
 
-class OsmHelper {
+class OsmHelper(val context: Context) {
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 
@@ -57,8 +63,11 @@ class OsmHelper {
         val width = ceil(realXRange * imgSizePx).toInt()
         val height = ceil(realYRange * imgSizePx).toInt()
 
-        if(width == 0 || height == 0) {
-            Log.e("ogl-osmhelper", "Cannot get image cluster, width $width ($xmax - $xmin) and / or height $height ($ymax - $ymin) is 0")
+        if (width == 0 || height == 0) {
+            Log.e(
+                "ogl-osmhelper",
+                "Cannot get image cluster, width $width ($xmax - $xmin) and / or height $height ($ymax - $ymin) is 0"
+            )
             return
         }
 
@@ -84,9 +93,7 @@ class OsmHelper {
                         .replace("{x}", xtile.toString())
                         .replace("{y}", ytile.toString())
                     Log.d("ogl-osmhelper", "Requesting osm url $imgUrl")
-                    val tileBitmap = downloadImage(imgUrl)
-
-                    tileBitmap?.let {
+                    getOrDownloadImage(imgUrl) { tileBitMap ->
                         val visibleMinX = max(xmin, xtile.toDouble())
                         val visibleMinY = max(ymin, ytile.toDouble())
                         val visibleMaxX = min(xmax, xtile + 1.0)
@@ -116,7 +123,7 @@ class OsmHelper {
                             )
                             val destRect = Rect(destLeft, destTop, destRight, destBottom)
 
-                            canvas.drawBitmap(tileBitmap, srcRect, destRect, paint)
+                            canvas.drawBitmap(tileBitMap, srcRect, destRect, paint)
                         } else {
                             Log.w(
                                 "ogl-osmhelper",
@@ -124,8 +131,9 @@ class OsmHelper {
                                         + "xtile $xtile xmin $xmin ytile $ytile "
                             )
                         }
+                        refreshView()
                     }
-                    refreshView()
+
                 } catch (e: Exception) {
                     Log.e("ogl-osmhelper", "Couldn't download image: ${e.message}", e)
 
@@ -158,21 +166,20 @@ class OsmHelper {
         return Pair(xtile, ytile)
     }
 
-    suspend fun downloadImage(urlString: String): Bitmap? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val url = URL(urlString)
-                val connection = url.openConnection()
-                connection.connect()
-                val inputStream: InputStream = connection.getInputStream()
-                val bitmap = BitmapFactory.decodeStream(inputStream)
-                inputStream.close()
-                bitmap
-            } catch (e: Exception) {
-                Log.e("ogl-osmhelper", "Error downloading image: $e")
-                null
-            }
-        }
+    fun getOrDownloadImage(url: String, callback: (Bitmap) -> Unit) {
+        Glide.with(context)
+            .asBitmap()
+            .load(url)
+            .into(object : CustomTarget<Bitmap>() {
+                override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    callback(resource)
+                }
+
+                override fun onLoadCleared(placeholder: Drawable?) {
+                    Log.d("ogl-osmhelper", "Load cleared for url $url")
+                }
+            })
+
     }
 
     interface OnTileProgressUpdateListener {

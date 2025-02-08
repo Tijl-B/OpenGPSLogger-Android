@@ -11,8 +11,8 @@ android {
         applicationId = "eu.tijlb.opengpslogger"
         minSdk = 34
         targetSdk = 34
-        versionCode = 16
-        versionName = "0.11.0"
+        versionCode = 17
+        versionName = "0.11.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -68,7 +68,10 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.ui.desktop)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.glide)
 
+    annotationProcessor(libs.compiler)
+    
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockito.core)

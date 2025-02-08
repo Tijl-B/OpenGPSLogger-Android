@@ -30,6 +30,7 @@ import eu.tijlb.opengpslogger.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 import eu.tijlb.opengpslogger.dto.VisualisationSettingsDto
+import eu.tijlb.opengpslogger.singleton.ImageRendererViewSingleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -117,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     tileServerDbHelper.setActive(selection)
                 }
+                ImageRendererViewSingleton.redrawOsm()
                 dialog.dismiss()
             }
             .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->

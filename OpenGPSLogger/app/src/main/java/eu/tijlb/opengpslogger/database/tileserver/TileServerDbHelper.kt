@@ -49,7 +49,6 @@ class TileServerDbHelper(context: Context) :
     }
 
     fun save(name: String, url: String) {
-
         Log.d("ogl-tileserverdbhelper", "Saving tile server $name, $url")
         val db = this.writableDatabase
 
@@ -65,7 +64,6 @@ class TileServerDbHelper(context: Context) :
     }
 
     fun get(name: String): String? {
-
         val db = readableDatabase
         val query = """
             SELECT *

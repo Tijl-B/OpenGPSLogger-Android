@@ -76,7 +76,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             initializeBeginAndEndTime()
             resetProgressBars()
             updateDataSourceDeleteButtonVisibility()
-            imageRendererView.resetIfDrawn()
+            imageRendererView.redrawPointsAndOsm()
         }
 
     private var startTime = LocalDate.MIN
@@ -99,7 +99,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             imageRendererView.inputBbox = value
             initializeBeginAndEndTime()
             resetProgressBars()
-            imageRendererView.resetIfDrawn()
+            imageRendererView.redrawPointsAndOsm()
         }
 
     private lateinit var locationDbHelper: LocationDbHelper
@@ -211,7 +211,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             imageRendererView.minAngle = advancedFiltersHelper.getMinAngle()
             initializeBeginAndEndTime()
             resetProgressBars()
-            imageRendererView.resetIfDrawn()
+            imageRendererView.redrawPointsAndOsm()
         }
 
         imageRendererView.onPointProgressUpdateListener =
@@ -221,7 +221,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
                 }
 
                 override fun onPointProgressUpdate(progress: Int) {
-                    pointsProgressBar.progress += progress
+                    pointsProgressBar.progress = progress
                 }
             }
 
@@ -245,7 +245,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         initializeBeginAndEndTime()
         setUpDataSourcesSpinner()
         imageRendererView.pointsRenderWidth = 4000
-        imageRendererView.resetIfDrawn()
+        imageRendererView.redrawPointsAndOsm()
     }
 
     private fun setUpDataSourcesSpinner() {
@@ -401,13 +401,13 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             "from" -> {
                 Log.d("ogl-homefragment-date", "Selected 'from' date: $localDate")
                 startTime = localDate
-                imageRendererView.resetIfDrawn()
+                imageRendererView.redrawPointsAndOsm()
             }
 
             "to" -> {
                 Log.d("ogl-homefragment-date", "Selected 'to' date: $localDate")
                 endTime = localDate
-                imageRendererView.resetIfDrawn()
+                imageRendererView.redrawPointsAndOsm()
             }
         }
     }
