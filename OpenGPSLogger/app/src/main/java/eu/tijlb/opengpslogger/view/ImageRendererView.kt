@@ -60,12 +60,7 @@ class ImageRendererView(
             if (field != value) {
                 field = value
                 pointsRenderHeight = (pointsRenderWidth / aspectRatio).toInt()
-                CoroutineScope(Dispatchers.Main)
-                    .launch {
-                        layoutParams = ViewGroup.LayoutParams(width, (width / value).toInt())
-                        CoroutineScope(Dispatchers.Default)
-                            .launch { resetPointDrawing() }
-                    }
+                layoutParams = ViewGroup.LayoutParams(width, (width / value).toInt())
             }
         }
     var pointsRenderWidth = width
@@ -73,10 +68,9 @@ class ImageRendererView(
             if (value > 0) {
                 field = value
                 pointsRenderHeight = (pointsRenderWidth / aspectRatio).toInt()
-                CoroutineScope(Dispatchers.Default)
-                    .launch { resetPointDrawing() }
             }
         }
+
     var dataSource = "All"
     var inputBbox: BBoxDto? = null
 
@@ -86,13 +80,27 @@ class ImageRendererView(
     var minAccuracy: Float? = null
     var minAngle = 0F
 
+    var redrawOsm = true
+        set(value) {
+            field = value
+            if (value) {
+                invalidate()
+            }
+        }
+    var redrawPoints = true
+        set(value) {
+            field = value
+            if (value) {
+                invalidate()
+            }
+        }
+
     private var pointsRenderHeight = height
+
     private val osmHelper: OsmHelper = OsmHelper()
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
-
     private val millisPerMonth = 30L * 24 * 60 * 60 * 1000
-    private var isDrawn = false
     private var osmBitMap: Bitmap? = null
     private var osmJob: Job? = null
     private var osmLock = Mutex()
@@ -117,34 +125,30 @@ class ImageRendererView(
                     "Executing callback on visualisation settings changed."
                 )
                 visualisationSettings = it
-                maxTimeDeltaMillis = TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
-                CoroutineScope(Dispatchers.Default)
-                    .launch {
-                        resetPointDrawing()
-                        invalidate()
-                    }
+                maxTimeDeltaMillis =
+                    TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
+                redrawPoints = true
             }
         visualisationSettings = visualisationSettingsHelper.getVisualisationSettings()
         maxTimeDeltaMillis =
             TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
     }
 
-    fun resetIfDrawn() {
-        if (isDrawn) {
-            CoroutineScope(Dispatchers.IO)
-                .launch { reset() }
-        }
+
+    fun redrawPointsAndOsm() {
+        redrawOsm = true
+        redrawPoints = true
     }
 
-    private suspend fun reset() {
-        Log.d("ogl-imagerendererview", "Resetting view")
-        resetOsmDrawing()
-        resetPointDrawing()
-        Log.d("ogl-imagerendererview", "Terminated jobs...")
+    private suspend fun resetPointsAndInvalidate() {
+        Log.d("ogl-imagerendererview", "Resetting points")
+        cancelPointCoroutines()
+        Log.d("ogl-imagerendererview", "Invalidating...")
         invalidate()
+
     }
 
-    private suspend fun resetOsmDrawing() {
+    private suspend fun cancelOsmCoroutines() {
         osmLock.withLock {
             osmJob?.takeIf { it.isActive }?.cancelAndJoin()
             osmJob = null
@@ -152,7 +156,7 @@ class ImageRendererView(
         }
     }
 
-    private suspend fun resetPointDrawing() {
+    private suspend fun cancelPointCoroutines() {
         pointsLock.withLock {
             Log.d("ogl-imagerendererview", "Resetting point drawing...")
             pointsCoroutines?.filter { it.isActive }
@@ -180,16 +184,21 @@ class ImageRendererView(
             Log.d("ogl-imagerendererview", "Not drawing since layoutParams is null")
             return
         }
-        isDrawn = true
         drawMap(canvas)
         Log.d("ogl-imagerendererview", "Finished onDraw")
     }
 
     override fun onDetachedFromWindow() {
+        Log.d("ogl-imagerendererview", "Detaching from window...")
         super.onDetachedFromWindow()
         visualisationSettingsHelper.deregisterAdvancedFiltersChangedListener(
             visualisationSettingsChangedListener
         )
+        CoroutineScope(Dispatchers.IO)
+            .launch {
+                cancelOsmCoroutines()
+                cancelPointCoroutines()
+            }
     }
 
     private fun drawMap(canvas: Canvas) {
@@ -199,15 +208,25 @@ class ImageRendererView(
             Log.d("ogl-imagerendererview", "No begin or end time, not drawing...")
             return
         }
-        val shouldLoadOsm = osmBitMap == null && osmJob?.isActive != true
-        val shouldLoadTiles = pointsBitMaps == null
 
-        Log.d(
-            "ogl-imagerendererview",
-            "ShouldLoadOsm $shouldLoadOsm, shouldLoadTiles $shouldLoadTiles"
-        )
+        Log.d("ogl-imagerendererview", "redrawOsm $redrawOsm, redrawPoints $redrawPoints")
+
+        if (redrawPoints) {
+            val realBbox = inputBbox
+                ?: locationDbHelper.getCoordsRange(pointsQuery())
+                    .expand(0.05)
+            calculateXYValues(realBbox)
+        }
+
+        if (redrawOsm) {
+            redrawOsm = false
+            CoroutineScope(Dispatchers.IO)
+                .launch {
+                    canvas.drawColor(Color.WHITE)
+                    cancelOsmCoroutines()
+                }
+        }
         if (shouldLoadOsm || shouldLoadTiles) {
-            canvas.drawColor(Color.WHITE)
 
             launchOsmAndPointCoroutine()
         }
