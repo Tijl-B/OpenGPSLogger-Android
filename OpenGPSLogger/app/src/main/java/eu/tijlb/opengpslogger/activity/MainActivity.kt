@@ -5,8 +5,10 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -94,16 +96,9 @@ class MainActivity : AppCompatActivity() {
         val spinner = dialogView.findViewById<Spinner>(R.id.spinner_tileServer)
         val nameEditText = dialogView.findViewById<EditText>(R.id.editText_tileServerName)
         val urlEditText = dialogView.findViewById<EditText>(R.id.editText_tileServerUrl)
+        val deleteButton = dialogView.findViewById<ImageButton>(R.id.imagebutton_deleteTileServer)
 
-        val names = tileServerDbHelper.getNames()
-
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            names
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
+        setTileServerSpinner(deleteButton, spinner)
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.tile_server_settings_title))
@@ -130,6 +125,27 @@ class MainActivity : AppCompatActivity() {
             .create()
             .show()
         return true
+    }
+
+    private fun setTileServerSpinner(deleteButton: ImageButton, spinner: Spinner) {
+        val names = tileServerDbHelper.getNames()
+        if (names.size > 1) {
+            deleteButton.visibility = View.VISIBLE
+            deleteButton.setOnClickListener {
+                deleteButton.visibility = View.INVISIBLE
+                val selection = spinner.selectedItem.toString()
+                tileServerDbHelper.delete(selection)
+                setTileServerSpinner(deleteButton, spinner)
+            }
+        }
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            names
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
     }
 
     private fun openVisualisationSettingsDialog(): Boolean {
