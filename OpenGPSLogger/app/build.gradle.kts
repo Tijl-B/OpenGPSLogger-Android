@@ -41,6 +41,19 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    flavorDimensions += "version"
+
+    productFlavors {
+        create("default") {
+            dimension = "version"
+        }
+        create("dev") {
+            dimension = "version"
+            applicationId = "eu.tijlb.opengpslogger.dev"
+            versionNameSuffix = "-dev"
+        }
+    }
 }
 
 dependencies {

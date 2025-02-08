@@ -74,7 +74,9 @@ class OsmHelper {
         for (xtile in xmin.toInt()..xmax.toInt()) {
             for (ytile in ymin.toInt()..ymax.toInt()) {
                 try {
-                    val imgUrl = smurl.format(zoom, xtile, ytile)
+                    val imgUrl = smurl.replace("{z}", zoom.toString())
+                        .replace("{x}", xtile.toString())
+                        .replace("{y}", ytile.toString())
                     Log.d("ogl-osmhelper", "Requesting osm url $imgUrl")
                     val tileBitmap = downloadImage(imgUrl)
 

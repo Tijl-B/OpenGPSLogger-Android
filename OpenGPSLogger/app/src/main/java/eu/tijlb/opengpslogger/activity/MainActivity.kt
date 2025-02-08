@@ -2,6 +2,7 @@ package eu.tijlb.opengpslogger.activity
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ArrayAdapter
@@ -24,6 +25,7 @@ import eu.tijlb.opengpslogger.database.settings.PRESET_LOW
 import eu.tijlb.opengpslogger.database.settings.PRESET_MEDIUM
 import eu.tijlb.opengpslogger.database.settings.PRESET_PASSIVE
 import eu.tijlb.opengpslogger.database.settings.VisualisationSettingsHelper
+import eu.tijlb.opengpslogger.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 import eu.tijlb.opengpslogger.dto.VisualisationSettingsDto
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var advancedFiltersHelper: AdvancedFiltersHelper
     private lateinit var visualisationSettingsHelper: VisualisationSettingsHelper
     private lateinit var locationDbHelper: LocationDbHelper
+    private lateinit var tileServerDbHelper: TileServerDbHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +50,7 @@ class MainActivity : AppCompatActivity() {
         advancedFiltersHelper = AdvancedFiltersHelper(this)
         visualisationSettingsHelper = VisualisationSettingsHelper(this)
         locationDbHelper = LocationDbHelper.getInstance(this)
+        tileServerDbHelper = TileServerDbHelper(this)
 
         setContentView(binding.root)
 
@@ -74,6 +78,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_trackingSettings -> openTrackingSettingsDialog()
             R.id.action_advancedFilters -> openAdvancedFiltersDialog()
             R.id.action_visualisationSettings -> openVisualisationSettingsDialog()
+            R.id.action_mapSettings -> openMapSettingsDialog()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -82,6 +87,49 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
+    }
+
+    private fun openMapSettingsDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_map_settings, null)
+        val spinner = dialogView.findViewById<Spinner>(R.id.spinner_tileServer)
+        val nameEditText = dialogView.findViewById<EditText>(R.id.editText_tileServerName)
+        val urlEditText = dialogView.findViewById<EditText>(R.id.editText_tileServerUrl)
+
+        val names = tileServerDbHelper.getNames()
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            names
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.tile_server_settings_title))
+            .setView(dialogView)
+            .setPositiveButton(R.string.tile_server_settings_confirm) { dialog, _ ->
+                val selection = spinner.selectedItem.toString()
+                val nameValue = nameEditText.text.toString()
+                val urlValue = urlEditText.text.toString()
+                Log.d(
+                    "ogl-mainactivity",
+                    "Got tile server selection $selection, name $nameValue and url $urlValue"
+                )
+                if (nameValue.isNotEmpty() && urlValue.startsWith("https://")) {
+                    tileServerDbHelper.save(nameValue, urlValue)
+                    tileServerDbHelper.setActive(nameValue)
+                } else {
+                    tileServerDbHelper.setActive(selection)
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
     }
 
     private fun openVisualisationSettingsDialog(): Boolean {

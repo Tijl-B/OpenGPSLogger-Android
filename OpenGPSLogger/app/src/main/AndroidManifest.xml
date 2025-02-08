@@ -97,7 +97,7 @@
 
         <provider
             android:name=".database.location.LocationDatabaseFileProvider"
-            android:authorities="eu.tijlb.opengpslogger.provider"
+            android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

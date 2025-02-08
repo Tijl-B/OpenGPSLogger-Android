@@ -15,6 +15,7 @@ import eu.tijlb.opengpslogger.OsmHelper
 import eu.tijlb.opengpslogger.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.database.settings.VisualisationSettingsHelper
+import eu.tijlb.opengpslogger.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.dto.BBoxDto
 import eu.tijlb.opengpslogger.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.query.PointsQuery
@@ -34,9 +35,6 @@ import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.max
 
-private const val BASEMAP_CATRODB_LIGHT =
-    "https://cartodb-basemaps-b.global.ssl.fastly.net/light_all/%s/%s/%s.png"
-
 class ImageRendererView(
     context: Context,
     attrs: AttributeSet? = null,
@@ -45,6 +43,7 @@ class ImageRendererView(
 
     private var visualisationSettingsHelper: VisualisationSettingsHelper
     private var visualisationSettingsChangedListener: OnSharedPreferenceChangeListener
+    private var tileServerDbHelper: TileServerDbHelper
 
     var onTilesLoadedListener: OnTilesLoadedListener? = null
     var onPointsLoadedListener: OnPointsLoadedListener? = null
@@ -109,6 +108,7 @@ class ImageRendererView(
     private var maxTimeDeltaMillis: Long
 
     init {
+        tileServerDbHelper = TileServerDbHelper(context)
         visualisationSettingsHelper = VisualisationSettingsHelper(context)
         visualisationSettingsChangedListener =
             visualisationSettingsHelper.registerVisualisationSettingsChangedListener {
@@ -117,7 +117,8 @@ class ImageRendererView(
                     "Executing callback on visualisation settings changed."
                 )
                 visualisationSettings = it
-                maxTimeDeltaMillis = TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
+                maxTimeDeltaMillis =
+                    TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
                 CoroutineScope(Dispatchers.Default)
                     .launch {
                         resetPointDrawing()
@@ -336,12 +337,16 @@ class ImageRendererView(
             osmHelper.getImageCluster(
                 bbox,
                 zoom,
-                BASEMAP_CATRODB_LIGHT,
+                getBasemapUrl(),
                 { bitmap -> osmBitMap = bitmap }
             )
             { invalidate() }
             onTilesLoadedListener?.onTilesLoaded()
         }
+    }
+
+    private fun getBasemapUrl(): String {
+        return tileServerDbHelper.getSelectedUrl()
     }
 
     private fun calculateXYValues(bbox: BBoxDto) {
