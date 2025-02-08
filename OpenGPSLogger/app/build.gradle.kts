@@ -10,7 +10,7 @@ android {
     defaultConfig {
         applicationId = "eu.tijlb.opengpslogger"
         minSdk = 34
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 17
         versionName = "0.11.1"
 
