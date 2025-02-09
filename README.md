@@ -17,7 +17,7 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 #### Images
 <img src="images/0.12.0/nyc.png" width="40%" height="40%">
 <img src="images/0.12.0/main_page.jpg" width="40%" height="40%">
-<img src="images/0.12.0/dropdown_menu.jpg.jpg" width="40%" height="40%">
+<img src="images/0.12.0/dropdown_menu.jpg" width="40%" height="40%">
 
 ### 0.11.1
 [apk](release/opengpslogger-0-11-1.apk)
