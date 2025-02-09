@@ -2,6 +2,16 @@
 
 ## Releases
 
+### 0.13.0
+[apk](release/opengpslogger-0-13-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- More visualisation settings:
+  - Choose color mode (single color, or multi color per hour / day / month / year)
+  - Choose color randomizer seed
+
 ### 0.12.0
 [apk](release/opengpslogger-0-12-0.apk)
 

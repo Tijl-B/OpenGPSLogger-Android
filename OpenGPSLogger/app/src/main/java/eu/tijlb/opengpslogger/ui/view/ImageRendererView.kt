@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
@@ -38,6 +39,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.round
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 class ImageRendererView(
     context: Context,
@@ -107,7 +111,10 @@ class ImageRendererView(
     private val osmImageBitmapRenderer: OsmImageBitmapRenderer = OsmImageBitmapRenderer(context)
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
-    private val millisPerMonth = 30L * 24 * 60 * 60 * 1000
+    private val millisPerHour = 60 * 60 * 1000
+    private val millisPerDay = 24 * millisPerHour
+    private val millisPerMonth = (30.436875 * millisPerDay).roundToLong()
+    private val millisPerYear = (365.2425 * millisPerDay).roundToLong()
     private var osmBitMap: Bitmap? = null
     private var osmJob: Job? = null
     private var osmLock = Mutex()
@@ -407,7 +414,7 @@ class ImageRendererView(
             Bitmap.createBitmap(pointsRenderWidth, pointsRenderHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(clusterBitmap)
         pointsBitMap = clusterBitmap
-        var currentMonth: Long = 0
+        var currentTimeBucket: Long = 0
 
         var prevLat: Double? = null
         var prevLon: Double? = null
@@ -459,14 +466,14 @@ class ImageRendererView(
                             val time = cursor.getLong(timeColumnIndex)
 
 
-                            currentMonth = draw(
+                            currentTimeBucket = draw(
                                 latitude,
                                 longitude,
                                 prevLat,
                                 prevLon,
                                 time,
                                 prevTime,
-                                currentMonth,
+                                currentTimeBucket,
                                 canvas,
                                 latConverter,
                                 lonConverter
@@ -497,21 +504,27 @@ class ImageRendererView(
         prevLongitude: Double?,
         time: Long,
         prevTime: Long,
-        currentMonth: Long,
+        currentTimeBucket: Long,
         canvas: Canvas,
         latConverter: (Double) -> Double,
         lonConverter: (Double) -> Double
     ): Long {
-        val monthBucket = time / millisPerMonth
-        var mCurrentMonth = currentMonth
-        if (monthBucket != mCurrentMonth) {
-            mCurrentMonth = monthBucket
-            val newColor = ColorUtil.generateColor(monthBucket)
+        val newTimeBucket = when (visualisationSettings.colorMode) {
+            ColorMode.SINGLE_COLOR -> 1
+            ColorMode.MULTI_COLOR_YEAR -> time / millisPerYear
+            ColorMode.MULTI_COLOR_MONTH -> time / millisPerMonth
+            ColorMode.MULTI_COLOR_DAY -> time / millisPerDay
+            ColorMode.MULTI_COLOR_HOUR -> time / millisPerHour
+        }
+        var timeBucket = currentTimeBucket
+        if (newTimeBucket != currentTimeBucket) {
+            timeBucket = newTimeBucket
+            val newColor = ColorUtil.generateColor(newTimeBucket + visualisationSettings.colorSeed)
             dotPaint.color = newColor
             linePaint.color = newColor
             Log.d(
                 "ogl-imagerendererview-point-color",
-                "Changed color to $newColor in month $mCurrentMonth (timestamp $time)"
+                "Changed color to $newColor in time bucket $newTimeBucket (${visualisationSettings.colorMode}) (timestamp $time)"
             )
 
         }
@@ -534,7 +547,7 @@ class ImageRendererView(
             }
         }
 
-        return mCurrentMonth
+        return timeBucket
     }
 
     private fun getStartDateMillis() = (beginTime?.atStartOfDay(ZoneId.systemDefault())
