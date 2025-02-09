@@ -30,7 +30,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.model.service.LocationNotificationService
-import eu.tijlb.opengpslogger.model.util.OsmUtil
+import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.model.database.boundingbox.BoundingBoxDbHelper
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
@@ -41,6 +41,7 @@ import eu.tijlb.opengpslogger.ui.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.ui.view.ImageRendererView
+import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -226,7 +227,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             }
 
         imageRendererView.onTileProgressUpdateListener =
-            object : OsmUtil.OnTileProgressUpdateListener {
+            object : OsmImageBitmapRenderer.OnTileProgressUpdateListener {
                 override fun onTileProgressMax(max: Int) {
                     Log.d("ogl-homefragment-tile", "tile progress max: $max")
                     tilesProgressBar.max = max

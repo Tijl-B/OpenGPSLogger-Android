@@ -20,7 +20,9 @@ import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
-import eu.tijlb.opengpslogger.model.util.OsmUtil
+import eu.tijlb.opengpslogger.model.util.ColorUtil
+import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
+import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +37,6 @@ import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
-import kotlin.math.ln
 import kotlin.math.max
 
 class ImageRendererView(
@@ -50,10 +51,10 @@ class ImageRendererView(
 
     var onTilesLoadedListener: OnTilesLoadedListener? = null
     var onPointsLoadedListener: OnPointsLoadedListener? = null
-    var onTileProgressUpdateListener: OsmUtil.OnTileProgressUpdateListener? = null
+    var onTileProgressUpdateListener: OsmImageBitmapRenderer.OnTileProgressUpdateListener? = null
         set(value) {
             field = value
-            osmUtil.onTileProgressUpdateListener = onTileProgressUpdateListener
+            osmImageBitmapRenderer.onTileProgressUpdateListener = onTileProgressUpdateListener
         }
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 
@@ -103,7 +104,7 @@ class ImageRendererView(
 
     private var pointsRenderHeight = height
 
-    private val osmUtil: OsmUtil = OsmUtil(context)
+    private val osmImageBitmapRenderer: OsmImageBitmapRenderer = OsmImageBitmapRenderer(context)
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
     private val millisPerMonth = 30L * 24 * 60 * 60 * 1000
@@ -305,10 +306,16 @@ class ImageRendererView(
     private fun createPointsCoroutine(
         pointsQuery: PointsQuery
     ) = CoroutineScope(Dispatchers.IO).launch {
+        val latConverter = { lat: Double ->
+            (OsmGeometryUtil.lat2num(lat, zoom) - yMin) / yRange * pointsRenderHeight
+        }
+        val lonConverter = { lon: Double ->
+            (OsmGeometryUtil.lon2num(lon, zoom) - xMin) / xRange * pointsRenderWidth
+        }
         drawCoordinates(
             pointsQuery,
-            { lat: Double -> (osmUtil.lat2num(lat, zoom) - yMin) / yRange * pointsRenderHeight },
-            { lon: Double -> (osmUtil.lon2num(lon, zoom) - xMin) / xRange * pointsRenderWidth }
+            latConverter,
+            lonConverter
         )
     }
 
@@ -325,7 +332,7 @@ class ImageRendererView(
         osmJob = CoroutineScope(Dispatchers.IO).launch {
             val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             osmBitMap = clusterBitmap
-            osmUtil.getImageCluster(
+            osmImageBitmapRenderer.getImageCluster(
                 bbox,
                 zoom,
                 getBasemapUrl(),
@@ -347,7 +354,7 @@ class ImageRendererView(
     }
 
     private fun setCopyrightNotice(copyrightNotice: String) {
-        if(copyrightNotice.isEmpty()) copyrightBitMap = null
+        if (copyrightNotice.isEmpty()) copyrightBitMap = null
 
         if (width == 0 || height == 0) return
 
@@ -373,9 +380,9 @@ class ImageRendererView(
     }
 
     private fun calculateXYValues(bbox: BBoxDto) {
-        zoom = calculateZoomLevel(bbox)
-        val (xmin, ymax) = osmUtil.deg2num(bbox.minLat, bbox.minLon, zoom)
-        val (xmax, ymin) = osmUtil.deg2num(bbox.maxLat, bbox.maxLon, zoom)
+        zoom = OsmGeometryUtil.calculateZoomLevel(bbox)
+        val (xmin, ymax) = OsmGeometryUtil.deg2num(bbox.minLat, bbox.minLon, zoom)
+        val (xmax, ymin) = OsmGeometryUtil.deg2num(bbox.maxLat, bbox.maxLon, zoom)
         xMin = xmin
         yMin = ymin
         xRange = xmax - xmin
@@ -499,7 +506,7 @@ class ImageRendererView(
         var mCurrentMonth = currentMonth
         if (monthBucket != mCurrentMonth) {
             mCurrentMonth = monthBucket
-            val newColor = generateColor(monthBucket)
+            val newColor = ColorUtil.generateColor(monthBucket)
             dotPaint.color = newColor
             linePaint.color = newColor
             Log.d(
@@ -530,16 +537,6 @@ class ImageRendererView(
         return mCurrentMonth
     }
 
-    private fun generateColor(seed: Long): Int {
-        val random = kotlin.random.Random(seed)
-        val hue = random.nextInt(0, 360)
-        val saturation = 0.7f + random.nextFloat() * 0.3f
-        val value = 0.8f + random.nextFloat() * 0.2f
-
-        val hsvColor = Color.HSVToColor(floatArrayOf(hue.toFloat(), saturation, value))
-        return hsvColor
-    }
-
     private fun getStartDateMillis() = (beginTime?.atStartOfDay(ZoneId.systemDefault())
         ?.toInstant()
         ?.toEpochMilli()
@@ -554,35 +551,11 @@ class ImageRendererView(
         return endDateMillis
     }
 
-    private fun calculateZoomLevel(bbox: BBoxDto): Int {
-        val latRange = bbox.latRange()
-        val lonRange = bbox.lonRange()
-
-        val calculatedZoom = calculateZoomBasedOnRange(latRange.coerceAtLeast(lonRange))
-
-        return calculatedZoom
-    }
-
-    private fun calculateZoomBasedOnRange(range: Double): Int {
-        val maxZoom = 16
-        val minZoom = 4
-
-        val scaleFactor = 1.5 // Lower values will make the zoom decrease more slowly
-
-        val zoom = maxZoom - (ln(range * 2 + 1) / ln(2.0) * scaleFactor)
-
-        val finalZoom = zoom.toInt().coerceIn(minZoom, maxZoom)
-
-        Log.d("ogl-imagerendererview-zoom", "Calculated zoom $finalZoom for range $range")
-        return finalZoom
-    }
-
     private fun updateVisualisationSettings() {
         visualisationSettings = visualisationSettingsHelper.getVisualisationSettings()
         maxTimeDeltaMillis =
             TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
     }
-
 
     interface OnTilesLoadedListener {
         fun onTilesLoaded()

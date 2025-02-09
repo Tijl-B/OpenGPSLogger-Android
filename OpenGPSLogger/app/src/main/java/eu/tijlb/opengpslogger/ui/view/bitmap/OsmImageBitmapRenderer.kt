@@ -1,4 +1,4 @@
-package eu.tijlb.opengpslogger.model.util
+package eu.tijlb.opengpslogger.ui.view.bitmap
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -12,17 +12,14 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 import kotlin.math.ceil
-import kotlin.math.cos
-import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
-import kotlin.math.tan
 
-class OsmUtil(val context: Context) {
+class OsmImageBitmapRenderer(val context: Context) {
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 
@@ -38,8 +35,8 @@ class OsmUtil(val context: Context) {
         val minLon = bbox.minLon
         val maxLon = bbox.maxLon
 
-        val (xmin, ymax) = deg2num(minLat, minLon, zoom)
-        val (xmax, ymin) = deg2num(maxLat, maxLon, zoom)
+        val (xmin, ymax) = OsmGeometryUtil.deg2num(minLat, minLon, zoom)
+        val (xmax, ymin) = OsmGeometryUtil.deg2num(maxLat, maxLon, zoom)
 
         Log.d(
             "ogl-osmhelper",
@@ -140,24 +137,6 @@ class OsmUtil(val context: Context) {
             }
         }
         Log.d("ogl-osmhelper", "Done loading osm background")
-    }
-
-    // Helper functions to convert between coordinates and tiles
-    fun lat2num(lat: Double, zoom: Int): Double {
-        val n = 2.0.pow(zoom)
-        val latRad = Math.toRadians(lat)
-        return n * (1.0 - (ln(tan(latRad) + 1 / cos(latRad)) / Math.PI)) / 2.0
-    }
-
-    fun lon2num(lon: Double, zoom: Int): Double {
-        val n = 2.0.pow(zoom)
-        return n * (lon + 180.0) / 360.0
-    }
-
-    fun deg2num(lat: Double, lon: Double, zoom: Int): Pair<Double, Double> {
-        val xtile = lon2num(lon, zoom)
-        val ytile = lat2num(lat, zoom)
-        return Pair(xtile, ytile)
     }
 
     fun getOrDownloadImage(url: String, callback: (Bitmap) -> Unit) {
