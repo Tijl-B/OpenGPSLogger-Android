@@ -7,6 +7,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -111,6 +113,7 @@ class ImageRendererView(
     private var pointsBitMap: Bitmap? = null
     private var pointsCoroutine: Job? = null
     private var pointsLock = Mutex()
+    private var copyrightBitMap: Bitmap? = null
     private var zoom = 10
     private var xMin = 0.0
     private var yMin = 0.0
@@ -173,6 +176,16 @@ class ImageRendererView(
         color = Color.RED
         alpha = 125
         strokeWidth = 5F
+    }
+    private val textPaint = Paint().apply {
+        isAntiAlias = true
+        color = Color.WHITE
+        textSize = 16f
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+    }
+    val copyrightBarPaint = Paint().apply {
+        color = Color.BLACK
+        alpha = 100
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -238,18 +251,17 @@ class ImageRendererView(
             "Drawing osmBitmap and pointsBitmap to canvas with w ${canvas.width} h ${canvas.height}"
         )
 
-        osmBitMap?.let {
+        drawBitmap(canvas, osmBitMap)
+        drawBitmap(canvas, pointsBitMap)
+        drawBitmap(canvas, copyrightBitMap)
+    }
+
+    private fun drawBitmap(canvas: Canvas, bitMap: Bitmap?) {
+        bitMap?.let {
             Bitmap.createScaledBitmap(it, canvas.width, canvas.height, true)
         }?.also {
             canvas.drawBitmap(it, 0f, 0f, null)
         }
-
-        pointsBitMap?.let {
-            Bitmap.createScaledBitmap(it, canvas.width, canvas.height, true)
-        }?.also {
-            canvas.drawBitmap(it, 0f, 0f, null)
-        }
-
     }
 
     private fun launchPointsCoroutine(realBbox: BBoxDto) {
@@ -325,7 +337,39 @@ class ImageRendererView(
     }
 
     private fun getBasemapUrl(): String {
+        updateCopyrightNotice()
         return tileServerDbHelper.getSelectedUrl()
+    }
+
+    private fun updateCopyrightNotice() {
+        val copyrightNotice = tileServerDbHelper.getSelectedCopyrightNotice()
+        setCopyrightNotice(copyrightNotice)
+    }
+
+    private fun setCopyrightNotice(copyrightNotice: String) {
+        if(copyrightNotice.isEmpty()) copyrightBitMap = null
+
+        if (width == 0 || height == 0) return
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        copyrightBitMap = bitmap
+
+        val textBounds = Rect()
+        textPaint.getTextBounds(copyrightNotice, 0, copyrightNotice.length, textBounds)
+        val textWidth = textBounds.width().toFloat()
+        val textHeight = textBounds.height().toFloat()
+
+        val barHeight = textHeight * 1.2F
+        val barWidth = textWidth + 16
+
+        val barLeft = width - barWidth
+        val barTop = height - barHeight
+        canvas.drawRect(barLeft, barTop, width.toFloat(), height.toFloat(), copyrightBarPaint)
+
+        val textX = barLeft + 8
+        val textY = height - textHeight * 0.2F
+        canvas.drawText(copyrightNotice, textX, textY, textPaint)
     }
 
     private fun calculateXYValues(bbox: BBoxDto) {
