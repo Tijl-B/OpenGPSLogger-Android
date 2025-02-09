@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/First2Fragment"
-        android:name="eu.tijlb.opengpslogger.fragment.ImportFragment"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.ImportFragment"
         android:label="@string/home_fragment_label"
         tools:layout="@layout/fragment_import">
     </fragment>

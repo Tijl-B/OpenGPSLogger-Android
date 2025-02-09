@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/FirstFragment"
-        android:name="eu.tijlb.opengpslogger.fragment.HomeFragment"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.HomeFragment"
         android:label="@string/home_fragment_label"
         tools:layout="@layout/fragment_home">
 
@@ -17,7 +17,7 @@
     </fragment>
     <fragment
         android:id="@+id/SecondFragment"
-        android:name="eu.tijlb.opengpslogger.fragment.LocationTableFragment"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.LocationTableFragment"
         android:label="@string/database_fragment_label"
         tools:layout="@layout/fragment_database">
 
