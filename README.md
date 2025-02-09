@@ -2,6 +2,23 @@
 
 ## Releases
 
+### 0.12.0
+[apk](release/opengpslogger-0-12-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Add copyright notice to bottom right of picture, specifiable by source (text only)
+
+#### Known issues
+- When changing aspect ratio, text may get stretched until a reload is triggered
+- It is not yet possible to add a copyright notice when manually adding a tile server in the app
+
+#### Images
+<img src="images/0.12.0/nyc.png" width="40%" height="40%">
+<img src="images/0.12.0/main_page.jpg" width="40%" height="40%">
+<img src="images/0.12.0/dropdown_menu.jpg" width="40%" height="40%">
+
 ### 0.11.1
 [apk](release/opengpslogger-0-11-1.apk)
 

@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.provider.BaseColumns
 import android.util.Log
+import eu.tijlb.opengpslogger.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.util.ConfigLoaderUtil
 
 class TileServerDbHelper(context: Context) :
@@ -18,6 +19,7 @@ class TileServerDbHelper(context: Context) :
             ${BaseColumns._ID} INTEGER PRIMARY KEY,
             ${TileServerDbContract.COLUMN_NAME_NAME} TEXT NOT NULL UNIQUE,
             ${TileServerDbContract.COLUMN_NAME_URL} TEXT NOT NULL,
+            ${TileServerDbContract.COLUMN_NAME_COPYRIGHT_NOTICE} TEXT NOT NULL DEFAULT '',
             ${TileServerDbContract.COLUMN_NAME_SELECTED} BOOLEAN NOT NULL CHECK (${TileServerDbContract.COLUMN_NAME_SELECTED} IN (0,1))
         );
         """.trimIndent()
@@ -34,8 +36,8 @@ class TileServerDbHelper(context: Context) :
     private val insertDefaultServersSql =
         """
         INSERT OR REPLACE INTO ${TileServerDbContract.TABLE_NAME} 
-        (${TileServerDbContract.COLUMN_NAME_NAME}, ${TileServerDbContract.COLUMN_NAME_URL}, ${TileServerDbContract.COLUMN_NAME_SELECTED}) 
-        VALUES ${defaultServers.joinToString(", ") { "('${it.first}', '${it.second}', 0)" }};
+        (${TileServerDbContract.COLUMN_NAME_NAME}, ${TileServerDbContract.COLUMN_NAME_URL}, ${TileServerDbContract.COLUMN_NAME_COPYRIGHT_NOTICE}, ${TileServerDbContract.COLUMN_NAME_SELECTED}) 
+        VALUES ${defaultServers.joinToString(", ") { "('${it.first}', '${it.second}', '${it.third}', 0)" }};
         """.trimIndent()
 
 
@@ -45,7 +47,16 @@ class TileServerDbHelper(context: Context) :
         db.execSQL(insertDefaultServersSql)
     }
 
-    override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        if (oldVersion < 2) {
+            db.execSQL(
+                """
+                    ALTER TABLE ${TileServerDbContract.TABLE_NAME}
+                    ADD COLUMN ${TileServerDbContract.COLUMN_NAME_COPYRIGHT_NOTICE} TEXT NOT NULL DEFAULT ''
+                """.trimIndent()
+            )
+            db.execSQL(insertDefaultServersSql)
+        }
     }
 
     fun save(name: String, url: String) {
@@ -163,8 +174,30 @@ class TileServerDbHelper(context: Context) :
 
     }
 
+    fun getSelectedCopyrightNotice(): String {
+        val query = """
+            SELECT ${TileServerDbContract.COLUMN_NAME_COPYRIGHT_NOTICE}
+            FROM ${TileServerDbContract.TABLE_NAME}
+            ORDER BY ${TileServerDbContract.COLUMN_NAME_SELECTED} DESC,
+                ${TileServerDbContract.COLUMN_NAME_NAME} ASC
+            LIMIT 1
+        """.trimIndent()
+
+        val db = readableDatabase
+        db.rawQuery(query, null).use { cursor ->
+            return if (cursor.moveToFirst()) {
+                val sourceIndex =
+                    cursor.getColumnIndex(TileServerDbContract.COLUMN_NAME_COPYRIGHT_NOTICE)
+                cursor.getString(sourceIndex)
+            } else {
+                defaultServers[0].third
+            }
+        }
+
+    }
+
     companion object {
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "tileserver.sqlite"
     }
 }
