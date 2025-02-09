@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="eu.tijlb.opengpslogger.activity.MainActivity">
+    tools:context="eu.tijlb.opengpslogger.ui.activity.MainActivity">
 
     <item
         android:id="@+id/action_trackingSettings"

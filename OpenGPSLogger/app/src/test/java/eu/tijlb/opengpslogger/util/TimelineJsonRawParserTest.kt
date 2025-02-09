@@ -1,7 +1,8 @@
 package eu.tijlb.opengpslogger.util
 
 import android.util.JsonReader
-import eu.tijlb.opengpslogger.activity.ImportActivity
+import eu.tijlb.opengpslogger.ui.activity.ImportActivity
+import eu.tijlb.opengpslogger.model.parser.json.TimelineJsonRawParser
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
