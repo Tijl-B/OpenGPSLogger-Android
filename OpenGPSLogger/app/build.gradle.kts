@@ -52,6 +52,7 @@ android {
             dimension = "version"
             applicationId = "eu.tijlb.opengpslogger.dev"
             versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Dev OpenGPSLogger")
         }
     }
 }
