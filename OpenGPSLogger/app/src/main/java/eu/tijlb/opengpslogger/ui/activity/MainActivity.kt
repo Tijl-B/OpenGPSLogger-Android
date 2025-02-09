@@ -29,6 +29,7 @@ import eu.tijlb.opengpslogger.model.database.settings.PRESET_PASSIVE
 import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
+import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
 import kotlinx.coroutines.CoroutineScope
@@ -156,11 +157,34 @@ class MainActivity : AppCompatActivity() {
         val lineSizeEditText = dialogView.findViewById<EditText>(R.id.editText_lineSize)
         val lineMaxMinsDeltaEditText =
             dialogView.findViewById<EditText>(R.id.editText_connectLinesMaxTimeDelta)
+        val colorSeedEditText = dialogView.findViewById<EditText>(R.id.editText_colorSeed)
         val lineSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_lines)
+        val colorSpinner = dialogView.findViewById<Spinner>(R.id.spinner_color)
+
+        val colorModeValues = ColorMode.entries
+        val spinnerValues = colorModeValues.map {
+            when(it) {
+                ColorMode.SINGLE_COLOR -> "Single color"
+                ColorMode.MULTI_COLOR_YEAR -> "Multi color (1 year)"
+                ColorMode.MULTI_COLOR_MONTH -> "Multi color (30 days)"
+                ColorMode.MULTI_COLOR_DAY -> "Multi color (1 day)"
+                ColorMode.MULTI_COLOR_HOUR -> "Multi color (1 hour)"
+            }
+        }
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            spinnerValues
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        colorSpinner.adapter = adapter
 
         val settings = visualisationSettingsHelper.getVisualisationSettings()
+        colorSpinner.setSelection(colorModeValues.indexOf(settings.colorMode))
         dotSizeEditText.setText(settings.dotSize?.toString() ?: getString(R.string.auto))
         lineSizeEditText.setText(settings.lineSize?.toString() ?: getString(R.string.auto))
+        colorSeedEditText.setText(settings.colorSeed.toString())
         lineMaxMinsDeltaEditText.setText(settings.connectLinesMaxMinutesDelta.toString())
         lineSwitch.isChecked = settings.drawLines
 
@@ -170,6 +194,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
                 val dotSize = dotSizeEditText.text.toString().toFloatOrNull()
                 val lineSize = lineSizeEditText.text.toString().toFloatOrNull()
+                val colorSeed = colorSeedEditText.text.toString().toIntOrNull()?:0
                 val lineMaxMinsDelta = lineMaxMinsDeltaEditText.text.toString().toLongOrNull()
                     ?: settings.connectLinesMaxMinutesDelta
                 val drawLines = lineSwitch.isChecked
@@ -177,7 +202,9 @@ class MainActivity : AppCompatActivity() {
                     drawLines,
                     lineSize,
                     dotSize,
-                    lineMaxMinsDelta
+                    lineMaxMinsDelta,
+                    colorModeValues[colorSpinner.selectedItemPosition],
+                    colorSeed
                 )
                 visualisationSettingsHelper.setVisualisationSettings(settingsDto)
                 dialog.dismiss()

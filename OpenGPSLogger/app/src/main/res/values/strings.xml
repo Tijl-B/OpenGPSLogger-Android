@@ -43,4 +43,9 @@
     <string name="tile_server_url_hint">https://example.com/dir/{z}/{x}/{y}.png</string>
     <string name="tile_server_settings_title">Tile server settings</string>
     <string name="tile_server_settings_confirm">Confirm</string>
+    <string name="color_seed">Color randomizer seed:</string>
+    <string name="color">Color</string>
+    <string name="dots">Dots</string>
+    <string name="lines">Lines</string>
+    <string name="or_add_custom_tile_server">Or add a custom tile server:</string>
 </resources>
