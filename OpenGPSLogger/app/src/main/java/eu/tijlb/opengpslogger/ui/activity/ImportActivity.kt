@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -50,35 +51,42 @@ class ImportActivity : AppCompatActivity() {
 
     private fun handleIncomingIntent(intent: Intent?) {
         Log.d("ogl-importactivity", "Got intent $intent.")
-        if (intent?.action == Intent.ACTION_SEND) {
-
-            val uri = intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            uri?.let {
-                when (intent.type) {
-                    GPX_MIMETYPE -> parseAndStoreGpxFile(it)
-
-                    JSON_MIMETYPE -> parserAndStoreJsonFile(it)
-                    else -> Log.d("ogl-importactivity", "Skipping intent $intent")
-                }
+        when(intent?.action) {
+            Intent.ACTION_SEND -> {
+                val uri = intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                uri?.let { handleUri(it) }
             }
-        } else if (intent?.action == Intent.ACTION_SEND_MULTIPLE) {
-            val uriList = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            uriList?.let {
-                for (uri in it) {
-                    val fileType = contentResolver.getType(uri)
-                    if (fileType == GPX_MIMETYPE || isGpxFile(uri)) {
-                        Log.d("ogl-importactivity-gpx", "Processing GPX file: $uri")
-                        parseAndStoreGpxFile(uri)
-                    } else if (fileType == JSON_MIMETYPE) {
-                        parserAndStoreJsonFile(uri)
-                        Log.d("ogl-importactivity-json", "Processing JSON file: $uri")
-                    } else {
-                        Log.d("ogl-importactivity", "Skipping non-GPX file: $uri")
+            Intent.ACTION_SEND_MULTIPLE -> {
+                val uriList = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                uriList?.let {
+                    for (uri in it) {
+                        handleUri(uri)
                     }
                 }
             }
+            Intent.ACTION_VIEW -> {
+                val uri = intent.data
+                uri?.let { handleUri(it) }
+            }
+            else -> Log.w("ogl-importactivity", "Ignoring intent $intent.")
+        }
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        startActivity(intent)
+    }
+
+    private fun handleUri(it: Uri): Any {
+        val fileType = contentResolver.getType(it)
+        return if (fileType == GPX_MIMETYPE || isGpxFile(it)) {
+            Log.d("ogl-importactivity-gpx", "Processing GPX file: $it")
+            parseAndStoreGpxFile(it)
+        } else if (fileType == JSON_MIMETYPE) {
+            Log.d("ogl-importactivity-json", "Processing JSON file: $it")
+            parserAndStoreJsonFile(it)
         } else {
-            Log.d("ogl-importactivity", "Ignoring intent $intent.")
+            Log.d("ogl-importactivity", "Skipping unsupported file type: $it")
         }
     }
 
