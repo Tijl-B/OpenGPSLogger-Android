@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
                 ImageRendererViewSingleton.redrawOsm()
                 dialog.dismiss()
             }
-            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+            .setNegativeButton(R.string.tile_server_settings_cancel) { dialog, _ ->
                 dialog.dismiss()
             }
             .create()
@@ -193,9 +193,9 @@ class MainActivity : AppCompatActivity() {
         lineSwitch.isChecked = settings.drawLines
 
         AlertDialog.Builder(this)
-            .setTitle(getString(R.string.tracking_settings_title))
+            .setTitle(getString(R.string.visualisation_settings_title))
             .setView(dialogView)
-            .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
+            .setPositiveButton(R.string.visualisation_settings_confirm) { dialog, _ ->
                 val dotSize = dotSizeEditText.text.toString().toFloatOrNull()
                 val lineSize = lineSizeEditText.text.toString().toFloatOrNull()
                 val colorSeed = colorSeedEditText.text.toString().toIntOrNull()?:0
@@ -215,7 +215,7 @@ class MainActivity : AppCompatActivity() {
                 visualisationSettingsHelper.setVisualisationSettings(settingsDto)
                 dialog.dismiss()
             }
-            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+            .setNegativeButton(R.string.visualisation_settings_cancel) { dialog, _ ->
                 dialog.dismiss()
             }
             .create()
@@ -235,9 +235,9 @@ class MainActivity : AppCompatActivity() {
         minAngleEditText.setText(minAngle.toString())
 
         AlertDialog.Builder(this)
-            .setTitle(getString(R.string.tracking_settings_title))
+            .setTitle(getString(R.string.advanced_filters_title))
             .setView(dialogView)
-            .setPositiveButton(R.string.tracking_settings_confirm) { dialog, _ ->
+            .setPositiveButton(R.string.advanced_filters_confirm) { dialog, _ ->
                 minAccuracy = minAccuracyEditText.text.toString().toFloatOrNull()
                 minAngle = minAngleEditText.text.toString().toFloatOrNull()
 
@@ -245,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                 advancedFiltersHelper.setMinAngle(minAngle)
                 dialog.dismiss()
             }
-            .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
+            .setNegativeButton(R.string.advanced_filters_cancel) { dialog, _ ->
                 dialog.dismiss()
             }
             .create()
