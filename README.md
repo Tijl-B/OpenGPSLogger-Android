@@ -2,6 +2,13 @@
 
 ## Releases
 
+### 0.14.0
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- More visualisation settings:
+  - Allow specifying color opacity percentage
+
 ### 0.13.0
 [apk](release/opengpslogger-0-13-0.apk)
 

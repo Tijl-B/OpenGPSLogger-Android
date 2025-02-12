@@ -48,4 +48,5 @@
     <string name="dots">Dots</string>
     <string name="lines">Lines</string>
     <string name="or_add_custom_tile_server">Or add a custom tile server:</string>
+    <string name="opacity">Opacity (%):</string>
 </resources>

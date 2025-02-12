@@ -158,6 +158,7 @@ class MainActivity : AppCompatActivity() {
         val lineMaxMinsDeltaEditText =
             dialogView.findViewById<EditText>(R.id.editText_connectLinesMaxTimeDelta)
         val colorSeedEditText = dialogView.findViewById<EditText>(R.id.editText_colorSeed)
+        val opacityEditText = dialogView.findViewById<EditText>(R.id.editText_opacity)
         val lineSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_lines)
         val colorSpinner = dialogView.findViewById<Spinner>(R.id.spinner_color)
 
@@ -185,6 +186,7 @@ class MainActivity : AppCompatActivity() {
         dotSizeEditText.setText(settings.dotSize?.toString() ?: getString(R.string.auto))
         lineSizeEditText.setText(settings.lineSize?.toString() ?: getString(R.string.auto))
         colorSeedEditText.setText(settings.colorSeed.toString())
+        opacityEditText.setText(settings.opacityPercentage.toString())
         lineMaxMinsDeltaEditText.setText(settings.connectLinesMaxMinutesDelta.toString())
         lineSwitch.isChecked = settings.drawLines
 
@@ -195,6 +197,7 @@ class MainActivity : AppCompatActivity() {
                 val dotSize = dotSizeEditText.text.toString().toFloatOrNull()
                 val lineSize = lineSizeEditText.text.toString().toFloatOrNull()
                 val colorSeed = colorSeedEditText.text.toString().toIntOrNull()?:0
+                val opacity = opacityEditText.text.toString().toIntOrNull()?.coerceIn(1, 100)?:100
                 val lineMaxMinsDelta = lineMaxMinsDeltaEditText.text.toString().toLongOrNull()
                     ?: settings.connectLinesMaxMinutesDelta
                 val drawLines = lineSwitch.isChecked
@@ -204,7 +207,8 @@ class MainActivity : AppCompatActivity() {
                     dotSize,
                     lineMaxMinsDelta,
                     colorModeValues[colorSpinner.selectedItemPosition],
-                    colorSeed
+                    colorSeed,
+                    opacity
                 )
                 visualisationSettingsHelper.setVisualisationSettings(settingsDto)
                 dialog.dismiss()

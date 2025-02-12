@@ -177,13 +177,10 @@ class ImageRendererView(
     private val dotPaint = Paint().apply {
         isAntiAlias = true
         color = Color.RED
-        alpha = 125
     }
     private val linePaint = Paint().apply {
         isAntiAlias = true
         color = Color.RED
-        alpha = 125
-        strokeWidth = 5F
     }
     private val textPaint = Paint().apply {
         isAntiAlias = true
@@ -519,7 +516,8 @@ class ImageRendererView(
         var timeBucket = currentTimeBucket
         if (newTimeBucket != currentTimeBucket) {
             timeBucket = newTimeBucket
-            val newColor = ColorUtil.generateColor(newTimeBucket + visualisationSettings.colorSeed)
+            val opacity = (visualisationSettings.opacityPercentage * ( 255.0 / 100.0)).roundToInt()
+            val newColor = ColorUtil.generateColor(newTimeBucket + visualisationSettings.colorSeed, opacity)
             dotPaint.color = newColor
             linePaint.color = newColor
             Log.d(

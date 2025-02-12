@@ -13,11 +13,13 @@ private const val LINE_SIZE = "LINE_SIZE"
 private const val CONNECT_LINE_MAX_MINS_DELTA = "CONNECT_LINE_MAX_MINS_DELTA"
 private const val COLOR_MODE = "COLOR_MODE"
 private const val COLOR_SEED = "COLOR_SEED"
+private const val COLOR_OPACITY_PERCENTAGE = "COLOR_OPACITY_PERCENTAGE"
 
 private const val DEFAULT_DRAW_LINES = false
 private const val DEFAULT_CONNECT_LINE_MAX_MINS_DELTA = 15L
 private val DEFAULT_COLOR_MODE = ColorMode.MULTI_COLOR_MONTH.name
 private const val DEFAULT_COLOR_SEED = 0
+private const val DEFAULT_COLOR_OPACITY_PERCENTAGE = 100
 
 private const val AUTO_DOT_SIZE = -1F
 private const val AUTO_LINE_SIZE = -1F
@@ -36,6 +38,7 @@ class VisualisationSettingsHelper(val context: Context) {
             CONNECT_LINE_MAX_MINS_DELTA, DEFAULT_CONNECT_LINE_MAX_MINS_DELTA
         )
         val colorSeed = locationRequestPreferences.getInt(COLOR_SEED, DEFAULT_COLOR_SEED)
+        val colorOpacity = locationRequestPreferences.getInt(COLOR_OPACITY_PERCENTAGE, DEFAULT_COLOR_OPACITY_PERCENTAGE)
         val colorModeStr = locationRequestPreferences.getString(COLOR_MODE, DEFAULT_COLOR_MODE)
             ?.takeIf { colorModePref ->
                 ColorMode.entries.map { it.name }
@@ -50,7 +53,8 @@ class VisualisationSettingsHelper(val context: Context) {
             dotSize.takeUnless { it == AUTO_DOT_SIZE },
             connectLineMaxMinsDelta,
             colorMode,
-            colorSeed
+            colorSeed,
+            colorOpacity
         )
     }
 
@@ -64,6 +68,7 @@ class VisualisationSettingsHelper(val context: Context) {
             putFloat(LINE_SIZE, settingsDto.lineSize ?: AUTO_LINE_SIZE)
             putLong(CONNECT_LINE_MAX_MINS_DELTA, settingsDto.connectLinesMaxMinutesDelta)
             putInt(COLOR_SEED, settingsDto.colorSeed)
+            putInt(COLOR_OPACITY_PERCENTAGE, settingsDto.opacityPercentage)
             putString(COLOR_MODE, settingsDto.colorMode.toString())
             apply()
         }
