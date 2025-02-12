@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
         val spinner = dialogView.findViewById<Spinner>(R.id.spinner_tileServer)
         val nameEditText = dialogView.findViewById<EditText>(R.id.editText_tileServerName)
         val urlEditText = dialogView.findViewById<EditText>(R.id.editText_tileServerUrl)
+        val copyrightEditText = dialogView.findViewById<EditText>(R.id.editText_copyrightWatermark)
         val deleteButton = dialogView.findViewById<ImageButton>(R.id.imagebutton_deleteTileServer)
 
         setTileServerSpinner(deleteButton, spinner)
@@ -109,12 +110,13 @@ class MainActivity : AppCompatActivity() {
                 val selection = spinner.selectedItem.toString()
                 val nameValue = nameEditText.text.toString()
                 val urlValue = urlEditText.text.toString()
+                val copyrightValue = copyrightEditText.text.toString()
                 Log.d(
                     "ogl-mainactivity",
                     "Got tile server selection $selection, name $nameValue and url $urlValue"
                 )
                 if (nameValue.isNotEmpty() && urlValue.startsWith("https://")) {
-                    tileServerDbHelper.save(nameValue, urlValue)
+                    tileServerDbHelper.save(nameValue, urlValue, copyrightValue)
                     tileServerDbHelper.setActive(nameValue)
                 } else {
                     tileServerDbHelper.setActive(selection)

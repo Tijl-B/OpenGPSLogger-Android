@@ -58,13 +58,14 @@ class TileServerDbHelper(context: Context) :
         }
     }
 
-    fun save(name: String, url: String) {
+    fun save(name: String, url: String, copyright: String) {
         Log.d("ogl-tileserverdbhelper", "Saving tile server $name, $url")
         val db = this.writableDatabase
 
         val values = ContentValues().apply {
             put(TileServerDbContract.COLUMN_NAME_NAME, name)
             put(TileServerDbContract.COLUMN_NAME_URL, url)
+            put(TileServerDbContract.COLUMN_NAME_COPYRIGHT_NOTICE, copyright)
             put(TileServerDbContract.COLUMN_NAME_SELECTED, false)
         }
 
