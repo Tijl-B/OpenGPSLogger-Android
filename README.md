@@ -3,6 +3,8 @@
 ## Releases
 
 ### 0.16.0
+[apk](release/opengpslogger-0-16-0.apk)
+
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
 #### Features
