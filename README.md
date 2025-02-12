@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 0.15.1
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Fix multiple dialog titles being Tracking settings incorrectly
+
 ### 0.15.0
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 

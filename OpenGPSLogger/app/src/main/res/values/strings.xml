@@ -51,4 +51,11 @@
     <string name="opacity">Opacity (%):</string>
     <string name="osm_default_copyright">© openstreetmap.org/copyright</string>
     <string name="copyright_watermark">Copyright watermark:</string>
+    <string name="tile_server_settings_cancel">cancel</string>
+    <string name="visualisation_settings_title">Visualisation settings</string>
+    <string name="visualisation_settings_cancel">cancel</string>
+    <string name="visualisation_settings_confirm">confirm</string>
+    <string name="advanced_filters_title">Advanced filters</string>
+    <string name="advanced_filters_confirm">confirm</string>
+    <string name="advanced_filters_cancel">cancel</string>
 </resources>
