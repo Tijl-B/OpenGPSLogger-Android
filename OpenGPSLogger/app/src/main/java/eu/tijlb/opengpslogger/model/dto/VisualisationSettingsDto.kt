@@ -9,5 +9,6 @@ data class VisualisationSettingsDto(
     val dotSize: Float?,
     val connectLinesMaxMinutesDelta: Long,
     val colorMode: ColorMode,
-    val colorSeed: Int
+    val colorSeed: Int,
+    val opacityPercentage: Int
 )
