@@ -2,6 +2,15 @@
 
 ## Releases
 
+### 0.16.0
+[apk](release/opengpslogger-0-16-0.apk)
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Import files when opened with view action
+- After importing file(s), automatically return to main activity
+
 ### 0.15.1
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 

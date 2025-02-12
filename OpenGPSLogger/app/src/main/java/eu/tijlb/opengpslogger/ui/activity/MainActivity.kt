@@ -1,6 +1,7 @@
 package eu.tijlb.opengpslogger.ui.activity
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -31,6 +32,7 @@ import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
+import eu.tijlb.opengpslogger.ui.fragment.HomeFragment
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +93,12 @@ class MainActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        recreate()
     }
 
     private fun openMapSettingsDialog(): Boolean {
