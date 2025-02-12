@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 0.15.0
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Allow specifying copyright watermark for manually added tile servers
+
 ### 0.14.0
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
