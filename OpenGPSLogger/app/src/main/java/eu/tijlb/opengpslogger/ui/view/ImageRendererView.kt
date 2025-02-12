@@ -23,8 +23,8 @@ import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.model.util.ColorUtil
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
-import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
+import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
