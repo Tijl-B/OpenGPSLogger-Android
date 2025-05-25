@@ -2,6 +2,7 @@ package eu.tijlb.opengpslogger.model.database.location.util
 
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
+import eu.tijlb.opengpslogger.model.dto.query.DATASOURCE_ALL
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 
 object LocationDbFilterUtil {
@@ -55,7 +56,7 @@ object LocationDbFilterUtil {
              $accuracyFilter
              $angleFilter
              $timestampFilter
-              ${if (query.dataSource != "All") "AND ${LocationDbContract.COLUMN_NAME_SOURCE} = '${query.dataSource}'" else ""}
+              ${if (query.dataSource != DATASOURCE_ALL) "AND ${LocationDbContract.COLUMN_NAME_SOURCE} = '${query.dataSource}'" else ""}
             """.trimIndent()
         Log.d("ogl-locationdbhelper-filter", "Using filter $filter")
         return filter

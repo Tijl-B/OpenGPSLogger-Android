@@ -282,8 +282,6 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
     private fun initializeBeginAndEndTime() {
         val query = PointsQuery(
             dataSource = selectedDataSource,
-            startDateMillis = 0,
-            endDateMillis = Long.MAX_VALUE,
             bbox = inputBbox,
             minAccuracy = advancedFiltersHelper.getMinAccuracy(),
             minAngle = advancedFiltersHelper.getMinAngle()

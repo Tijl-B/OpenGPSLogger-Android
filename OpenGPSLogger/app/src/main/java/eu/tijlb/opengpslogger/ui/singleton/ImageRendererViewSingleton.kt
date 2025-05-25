@@ -22,7 +22,7 @@ object ImageRendererViewSingleton {
 
     fun redrawPoints() {
         Handler(Looper.getMainLooper()).post {
-            viewRef?.get()?.redrawPoints = true
+            viewRef?.get()?.redrawCoordinateData = true
         }
     }
 

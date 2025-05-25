@@ -8,11 +8,18 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RenderEffect
+import android.graphics.RenderNode
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import eu.tijlb.opengpslogger.model.bitmap.SparseDensityMap
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbContract
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.SUBDIVISIONS_CONTINENT
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
@@ -20,6 +27,7 @@ import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelpe
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
+import eu.tijlb.opengpslogger.model.dto.query.DATASOURCE_ALL
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.model.util.ColorUtil
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
@@ -38,9 +46,11 @@ import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
+import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
+import kotlin.math.tan
 
 class ImageRendererView(
     context: Context,
@@ -81,7 +91,7 @@ class ImageRendererView(
             }
         }
 
-    var dataSource = "All"
+    var dataSource = DATASOURCE_ALL
     var inputBbox: BBoxDto? = null
 
     var beginTime: LocalDate? = null
@@ -97,7 +107,7 @@ class ImageRendererView(
                 invalidate()
             }
         }
-    var redrawPoints = true
+    var redrawCoordinateData = false
         set(value) {
             field = value
             if (value) {
@@ -110,6 +120,8 @@ class ImageRendererView(
     private val osmImageBitmapRenderer: OsmImageBitmapRenderer = OsmImageBitmapRenderer(context)
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
+    private val continentDensityMapDbHelper: ContinentDensityMapDbHelper =
+        ContinentDensityMapDbHelper.getInstance(getContext())
     private val millisPerHour = 60 * 60 * 1000
     private val millisPerDay = 24 * millisPerHour
     private val millisPerMonth = (30.436875 * millisPerDay).roundToLong()
@@ -118,8 +130,9 @@ class ImageRendererView(
     private var osmJob: Job? = null
     private var osmLock = Mutex()
     private var pointsBitMap: Bitmap? = null
-    private var pointsCoroutine: Job? = null
-    private var pointsLock = Mutex()
+    private var densityMapBitMap: Bitmap? = null
+    private var coordinateDataCoroutine: Job? = null
+    private var coordinateDataLock = Mutex()
     private var copyrightBitMap: Bitmap? = null
     private var zoom = 10
     private var xMin = 0.0
@@ -142,7 +155,7 @@ class ImageRendererView(
                 visualisationSettings = it
                 maxTimeDeltaMillis =
                     TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
-                redrawPoints = true
+                redrawCoordinateData = true
             }
         visualisationSettings = visualisationSettingsHelper.getVisualisationSettings()
         maxTimeDeltaMillis =
@@ -153,7 +166,7 @@ class ImageRendererView(
 
     fun redrawPointsAndOsm() {
         redrawOsm = true
-        redrawPoints = true
+        redrawCoordinateData = true
     }
 
     private suspend fun cancelOsmCoroutine() {
@@ -164,12 +177,13 @@ class ImageRendererView(
         }
     }
 
-    private suspend fun cancelPointCoroutine() {
-        pointsLock.withLock {
-            Log.d("ogl-imagerendererview", "Resetting point drawing...")
-            pointsCoroutine?.takeIf { it.isActive }?.cancelAndJoin()
-            pointsCoroutine = null
+    private suspend fun cancelCoordinateDataCoroutine() {
+        coordinateDataLock.withLock {
+            Log.d("ogl-imagerendererview", "Resetting coordinate drawing drawing...")
+            coordinateDataCoroutine?.takeIf { it.isActive }?.cancelAndJoin()
+            coordinateDataCoroutine = null
             pointsBitMap = null
+            densityMapBitMap = null
         }
     }
 
@@ -211,7 +225,7 @@ class ImageRendererView(
         CoroutineScope(Dispatchers.IO)
             .launch {
                 cancelOsmCoroutine()
-                cancelPointCoroutine()
+                cancelCoordinateDataCoroutine()
             }
     }
 
@@ -223,12 +237,15 @@ class ImageRendererView(
             return
         }
 
-        Log.d("ogl-imagerendererview", "redrawOsm $redrawOsm, redrawPoints $redrawPoints")
+        Log.d(
+            "ogl-imagerendererview",
+            "redrawOsm $redrawOsm, redrawCoordinateData $redrawCoordinateData"
+        )
 
-        if (redrawPoints || redrawOsm) {
-            val shouldRedrawPoints = redrawPoints
+        if (redrawCoordinateData || redrawOsm) {
+            val shouldRedrawCoordinateData = redrawCoordinateData
             val shouldRedrawOsm = redrawOsm
-            redrawPoints = false
+            redrawCoordinateData = false
             redrawOsm = false
             CoroutineScope(Dispatchers.IO)
                 .launch {
@@ -237,10 +254,14 @@ class ImageRendererView(
                             .expand(0.05)
                     calculateXYValues(realBbox)
 
-                    if (shouldRedrawPoints) {
-                        Log.d("ogl-imagerendererview", "Redrawing points...")
-                        cancelPointCoroutine()
-                        launchPointsCoroutine(realBbox)
+                    if (shouldRedrawCoordinateData) {
+                        Log.d("ogl-imagerendererview", "Redrawing coordinate data...")
+                        cancelCoordinateDataCoroutine()
+                        if (visualisationSettings.drawDensityMap) {
+                            launchDensityMap(realBbox)
+                        } else {
+                            launchPointsCoroutine(realBbox)
+                        }
                     }
                     if (shouldRedrawOsm) {
                         Log.d("ogl-imagerendererview", "Redrawing osm...")
@@ -258,7 +279,191 @@ class ImageRendererView(
         drawBitmap(canvas, osmBitMap)
         drawBitmap(canvas, pointsBitMap)
         drawBitmap(canvas, copyrightBitMap)
+        drawBitmap(canvas, densityMapBitMap)
     }
+
+    private fun launchDensityMap(bbox: BBoxDto) {
+        CoroutineScope(Dispatchers.IO).launch {
+            Log.d("ogl-imagerendererview", "Getting coordinateDataLock")
+            coordinateDataLock.withLock {
+                if (!isActive) {
+                    Log.d("ogl-imagerendererview", "Stop loading density map!")
+                    return@withLock
+                }
+                if (densityMapBitMap == null && coordinateDataCoroutine?.isActive != true) {
+                    Log.d("ogl-imagerendererview", "Loading density map")
+                    updateVisualisationSettings()
+
+                    if (!isActive) {
+                        Log.d("ogl-imagerendererview", "Stop drawing density map!")
+                        return@withLock
+                    }
+
+                    Log.d("ogl-imagerendererview", "Starting coroutine for drawing density map...")
+                    coordinateDataCoroutine = createDensityMapCoroutine(bbox)
+                }
+            }
+        }
+    }
+
+    private fun createDensityMapCoroutine(bbox: BBoxDto) = CoroutineScope(Dispatchers.IO).launch {
+        drawDensityMap(
+            bbox,
+            ::latToPxIdxConverter,
+            ::lonToPxIdxConverter
+        )
+    }
+
+    private suspend fun drawDensityMap(
+        bbox: BBoxDto,
+        latConverter: (Double) -> Double,
+        lonConverter: (Double) -> Double
+    ) {
+        Log.d("ogl-imagerendererview", "Drawing density map...")
+        if (!coroutineContext.isActive) {
+            Log.d("ogl-imagerendererview", "Stop drawing density map!")
+            invalidate()
+            return
+        }
+
+        val sparseDensityMap = SparseDensityMap(SUBDIVISIONS_CONTINENT, SUBDIVISIONS_CONTINENT)
+        val adaptedClusterBitmap =
+            Bitmap.createBitmap(pointsRenderWidth, pointsRenderHeight, Bitmap.Config.ARGB_8888)
+
+        densityMapBitMap = adaptedClusterBitmap
+
+        var i = 0
+        continentDensityMapDbHelper.getAllPoints()
+            .use { cursor ->
+                run {
+                    if (!coroutineContext.isActive) {
+                        Log.d("ogl-imagerendererview-point", "Stop drawing density map!")
+                        invalidate()
+                        return
+                    }
+                    Log.d("ogl-imagerendererview-point", "Start iterating over points cursor")
+                    if (cursor.moveToFirst()) {
+                        Log.d("ogl-imagerendererview-point", "Starting count")
+                        val amountOfPointsToLoad = cursor.count
+                        Log.d("ogl-imagerendererview-point", "Count done $amountOfPointsToLoad")
+                        onPointProgressUpdateListener?.onPointProgressMax(
+                            amountOfPointsToLoad
+                        )
+                        pointRadius = 1F
+
+                        val xIndexColumnIndex =
+                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_X_INDEX)
+                        val yIndexColumnIndex =
+                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_Y_INDEX)
+                        val timeColumnIndex =
+                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME)
+                        val countColumnIndex =
+                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT)
+
+                        Log.d("ogl-imagerendererview-point", "Got first point from cursor")
+                        do {
+                            if (!coroutineContext.isActive) {
+                                Log.d("ogl-imagerendererview-point", "Stop drawing density map!")
+                                invalidate()
+                                return
+                            }
+
+                            val xIndex = cursor.getFloat(xIndexColumnIndex)
+                            val yIndex = cursor.getFloat(yIndexColumnIndex)
+                            val time = cursor.getLong(timeColumnIndex)
+                            val amount = cursor.getLong(countColumnIndex)
+
+                            // TODO set the max correctly
+                            val color = ColorUtil.toDensityColor(amount, 100000L)
+                            if (xIndex >= 0 && xIndex <= sparseDensityMap.width && yIndex >= 0 && yIndex <= sparseDensityMap.height) {
+                                sparseDensityMap.put(xIndex, yIndex, color)
+                            }
+
+                            if ((++i) % 10000 == 0) {
+                                Log.d(
+                                    "ogl-imagerendererview-point",
+                                    "refreshing density map bitmap $i"
+                                )
+                                extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
+                                onPointProgressUpdateListener?.onPointProgressUpdate(i)
+                                invalidate()
+                            }
+
+                        } while (cursor.moveToNext())
+                    }
+                }
+            }
+
+        extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
+        onPointProgressUpdateListener?.onPointProgressUpdate(i)
+        Log.d("ogl-imagerendererview-point", "Done drawing density map...")
+        invalidate()
+        onPointsLoadedListener?.onPointsLoaded()
+    }
+
+    private fun extractAndScaleBitmap(
+        sourceBitMap: SparseDensityMap,
+        targetBitmap: Bitmap,
+        bbox: BBoxDto
+    ): Bitmap {
+        val worldWidth = sourceBitMap.width.toDouble()
+        val worldHeight = sourceBitMap.height.toDouble()
+
+        fun lonToX(lon: Double): Int = ((lon + 180) / 360 * worldWidth).toInt()
+        fun latToY(lat: Double): Int {
+            val clampedLat = lat.coerceIn(-85.05112878, 85.05112878)
+            val latRad = Math.toRadians(clampedLat)
+            val mercatorY = (1.0 - ln(tan(Math.PI / 4 + latRad / 2)) / Math.PI) / 2.0
+            return (mercatorY * worldHeight).toInt()
+        }
+
+        val left = lonToX(bbox.minLon).coerceIn(0, sourceBitMap.width - 1)
+        val right = lonToX(bbox.maxLon).coerceIn(0, sourceBitMap.width - 1)
+        val top = latToY(bbox.maxLat).coerceIn(0, sourceBitMap.height - 1)
+        val bottom = latToY(bbox.minLat).coerceIn(0, sourceBitMap.height - 1)
+
+        val srcWidth = maxOf(1, right - left)
+        val srcHeight = maxOf(1, bottom - top)
+
+        val dstWidth = targetBitmap.width
+        val dstHeight = targetBitmap.height
+
+        val canvas = Canvas(targetBitmap)
+        canvas.drawColor(Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+
+        val paint = Paint()
+
+        for ((pos, color) in sourceBitMap.data) {
+            val (x, y) = pos
+            if (x in left.toFloat()..right.toFloat() && y in top.toFloat()..bottom.toFloat()) {
+                val mappedX = ((x - left).toDouble() / srcWidth * dstWidth).toFloat()
+                val mappedY = ((y - top).toDouble() / srcHeight * dstHeight).toFloat()
+
+                // Calculate cell width and height in target bitmap pixels
+                val cellWidth = dstWidth.toFloat() / srcWidth
+                val cellHeight = dstHeight.toFloat() / srcHeight
+
+                paint.color = color
+
+                // Draw rectangle instead of single point
+                canvas.drawRect(
+                    mappedX,
+                    mappedY,
+                    mappedX + cellWidth,
+                    mappedY + cellHeight,
+                    paint
+                )
+            }
+        }
+
+        return targetBitmap
+    }
+
+    private fun latToPxIdxConverter(lat: Double) =
+        (OsmGeometryUtil.lat2num(lat, zoom) - yMin) / yRange * pointsRenderHeight
+
+    private fun lonToPxIdxConverter(lon: Double) =
+        (OsmGeometryUtil.lon2num(lon, zoom) - xMin) / xRange * pointsRenderWidth
 
     private fun drawBitmap(canvas: Canvas, bitMap: Bitmap?) {
         bitMap?.let {
@@ -270,13 +475,13 @@ class ImageRendererView(
 
     private fun launchPointsCoroutine(realBbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d("ogl-imagerendererview", "Getting pointLock")
-            pointsLock.withLock {
+            Log.d("ogl-imagerendererview", "Getting coordinateDataLock")
+            coordinateDataLock.withLock {
                 if (!isActive) {
                     Log.d("ogl-imagerendererview", "Stop loading points!")
                     return@withLock
                 }
-                if (pointsBitMap == null && pointsCoroutine?.isActive != true) {
+                if (pointsBitMap == null && coordinateDataCoroutine?.isActive != true) {
                     Log.d("ogl-imagerendererview", "Loading points")
                     updateVisualisationSettings()
                     val pointsQuery = pointsQuery(realBbox)
@@ -288,7 +493,7 @@ class ImageRendererView(
                     }
 
                     Log.d("ogl-imagerendererview", "Starting coroutine for drawing points...")
-                    pointsCoroutine = createPointsCoroutine(pointsQuery)
+                    coordinateDataCoroutine = createPointsCoroutine(pointsQuery)
                 }
             }
         }
@@ -309,16 +514,10 @@ class ImageRendererView(
     private fun createPointsCoroutine(
         pointsQuery: PointsQuery
     ) = CoroutineScope(Dispatchers.IO).launch {
-        val latConverter = { lat: Double ->
-            (OsmGeometryUtil.lat2num(lat, zoom) - yMin) / yRange * pointsRenderHeight
-        }
-        val lonConverter = { lon: Double ->
-            (OsmGeometryUtil.lon2num(lon, zoom) - xMin) / xRange * pointsRenderWidth
-        }
         drawCoordinates(
             pointsQuery,
-            latConverter,
-            lonConverter
+            ::latToPxIdxConverter,
+            ::lonToPxIdxConverter
         )
     }
 
@@ -514,8 +713,9 @@ class ImageRendererView(
         var timeBucket = currentTimeBucket
         if (newTimeBucket != currentTimeBucket) {
             timeBucket = newTimeBucket
-            val opacity = (visualisationSettings.opacityPercentage * ( 255.0 / 100.0)).roundToInt()
-            val newColor = ColorUtil.generateColor(newTimeBucket + visualisationSettings.colorSeed, opacity)
+            val opacity = (visualisationSettings.opacityPercentage * (255.0 / 100.0)).roundToInt()
+            val newColor =
+                ColorUtil.generateColor(newTimeBucket + visualisationSettings.colorSeed, opacity)
             dotPaint.color = newColor
             linePaint.color = newColor
             Log.d(

@@ -2,6 +2,13 @@
 
 ## Releases
 
+### 0.17.0
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Add continent density map visualisation
+
 ### 0.16.0
 [apk](release/opengpslogger-0-16-0.apk)
 

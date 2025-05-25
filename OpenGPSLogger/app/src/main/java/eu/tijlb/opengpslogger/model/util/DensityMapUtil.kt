@@ -26,12 +26,7 @@ object DensityMapUtil {
         locationDbHelper: LocationDbHelper
     ) {
         densityMapDbHelper.drop()
-        val pointsQuery = PointsQuery(
-            dataSource = "All",
-            startDateMillis = 0,
-            endDateMillis = Long.MAX_VALUE,
-            minAngle = 0F
-        )
+        val pointsQuery = PointsQuery()
         locationDbHelper.getPointsCursor(pointsQuery)
             .use { cursor ->
                 run {
