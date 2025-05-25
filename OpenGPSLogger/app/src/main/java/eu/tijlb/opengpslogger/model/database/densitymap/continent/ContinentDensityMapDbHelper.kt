@@ -1,13 +1,18 @@
 package eu.tijlb.opengpslogger.model.database.densitymap.continent
 
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
+import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import kotlin.math.floor
+import kotlin.math.ln
+import kotlin.math.tan
 
+const val SUBDIVISIONS_CONTINENT = 25_000
 class ContinentDensityMapDbHelper(context: Context) :
     SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -87,10 +92,12 @@ class ContinentDensityMapDbHelper(context: Context) :
     }
 
     private fun toIndex(lat: Double, long: Double): Pair<Long, Long> {
-        val amountOfSubdivisionsInWorld = 10000
-
-        val xIndex = floor(((long + 180.0) / 360.0) * amountOfSubdivisionsInWorld).toLong()
-        val yIndex = floor(((lat + 90.0) / 180.0) * amountOfSubdivisionsInWorld).toLong()
+        val maxLat = 85.05112878
+        val clampedLat = lat.coerceIn(-maxLat, maxLat)
+        val xIndex = ((long + 180.0) / 360.0 * SUBDIVISIONS_CONTINENT).toLong()
+        val latRad = Math.toRadians(clampedLat)
+        val yMerc = (1.0 - ln(tan(Math.PI / 4 + latRad / 2)) / Math.PI) / 2.0
+        val yIndex = (yMerc * SUBDIVISIONS_CONTINENT).toLong()
 
         return Pair(xIndex, yIndex)
     }
@@ -100,8 +107,23 @@ class ContinentDensityMapDbHelper(context: Context) :
         db.execSQL("DELETE FROM ${ContinentDensityMapDbContract.TABLE_NAME}")
     }
 
+    fun getAllPoints(): Cursor {
+        return readableDatabase.query(
+            ContinentDensityMapDbContract.TABLE_NAME,
+            null, null, null, null, null, null
+        )
+    }
+
     companion object {
         const val DATABASE_VERSION = 1
         const val DATABASE_NAME = "densitymap_continent.sqlite"
+
+        private var instance: ContinentDensityMapDbHelper? = null
+
+        fun getInstance(context: Context): ContinentDensityMapDbHelper {
+            return instance ?: synchronized(this) {
+                instance ?: ContinentDensityMapDbHelper(context).also { instance = it }
+            }
+        }
     }
 }

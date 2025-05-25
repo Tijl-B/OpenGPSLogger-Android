@@ -1,6 +1,8 @@
 package eu.tijlb.opengpslogger.model.util
 
 import android.graphics.Color
+import kotlin.math.ln
+import kotlin.math.pow
 
 object ColorUtil {
     fun generateColor(seed: Long, opacity: Int): Int {
@@ -12,4 +14,25 @@ object ColorUtil {
         val hsvColor = Color.HSVToColor(opacity, floatArrayOf(hue.toFloat(), saturation, value))
         return hsvColor
     }
+
+    fun toDensityColor(amount: Long, maxAmount: Long): Int {
+        if (amount <= 0) return Color.TRANSPARENT
+
+        val logAmount = ln(amount.toDouble())
+        val log100 = ln(100.0)
+        val logMax = ln(maxAmount.toDouble())
+
+        val t = if (logAmount <= log100) {
+            (logAmount / log100).pow(2.0)
+        } else {
+            ((logAmount - log100) / (logMax - log100)).pow(1.5)
+        }.coerceIn(0.0, 1.0)
+
+        val hue = 60f + (270f - 60f) * t.toFloat()
+        val saturation = 1f
+        val value = 0.6f + 0.4f * t.toFloat()
+
+        return Color.HSVToColor(floatArrayOf(hue, saturation, value))
+    }
+
 }
