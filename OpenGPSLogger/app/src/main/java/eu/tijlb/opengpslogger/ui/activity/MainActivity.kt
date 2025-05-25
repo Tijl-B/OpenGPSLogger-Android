@@ -195,6 +195,7 @@ class MainActivity : AppCompatActivity() {
         val colorSeedEditText = dialogView.findViewById<EditText>(R.id.editText_colorSeed)
         val opacityEditText = dialogView.findViewById<EditText>(R.id.editText_opacity)
         val lineSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_lines)
+        val densityMapSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_density_map)
         val colorSpinner = dialogView.findViewById<Spinner>(R.id.spinner_color)
 
         val colorModeValues = ColorMode.entries
@@ -224,6 +225,7 @@ class MainActivity : AppCompatActivity() {
         opacityEditText.setText(settings.opacityPercentage.toString())
         lineMaxMinsDeltaEditText.setText(settings.connectLinesMaxMinutesDelta.toString())
         lineSwitch.isChecked = settings.drawLines
+        densityMapSwitch.isChecked = settings.drawDensityMap
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.visualisation_settings_title))
@@ -236,8 +238,10 @@ class MainActivity : AppCompatActivity() {
                 val lineMaxMinsDelta = lineMaxMinsDeltaEditText.text.toString().toLongOrNull()
                     ?: settings.connectLinesMaxMinutesDelta
                 val drawLines = lineSwitch.isChecked
+                val drawDensityMap = densityMapSwitch.isChecked
                 val settingsDto = VisualisationSettingsDto(
                     drawLines,
+                    drawDensityMap,
                     lineSize,
                     dotSize,
                     lineMaxMinsDelta,
