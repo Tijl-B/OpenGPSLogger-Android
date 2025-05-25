@@ -8,6 +8,7 @@ import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 private const val VISUALISATION_SETTINGS = "VISUALISATION_SETTINGS"
 
 private const val DRAW_LINES = "DRAW_LINES"
+private const val DRAW_DENSITY_MAP = "DRAW_DENSITY_MAP"
 private const val DOT_SIZE = "DOT_SIZE"
 private const val LINE_SIZE = "LINE_SIZE"
 private const val CONNECT_LINE_MAX_MINS_DELTA = "CONNECT_LINE_MAX_MINS_DELTA"
@@ -16,6 +17,7 @@ private const val COLOR_SEED = "COLOR_SEED"
 private const val COLOR_OPACITY_PERCENTAGE = "COLOR_OPACITY_PERCENTAGE"
 
 private const val DEFAULT_DRAW_LINES = false
+private const val DEFAULT_DRAW_DENSITY_MAP = false
 private const val DEFAULT_CONNECT_LINE_MAX_MINS_DELTA = 15L
 private val DEFAULT_COLOR_MODE = ColorMode.MULTI_COLOR_MONTH.name
 private const val DEFAULT_COLOR_SEED = 0
@@ -32,6 +34,7 @@ class VisualisationSettingsHelper(val context: Context) {
         val locationRequestPreferences =
             context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
         val drawLines = locationRequestPreferences.getBoolean(DRAW_LINES, DEFAULT_DRAW_LINES)
+        val drawDensityMap = locationRequestPreferences.getBoolean(DRAW_DENSITY_MAP, DEFAULT_DRAW_DENSITY_MAP)
         val dotSize = locationRequestPreferences.getFloat(DOT_SIZE, DEFAULT_DOT_SIZE)
         val lineSize = locationRequestPreferences.getFloat(LINE_SIZE, DEFAULT_LINE_SIZE)
         val connectLineMaxMinsDelta = locationRequestPreferences.getLong(
@@ -49,6 +52,7 @@ class VisualisationSettingsHelper(val context: Context) {
 
         return VisualisationSettingsDto(
             drawLines,
+            drawDensityMap,
             lineSize.takeUnless { it == AUTO_LINE_SIZE },
             dotSize.takeUnless { it == AUTO_DOT_SIZE },
             connectLineMaxMinsDelta,
@@ -64,6 +68,7 @@ class VisualisationSettingsHelper(val context: Context) {
             context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
         with(locationRequestPreferences.edit()) {
             putBoolean(DRAW_LINES, settingsDto.drawLines)
+            putBoolean(DRAW_DENSITY_MAP, settingsDto.drawDensityMap)
             putFloat(DOT_SIZE, settingsDto.dotSize ?: AUTO_DOT_SIZE)
             putFloat(LINE_SIZE, settingsDto.lineSize ?: AUTO_LINE_SIZE)
             putLong(CONNECT_LINE_MAX_MINS_DELTA, settingsDto.connectLinesMaxMinutesDelta)

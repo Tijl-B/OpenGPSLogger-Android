@@ -5,6 +5,7 @@ import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 
 data class VisualisationSettingsDto(
     val drawLines: Boolean,
+    val drawDensityMap: Boolean,
     val lineSize: Float?,
     val dotSize: Float?,
     val connectLinesMaxMinutesDelta: Long,

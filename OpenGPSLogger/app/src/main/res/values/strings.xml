@@ -44,7 +44,7 @@
     <string name="tile_server_settings_title">Tile server settings</string>
     <string name="tile_server_settings_confirm">Confirm</string>
     <string name="color_seed">Color randomizer seed:</string>
-    <string name="color">Color</string>
+    <string name="dot_color">Dot color</string>
     <string name="dots">Dots</string>
     <string name="lines">Lines</string>
     <string name="or_add_custom_tile_server">Or add a custom tile server:</string>
@@ -62,4 +62,6 @@
     <string name="recalculate_values">Recalculate values</string>
     <string name="density_map_settings">Density map settings (experimental)</string>
     <string name="density_map_settings_confirm">Confirm</string>
+    <string name="use_density_map">Use density map:</string>
+    <string name="density_map">Density map</string>
 </resources>
