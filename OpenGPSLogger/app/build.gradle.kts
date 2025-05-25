@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.androidx.ui.desktop)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.glide)
+    implementation(libs.core.ktx)
 
     annotationProcessor(libs.compiler)
     

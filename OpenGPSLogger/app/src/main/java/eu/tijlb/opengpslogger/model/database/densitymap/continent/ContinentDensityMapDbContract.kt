@@ -1,0 +1,11 @@
+package eu.tijlb.opengpslogger.model.database.densitymap.continent
+
+import android.provider.BaseColumns
+
+object ContinentDensityMapDbContract : BaseColumns {
+    const val TABLE_NAME = "density_map_continent"
+    const val COLUMN_NAME_INDEX = "idx"
+    const val COLUMN_NAME_AMOUNT = "amount"
+    const val COLUMN_NAME_LAST_POINT_TIME = "last_point_time"
+
+}
