@@ -22,14 +22,20 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_advancedFilters"
+        android:id="@+id/action_densityMapSettings"
         android:orderInCategory="103"
+        android:title="@string/densityMapSettings"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_advancedFilters"
+        android:orderInCategory="200"
         android:title="@string/advanced_filters"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_about"
-        android:orderInCategory="110"
+        android:orderInCategory="300"
         android:title="@string/action_about"
         app:showAsAction="never" />
 

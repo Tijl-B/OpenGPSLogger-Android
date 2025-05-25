@@ -2,12 +2,14 @@ package eu.tijlb.opengpslogger.ui.activity
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Spinner
@@ -30,9 +32,10 @@ import eu.tijlb.opengpslogger.model.database.settings.PRESET_PASSIVE
 import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
-import eu.tijlb.opengpslogger.ui.fragment.HomeFragment
+import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var visualisationSettingsHelper: VisualisationSettingsHelper
     private lateinit var locationDbHelper: LocationDbHelper
     private lateinit var tileServerDbHelper: TileServerDbHelper
+    private lateinit var continentDensityMapDbHelper: ContinentDensityMapDbHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         visualisationSettingsHelper = VisualisationSettingsHelper(this)
         locationDbHelper = LocationDbHelper.getInstance(this)
         tileServerDbHelper = TileServerDbHelper(this)
+        continentDensityMapDbHelper = ContinentDensityMapDbHelper(this)
 
         setContentView(binding.root)
 
@@ -73,7 +78,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
@@ -85,6 +89,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_advancedFilters -> openAdvancedFiltersDialog()
             R.id.action_visualisationSettings -> openVisualisationSettingsDialog()
             R.id.action_mapSettings -> openMapSettingsDialog()
+            R.id.action_densityMapSettings -> openDensityMapSettingsDialog()
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -99,6 +104,26 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         recreate()
+    }
+
+    private fun openDensityMapSettingsDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_density_map_settings, null)
+        val button = dialogView.findViewById<Button>(R.id.btn_recalculate_density_map)
+
+        button.setOnClickListener {
+            Log.d("ogl-mainactivity", "Recalculating density map")
+            DensityMapUtil.recreateDatabaseAsync(continentDensityMapDbHelper, locationDbHelper)
+            button.setBackgroundColor(Color.GRAY)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.density_map_settings))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.density_map_settings_confirm)) { dialog, _ ->
+                Log.d("ogl-mainactivity", "Confirmed density map settings dialog")
+            }
+            .create()
+            .show()
+        return true
     }
 
     private fun openMapSettingsDialog(): Boolean {

@@ -453,7 +453,6 @@ class ImageRendererView(
                             if (!coroutineContext.isActive) {
                                 Log.d("ogl-imagerendererview-point", "Stop drawing points!")
                                 invalidate()
-                                cursor.close()
                                 return
                             }
 
