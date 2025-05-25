@@ -58,4 +58,8 @@
     <string name="advanced_filters_title">Advanced filters</string>
     <string name="advanced_filters_confirm">confirm</string>
     <string name="advanced_filters_cancel">cancel</string>
+    <string name="densityMapSettings">Density map settings</string>
+    <string name="recalculate_values">Recalculate values</string>
+    <string name="density_map_settings">Density map settings (experimental)</string>
+    <string name="density_map_settings_confirm">Confirm</string>
 </resources>

@@ -65,11 +65,11 @@ class ContinentDensityMapDbHelperTest {
     }
 
     @Test
-    fun addSameLocationTwice() {
+    fun addSameLocationTwiceWithLotsOfTimeInBetween() {
         val location = Location("test").apply {
             latitude = 50.0
             longitude = 8.0
-            time = 111111L
+            time = 1L
         }
 
         dbHelper.addLocation(location)
@@ -77,7 +77,7 @@ class ContinentDensityMapDbHelperTest {
         val updatedLocation = Location("test").apply {
             latitude = 50.0
             longitude = 8.0
-            time = 222222L
+            time = 222222222L
         }
 
         dbHelper.addLocation(updatedLocation)
@@ -95,7 +95,44 @@ class ContinentDensityMapDbHelperTest {
             cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
         )
         assertEquals(
-            222222L,
+            222222222L,
+            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
+        )
+        cursor.close()
+    }
+
+    @Test
+    fun addSameLocationTwiceWithLittleTimeInBetween() {
+        val location = Location("test").apply {
+            latitude = 50.0
+            longitude = 8.0
+            time = 1L
+        }
+
+        dbHelper.addLocation(location)
+
+        val updatedLocation = Location("test").apply {
+            latitude = 50.0
+            longitude = 8.0
+            time = 2L
+        }
+
+        dbHelper.addLocation(updatedLocation)
+
+        val db = dbHelper.readableDatabase
+        val cursor = db.query(
+            ContinentDensityMapDbContract.TABLE_NAME,
+            null,
+            null, null, null, null, null
+        )
+
+        assertTrue(cursor.moveToFirst())
+        assertEquals(
+            1,
+            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
+        )
+        assertEquals(
+            1L,
             cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
         )
         cursor.close()
