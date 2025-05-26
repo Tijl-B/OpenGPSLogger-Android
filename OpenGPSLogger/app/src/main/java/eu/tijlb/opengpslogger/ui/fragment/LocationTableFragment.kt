@@ -15,12 +15,12 @@ import android.widget.TableRow
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
+import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.model.database.location.LocationDatabaseFileProvider
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
-import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 

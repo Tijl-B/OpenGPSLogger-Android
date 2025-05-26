@@ -2,7 +2,6 @@ package eu.tijlb.opengpslogger.model.util
 
 import android.graphics.Color
 import kotlin.math.ln
-import kotlin.math.pow
 
 object ColorUtil {
     fun generateColor(seed: Long, opacity: Int): Int {

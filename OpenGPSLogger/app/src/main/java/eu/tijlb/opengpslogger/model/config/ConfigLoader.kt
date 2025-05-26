@@ -2,7 +2,6 @@ package eu.tijlb.opengpslogger.model.config
 
 import android.content.Context
 import android.util.Log
-import org.json.JSONObject
 import java.io.FileNotFoundException
 
 object ConfigLoader {

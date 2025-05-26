@@ -29,19 +29,19 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import eu.tijlb.opengpslogger.model.service.LocationNotificationService
-import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
 import eu.tijlb.opengpslogger.model.database.boundingbox.BoundingBoxDbHelper
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.AdvancedFiltersHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
-import eu.tijlb.opengpslogger.databinding.FragmentHomeBinding
-import eu.tijlb.opengpslogger.ui.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import eu.tijlb.opengpslogger.model.service.LocationNotificationService
+import eu.tijlb.opengpslogger.ui.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.ui.view.ImageRendererView
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
+import eu.tijlb.opengpslogger.ui.view.bitmap.PointsBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -216,7 +216,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         }
 
         imageRendererView.onPointProgressUpdateListener =
-            object : ImageRendererView.OnPointProgressUpdateListener {
+            object : PointsBitmapRenderer.OnPointProgressUpdateListener {
                 override fun onPointProgressMax(max: Int) {
                     pointsProgressBar.max = max
                 }

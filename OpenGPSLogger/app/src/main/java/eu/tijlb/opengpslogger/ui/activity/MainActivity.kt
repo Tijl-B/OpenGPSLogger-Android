@@ -21,8 +21,11 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.AdvancedFiltersHelper
+import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.PRESET_HIGH
 import eu.tijlb.opengpslogger.model.database.settings.PRESET_HIGHEST
@@ -31,9 +34,6 @@ import eu.tijlb.opengpslogger.model.database.settings.PRESET_MEDIUM
 import eu.tijlb.opengpslogger.model.database.settings.PRESET_PASSIVE
 import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
-import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
-import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
