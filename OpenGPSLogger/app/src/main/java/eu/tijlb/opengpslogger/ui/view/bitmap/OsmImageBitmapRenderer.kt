@@ -66,8 +66,6 @@ class OsmImageBitmapRenderer(val context: Context) {
         assignBitmap(clusterBitmap)
         val canvas = Canvas(clusterBitmap)
 
-        canvas.drawColor(Color.GRAY)
-
         val paint = Paint()
 
         onTileProgressUpdateListener?.onTileProgressMax(xRange * yRange)
