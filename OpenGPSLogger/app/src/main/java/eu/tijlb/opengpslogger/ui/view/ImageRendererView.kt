@@ -8,10 +8,11 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
-import android.graphics.RenderEffect
-import android.graphics.RenderNode
-import android.graphics.Shader
 import android.graphics.Typeface
+import android.renderscript.Allocation
+import android.renderscript.Element
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicBlur
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -48,6 +49,7 @@ import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.math.tan
@@ -327,7 +329,7 @@ class ImageRendererView(
         }
 
         val sparseDensityMap = SparseDensityMap(SUBDIVISIONS_CONTINENT, SUBDIVISIONS_CONTINENT)
-        val adaptedClusterBitmap =
+        var adaptedClusterBitmap =
             Bitmap.createBitmap(pointsRenderWidth, pointsRenderHeight, Bitmap.Config.ARGB_8888)
 
         densityMapBitMap = adaptedClusterBitmap
@@ -384,7 +386,11 @@ class ImageRendererView(
                                     "ogl-imagerendererview-point",
                                     "refreshing density map bitmap $i"
                                 )
-                                extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
+                                densityMapBitMap = extractAndScaleBitmap(
+                                    sparseDensityMap,
+                                    adaptedClusterBitmap,
+                                    bbox
+                                )
                                 onPointProgressUpdateListener?.onPointProgressUpdate(i)
                                 invalidate()
                             }
@@ -394,7 +400,7 @@ class ImageRendererView(
                 }
             }
 
-        extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
+        densityMapBitMap = extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox, true)
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
         Log.d("ogl-imagerendererview-point", "Done drawing density map...")
         invalidate()
@@ -404,8 +410,13 @@ class ImageRendererView(
     private fun extractAndScaleBitmap(
         sourceBitMap: SparseDensityMap,
         targetBitmap: Bitmap,
-        bbox: BBoxDto
+        bbox: BBoxDto,
+        blur: Boolean = false
     ): Bitmap {
+        Log.d(
+            "ogl-imagerendererview",
+            "Extracting and scaling sparse bitmap into full bitmap with bbox $bbox"
+        )
         val worldWidth = sourceBitMap.width.toDouble()
         val worldHeight = sourceBitMap.height.toDouble()
 
@@ -428,6 +439,9 @@ class ImageRendererView(
         val dstWidth = targetBitmap.width
         val dstHeight = targetBitmap.height
 
+        val cellWidth = dstWidth.toFloat() / srcWidth
+        val cellHeight = dstHeight.toFloat() / srcHeight
+
         val canvas = Canvas(targetBitmap)
         canvas.drawColor(Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
 
@@ -439,24 +453,63 @@ class ImageRendererView(
                 val mappedX = ((x - left).toDouble() / srcWidth * dstWidth).toFloat()
                 val mappedY = ((y - top).toDouble() / srcHeight * dstHeight).toFloat()
 
-                // Calculate cell width and height in target bitmap pixels
-                val cellWidth = dstWidth.toFloat() / srcWidth
-                val cellHeight = dstHeight.toFloat() / srcHeight
 
                 paint.color = color
 
-                // Draw rectangle instead of single point
                 canvas.drawRect(
-                    mappedX,
-                    mappedY,
-                    mappedX + cellWidth,
-                    mappedY + cellHeight,
+                    mappedX - cellWidth / 2F,
+                    mappedY - cellHeight / 2F,
+                    mappedX + cellWidth / 2F,
+                    mappedY + cellHeight / 2F,
                     paint
                 )
             }
         }
 
-        return targetBitmap
+        var result = targetBitmap
+        if (blur) {
+            val minCellDimension = min(cellWidth, cellHeight)
+            val passes = (minCellDimension * 0.5F).toInt().coerceIn(1, 10)
+            result = blurBitmapMultiplePasses(
+                context,
+                targetBitmap,
+                radius = minCellDimension * 0.5F,
+                passes = passes
+            )
+        }
+        return result
+    }
+
+    fun blurBitmapMultiplePasses(
+        context: Context,
+        bitmap: Bitmap,
+        radius: Float,
+        passes: Int
+    ): Bitmap {
+        var blurred = bitmap
+        Log.d("ogl-imagerendererview", "Blurring bitmap $passes times with radius $radius")
+        repeat(passes) {
+            blurred = blurBitmap(context, blurred, radius)
+        }
+        return blurred
+    }
+
+    fun blurBitmap(context: Context, bitmap: Bitmap, radius: Float): Bitmap {
+        if (radius < 0.1F) {
+            return bitmap
+        }
+        Log.d("ogl-imagerendererview", "Blurring bitmap with a radius of $radius")
+        val renderScript = RenderScript.create(context)
+        val input = Allocation.createFromBitmap(renderScript, bitmap)
+        val output = Allocation.createTyped(renderScript, input.type)
+        val script = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
+        script.setRadius(radius.coerceIn(0.1f, 25f))
+        script.setInput(input)
+        script.forEach(output)
+        val blurred = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config)
+        output.copyTo(blurred)
+        renderScript.destroy()
+        return blurred
     }
 
     private fun latToPxIdxConverter(lat: Double) =
