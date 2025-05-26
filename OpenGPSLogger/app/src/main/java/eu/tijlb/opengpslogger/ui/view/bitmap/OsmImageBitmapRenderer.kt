@@ -23,7 +23,7 @@ class OsmImageBitmapRenderer(val context: Context) {
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 
-    suspend fun getImageCluster(
+    suspend fun draw(
         bbox: BBoxDto,
         zoom: Int,
         smurl: String,

@@ -51,7 +51,7 @@ class PointsBitmapRenderer(
     private var pointRadius = 5F
 
     @SuppressLint("Range")
-    suspend fun drawCoordinates(
+    suspend fun draw(
         query: PointsQuery,
         latConverter: (Double) -> Double,
         lonConverter: (Double) -> Double,
@@ -117,7 +117,7 @@ class PointsBitmapRenderer(
                             val time = cursor.getLong(timeColumnIndex)
 
 
-                            currentTimeBucket = draw(
+                            currentTimeBucket = drawPoint(
                                 latitude,
                                 longitude,
                                 prevLat,
@@ -148,7 +148,7 @@ class PointsBitmapRenderer(
     }
 
 
-    private fun draw(
+    private fun drawPoint(
         latitude: Double,
         longitude: Double,
         prevLatitude: Double?,

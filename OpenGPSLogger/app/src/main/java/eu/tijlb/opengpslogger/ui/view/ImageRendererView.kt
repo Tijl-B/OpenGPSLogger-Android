@@ -6,8 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.Typeface
 import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
@@ -47,6 +45,7 @@ import kotlin.math.ln
 import kotlin.math.min
 import kotlin.math.tan
 import androidx.core.graphics.scale
+import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 
 class ImageRendererView(
     context: Context,
@@ -119,6 +118,7 @@ class ImageRendererView(
     private var pointsRenderHeight = height
 
     private val osmImageBitmapRenderer: OsmImageBitmapRenderer = OsmImageBitmapRenderer(context)
+    private val copyRightNoticeBitmapRenderer: CopyRightNoticeBitmapRenderer = CopyRightNoticeBitmapRenderer()
     private val pointsBitmapRenderer: PointsBitmapRenderer
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
@@ -182,17 +182,6 @@ class ImageRendererView(
             pointsBitMap = null
             densityMapBitMap = null
         }
-    }
-
-    private val textPaint = Paint().apply {
-        isAntiAlias = true
-        color = Color.WHITE
-        textSize = 16f
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-    }
-    val copyrightBarPaint = Paint().apply {
-        color = Color.BLACK
-        alpha = 100
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -356,7 +345,7 @@ class ImageRendererView(
                             val amount = cursor.getLong(countColumnIndex)
 
                             // TODO set the max correctly
-                            val color = ColorUtil.toDensityColor(amount, 100000L)
+                            val color = ColorUtil.toDensityColor(amount, 10000L)
                             if (xIndex >= 0 && xIndex <= sparseDensityMap.width && yIndex >= 0 && yIndex <= sparseDensityMap.height) {
                                 sparseDensityMap.put(xIndex, yIndex, color)
                             }
@@ -546,7 +535,7 @@ class ImageRendererView(
     private fun createPointsCoroutine(
         pointsQuery: PointsQuery
     ) = CoroutineScope(Dispatchers.IO).launch {
-        pointsBitmapRenderer.drawCoordinates(
+        pointsBitmapRenderer.draw(
             pointsQuery,
             ::latToPxIdxConverter,
             ::lonToPxIdxConverter,
@@ -569,7 +558,7 @@ class ImageRendererView(
         osmJob = CoroutineScope(Dispatchers.IO).launch {
             val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             osmBitMap = clusterBitmap
-            osmImageBitmapRenderer.getImageCluster(
+            osmImageBitmapRenderer.draw(
                 bbox,
                 zoom,
                 getBasemapUrl(),
@@ -587,33 +576,11 @@ class ImageRendererView(
 
     private fun updateCopyrightNotice() {
         val copyrightNotice = tileServerDbHelper.getSelectedCopyrightNotice()
-        setCopyrightNotice(copyrightNotice)
-    }
-
-    private fun setCopyrightNotice(copyrightNotice: String) {
-        if (copyrightNotice.isEmpty()) copyrightBitMap = null
-
-        if (width == 0 || height == 0) return
-
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        copyrightBitMap = bitmap
-
-        val textBounds = Rect()
-        textPaint.getTextBounds(copyrightNotice, 0, copyrightNotice.length, textBounds)
-        val textWidth = textBounds.width().toFloat()
-        val textHeight = textBounds.height().toFloat()
-
-        val barHeight = textHeight * 1.2F
-        val barWidth = textWidth + 16
-
-        val barLeft = width - barWidth
-        val barTop = height - barHeight
-        canvas.drawRect(barLeft, barTop, width.toFloat(), height.toFloat(), copyrightBarPaint)
-
-        val textX = barLeft + 8
-        val textY = height - textHeight * 0.2F
-        canvas.drawText(copyrightNotice, textX, textY, textPaint)
+        copyRightNoticeBitmapRenderer.draw(
+            copyrightNotice,
+            Pair(width, height),
+            { bitmap -> copyrightBitMap = bitmap })
+        { invalidate() }
     }
 
     private fun calculateXYValues(bbox: BBoxDto) {
