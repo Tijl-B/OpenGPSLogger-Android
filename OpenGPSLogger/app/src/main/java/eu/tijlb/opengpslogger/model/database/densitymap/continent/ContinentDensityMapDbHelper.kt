@@ -7,8 +7,6 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
-import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
-import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.tan
 

@@ -2,8 +2,8 @@ package eu.tijlb.opengpslogger.model.parser.json
 
 import android.util.JsonReader
 import android.util.Log
-import eu.tijlb.opengpslogger.ui.activity.ImportActivity
 import eu.tijlb.opengpslogger.model.util.TimeUtil
+import eu.tijlb.opengpslogger.ui.activity.ImportActivity
 
 object LocationHistoryJsonParser {
 

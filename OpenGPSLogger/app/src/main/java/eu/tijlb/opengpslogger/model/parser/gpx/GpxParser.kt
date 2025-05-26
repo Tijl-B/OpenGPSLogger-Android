@@ -1,8 +1,8 @@
 package eu.tijlb.opengpslogger.model.parser.gpx
 
 import android.util.Log
-import eu.tijlb.opengpslogger.ui.activity.ImportActivity
 import eu.tijlb.opengpslogger.model.util.TimeUtil
+import eu.tijlb.opengpslogger.ui.activity.ImportActivity
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
