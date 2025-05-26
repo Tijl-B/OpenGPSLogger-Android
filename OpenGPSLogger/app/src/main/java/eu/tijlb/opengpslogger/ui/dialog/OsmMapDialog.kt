@@ -21,7 +21,6 @@ class OsmMapDialog(private val onDismiss: () -> Unit) : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        //val osmMapView: OsmMapView = view.findViewById(R.id.osmMapView)
         val closeButton: View = view.findViewById(R.id.closeButton)
 
         closeButton.setOnClickListener {

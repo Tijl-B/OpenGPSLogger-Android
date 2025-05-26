@@ -6,12 +6,14 @@ import android.graphics.Canvas
 import android.util.AttributeSet
 import android.util.Log
 import android.view.GestureDetector
+import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
-import android.view.GestureDetector.OnGestureListener
 import android.view.View
+import androidx.core.graphics.withTranslation
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
+import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +21,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlin.math.ln
 import kotlin.math.pow
-import androidx.core.graphics.withTranslation
-import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 
 class OsmMapView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
@@ -128,7 +128,6 @@ class OsmMapView @JvmOverloads constructor(
         viewHeight: Int
     ): BBoxDto {
         val tileSize = 256
-        val scale = 2.0.pow(zoom)
 
         val centerX = OsmGeometryUtil.lon2num(lon, zoom) * tileSize
         val centerY = OsmGeometryUtil.lat2num(lat, zoom) * tileSize
@@ -187,44 +186,33 @@ class OsmMapView @JvmOverloads constructor(
         val tileSize = 256.0
         val oldZoomInt = zoomLevel.toInt()
 
-        // Current map scale (pixels per tile at current zoom)
         val oldMapScale = 2.0.pow(zoomLevel.toDouble())
 
-        // New map scale after applying visual zoom scale, constrained within zoom limits
         val newMapScale = (oldMapScale * visualZoomScale).coerceIn(2.0.pow(1.0), 2.0.pow(19.0))
 
-        // New zoom as float (log base 2 of scale)
         val newZoomFloat = ln(newMapScale) / ln(2.0)
         val newZoomInt = newZoomFloat.toInt()
 
-        // Pixel coords of center at old integer zoom
         val centerPixelXOldZoom = OsmGeometryUtil.lon2num(centerLon, oldZoomInt) * tileSize
         val centerPixelYOldZoom = OsmGeometryUtil.lat2num(centerLat, oldZoomInt) * tileSize
 
-        // Position of focus point on the map in pixels at old integer zoom
         val focusPixelXOldZoom = centerPixelXOldZoom + (lastScaleFocusX - width / 2.0)
         val focusPixelYOldZoom = centerPixelYOldZoom + (lastScaleFocusY - height / 2.0)
 
-        // Lat/Lon of focus point before zoom (based on old zoom integer level)
         val focusLon = OsmGeometryUtil.numToLon(focusPixelXOldZoom / tileSize, oldZoomInt)
         val focusLat = OsmGeometryUtil.numToLat(focusPixelYOldZoom / tileSize, oldZoomInt)
 
-        // Pixel coords of focus point at new integer zoom
         val focusPixelXNewZoom = OsmGeometryUtil.lon2num(focusLon, newZoomInt) * tileSize
         val focusPixelYNewZoom = OsmGeometryUtil.lat2num(focusLat, newZoomInt) * tileSize
 
-        // Adjust center pixel so focus point stays under finger
         val newCenterPixelX = focusPixelXNewZoom - (lastScaleFocusX - width / 2.0)
         val newCenterPixelY = focusPixelYNewZoom - (lastScaleFocusY - height / 2.0)
 
-        // Convert new center pixel coords back to lat/lon at new integer zoom
         centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, newZoomInt)
         centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, newZoomInt)
 
-        // Update zoom level as float (fractional zoom)
         zoomLevel = newZoomFloat.toFloat()
 
-        // Reset visual scaling and offsets
         visualZoomScale = 1f
         offsetX = 0f
         offsetY = 0f
@@ -257,7 +245,6 @@ class OsmMapView @JvmOverloads constructor(
         offsetX = 0f
         offsetY = 0f
     }
-
 
     // Unused but required GestureDetector methods
     override fun onShowPress(e: MotionEvent) {}
