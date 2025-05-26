@@ -152,6 +152,7 @@ class ImageRendererView(
     fun redrawPointsAndOsm() {
         redrawOsm = true
         redrawCoordinateData = true
+        invalidate()
     }
 
     private suspend fun cancelOsmCoroutine() {

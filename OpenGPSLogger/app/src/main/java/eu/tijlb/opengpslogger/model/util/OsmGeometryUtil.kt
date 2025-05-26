@@ -2,9 +2,11 @@ package eu.tijlb.opengpslogger.model.util
 
 import android.util.Log
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import kotlin.math.atan
 import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.pow
+import kotlin.math.sinh
 import kotlin.math.tan
 
 object OsmGeometryUtil {
@@ -18,6 +20,17 @@ object OsmGeometryUtil {
     fun lon2num(lon: Double, zoom: Int): Double {
         val n = 2.0.pow(zoom)
         return n * (lon + 180.0) / 360.0
+    }
+
+    fun numToLon(x: Double, zoom: Int): Double {
+        val n = 2.0.pow(zoom)
+        return x / n * 360.0 - 180.0
+    }
+
+    fun numToLat(y: Double, zoom: Int): Double {
+        val n = 2.0.pow(zoom)
+        val latRad = atan(sinh(Math.PI * (1 - 2 * y / n)))
+        return Math.toDegrees(latRad)
     }
 
     fun deg2num(lat: Double, lon: Double, zoom: Int): Pair<Double, Double> {

@@ -3,7 +3,6 @@ package eu.tijlb.opengpslogger.ui.view.bitmap
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
@@ -65,8 +64,6 @@ class OsmImageBitmapRenderer(val context: Context) {
         val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         assignBitmap(clusterBitmap)
         val canvas = Canvas(clusterBitmap)
-
-        canvas.drawColor(Color.GRAY)
 
         val paint = Paint()
 

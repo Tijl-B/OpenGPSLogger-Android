@@ -38,6 +38,7 @@ import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.model.service.LocationNotificationService
+import eu.tijlb.opengpslogger.ui.dialog.OsmMapDialog
 import eu.tijlb.opengpslogger.ui.dialog.ZoomableImageDialog
 import eu.tijlb.opengpslogger.ui.view.ImageRendererView
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
@@ -59,6 +60,7 @@ private const val BOUNDING_BOX_NONE = "None"
 class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
 
     private lateinit var requestLocationButton: Button
+    private lateinit var adaptiveViewButton: Button
     private lateinit var dataSourcesDeleteButton: ImageButton
     private lateinit var dataSourcesSpinner: Spinner
     private lateinit var pointsProgressBar: ProgressBar
@@ -112,6 +114,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         }
 
     private var showingZoomableImage = false
+    private var showingOsmMap = false
 
     private var _binding: FragmentHomeBinding? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -187,6 +190,7 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
         imageRendererView = view.findViewById(R.id.imageRendererView)
 
         requestLocationButton = view.findViewById(R.id.button_request_location)
+        adaptiveViewButton = view.findViewById(R.id.button_adaptive_view)
         dataSourcesDeleteButton = view.findViewById(R.id.button_data_source_delete)
         dataSourcesSpinner = view.findViewById(R.id.spinner_datasources)
         pointsProgressBar = view.findViewById(R.id.pointsProgressBar)
@@ -239,9 +243,8 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
                 }
             }
 
-        imageRendererView.setOnClickListener {
-            showZoomableImage()
-        }
+        adaptiveViewButton.setOnClickListener { showOsmMap() }
+        imageRendererView.setOnClickListener { showZoomableImage() }
 
         initializeBeginAndEndTime()
         setUpDataSourcesSpinner()
@@ -545,6 +548,20 @@ class HomeFragment : Fragment(), DatePickerFragment.OnDateSelectedListener {
             requestLocationButton.text = "Stop tracking"
         } else {
             requestLocationButton.text = "Start tracking"
+        }
+    }
+
+    private fun showOsmMap() {
+        if (!showingOsmMap) {
+            showingOsmMap = true
+            CoroutineScope(Dispatchers.Default).launch {
+                withContext(Dispatchers.IO) {
+                    val dialog = OsmMapDialog {
+                        showingOsmMap = false
+                    }
+                    dialog.show(parentFragmentManager, "OsmMapDialog")
+                }
+            }
         }
     }
 
