@@ -2,6 +2,13 @@
 
 ## Releases
 
+### 0.17.1
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Improve density map visualisation
+
 ### 0.17.0
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
