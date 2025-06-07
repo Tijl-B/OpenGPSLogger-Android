@@ -2,6 +2,13 @@
 
 ## Releases
 
+### 0.19.0
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- Add multiple levels of density map (world, continent, country, city, street) with adaptive choice based on osm zoom level
+
 ### 0.18.0
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.

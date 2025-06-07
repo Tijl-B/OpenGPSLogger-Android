@@ -113,6 +113,7 @@ class OsmMapView @JvmOverloads constructor(
         coroutineScope.launch {
             densityMapBitmapRenderer.draw(
                 bbox,
+                intZoom,
                 Pair(width, height),
                 { bmp -> pointsBitmap = bmp },
                 { invalidate() }

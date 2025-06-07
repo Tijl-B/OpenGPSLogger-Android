@@ -1,7 +1,7 @@
 package eu.tijlb.opengpslogger.model.util
 
 import android.util.Log
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdaptor
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
@@ -14,18 +14,18 @@ import kotlin.coroutines.coroutineContext
 object DensityMapUtil {
 
     fun recreateDatabaseAsync(
-        densityMapDbHelper: ContinentDensityMapDbHelper,
+        densityMapAdaptor: DensityMapAdaptor,
         locationDbHelper: LocationDbHelper
     ) {
         CoroutineScope(Dispatchers.IO)
-            .launch { recreateDatabase(densityMapDbHelper, locationDbHelper) }
+            .launch { recreateDatabase(densityMapAdaptor, locationDbHelper) }
     }
 
-    suspend fun recreateDatabase(
-        densityMapDbHelper: ContinentDensityMapDbHelper,
+    private suspend fun recreateDatabase(
+        densityMapAdaptor: DensityMapAdaptor,
         locationDbHelper: LocationDbHelper
     ) {
-        densityMapDbHelper.drop()
+        densityMapAdaptor.drop()
         val pointsQuery = PointsQuery()
         locationDbHelper.getPointsCursor(pointsQuery)
             .use { cursor ->
@@ -58,7 +58,7 @@ object DensityMapUtil {
                             val latitude = cursor.getDouble(latColumnIndex)
                             val time = cursor.getLong(timeColumnIndex)
 
-                            densityMapDbHelper.addPoint(latitude, longitude, time)
+                            densityMapAdaptor.addPoint(latitude, longitude, time)
 
                             if ((++i) % 10000 == 0) {
                                 Log.d("ogl-densitymaputil", "Loaded $i points into the density map")

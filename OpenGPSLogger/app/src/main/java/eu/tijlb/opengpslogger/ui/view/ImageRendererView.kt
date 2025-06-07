@@ -276,6 +276,7 @@ class ImageRendererView(
     private fun createDensityMapCoroutine(bbox: BBoxDto) = CoroutineScope(Dispatchers.IO).launch {
         densityMapBitmapRenderer.draw(
             bbox,
+            zoom,
             Pair(pointsRenderWidth, pointsRenderHeight),
             { bitmap -> densityMapBitMap = bitmap }
         ) { invalidate() }
