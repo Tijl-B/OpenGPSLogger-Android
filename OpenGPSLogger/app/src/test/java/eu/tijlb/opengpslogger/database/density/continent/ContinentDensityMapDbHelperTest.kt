@@ -3,8 +3,8 @@ package eu.tijlb.opengpslogger.database.density.continent
 import android.content.Context
 import android.location.Location
 import androidx.test.core.app.ApplicationProvider
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbContract
 import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbContract
 import org.junit.*
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -48,18 +48,18 @@ class ContinentDensityMapDbHelperTest {
 
         val db = dbHelper.readableDatabase
         val cursor = db.query(
-            ContinentDensityMapDbContract.TABLE_NAME,
+            DensityMapDbContract.TABLE_NAME,
             null, null, null, null, null, null
         )
 
         assertTrue(cursor.moveToFirst())
         assertEquals(
             1,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_AMOUNT))
         )
         assertEquals(
             111111L,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
         )
         cursor.close()
     }
@@ -84,7 +84,7 @@ class ContinentDensityMapDbHelperTest {
 
         val db = dbHelper.readableDatabase
         val cursor = db.query(
-            ContinentDensityMapDbContract.TABLE_NAME,
+            DensityMapDbContract.TABLE_NAME,
             null,
             null, null, null, null, null
         )
@@ -92,11 +92,11 @@ class ContinentDensityMapDbHelperTest {
         assertTrue(cursor.moveToFirst())
         assertEquals(
             2,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_AMOUNT))
         )
         assertEquals(
             222222222L,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
         )
         cursor.close()
     }
@@ -121,7 +121,7 @@ class ContinentDensityMapDbHelperTest {
 
         val db = dbHelper.readableDatabase
         val cursor = db.query(
-            ContinentDensityMapDbContract.TABLE_NAME,
+            DensityMapDbContract.TABLE_NAME,
             null,
             null, null, null, null, null
         )
@@ -129,11 +129,11 @@ class ContinentDensityMapDbHelperTest {
         assertTrue(cursor.moveToFirst())
         assertEquals(
             1,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_AMOUNT))
         )
         assertEquals(
             1L,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
         )
         cursor.close()
     }
@@ -158,7 +158,7 @@ class ContinentDensityMapDbHelperTest {
 
         val db = dbHelper.readableDatabase
         val cursor = db.query(
-            ContinentDensityMapDbContract.TABLE_NAME,
+            DensityMapDbContract.TABLE_NAME,
             null,
             null, null, null, null, null
         )
@@ -166,21 +166,21 @@ class ContinentDensityMapDbHelperTest {
         assertTrue(cursor.moveToFirst())
         assertEquals(
             1,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_AMOUNT))
         )
         assertEquals(
             111111L,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
         )
         assertTrue(cursor.moveToNext())
 
         assertEquals(
             1,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_AMOUNT))
         )
         assertEquals(
             222222L,
-            cursor.getLong(cursor.getColumnIndexOrThrow(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
+            cursor.getLong(cursor.getColumnIndexOrThrow(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME))
         )
         cursor.close()
     }

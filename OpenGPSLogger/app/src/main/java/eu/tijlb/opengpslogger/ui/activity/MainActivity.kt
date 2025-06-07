@@ -22,7 +22,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdaptor
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.AdvancedFiltersHelper
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var visualisationSettingsHelper: VisualisationSettingsHelper
     private lateinit var locationDbHelper: LocationDbHelper
     private lateinit var tileServerDbHelper: TileServerDbHelper
-    private lateinit var continentDensityMapDbHelper: ContinentDensityMapDbHelper
+    private lateinit var densityMapAdaptor: DensityMapAdaptor
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
         visualisationSettingsHelper = VisualisationSettingsHelper(this)
         locationDbHelper = LocationDbHelper.getInstance(this)
         tileServerDbHelper = TileServerDbHelper(this)
-        continentDensityMapDbHelper = ContinentDensityMapDbHelper(this)
+        densityMapAdaptor = DensityMapAdaptor(this)
 
         setContentView(binding.root)
 
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
 
         button.setOnClickListener {
             Log.d("ogl-mainactivity", "Recalculating density map")
-            DensityMapUtil.recreateDatabaseAsync(continentDensityMapDbHelper, locationDbHelper)
+            DensityMapUtil.recreateDatabaseAsync(densityMapAdaptor, locationDbHelper)
             button.setBackgroundColor(Color.GRAY)
         }
         AlertDialog.Builder(this)
@@ -195,12 +195,13 @@ class MainActivity : AppCompatActivity() {
         val colorSeedEditText = dialogView.findViewById<EditText>(R.id.editText_colorSeed)
         val opacityEditText = dialogView.findViewById<EditText>(R.id.editText_opacity)
         val lineSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_lines)
-        val densityMapSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_density_map)
+        val densityMapSwitch =
+            dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_density_map)
         val colorSpinner = dialogView.findViewById<Spinner>(R.id.spinner_color)
 
         val colorModeValues = ColorMode.entries
         val spinnerValues = colorModeValues.map {
-            when(it) {
+            when (it) {
                 ColorMode.SINGLE_COLOR -> "Single color"
                 ColorMode.MULTI_COLOR_YEAR -> "Multi color (1 year)"
                 ColorMode.MULTI_COLOR_MONTH -> "Multi color (30 days)"
@@ -233,8 +234,8 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.visualisation_settings_confirm) { dialog, _ ->
                 val dotSize = dotSizeEditText.text.toString().toFloatOrNull()
                 val lineSize = lineSizeEditText.text.toString().toFloatOrNull()
-                val colorSeed = colorSeedEditText.text.toString().toIntOrNull()?:0
-                val opacity = opacityEditText.text.toString().toIntOrNull()?.coerceIn(1, 100)?:100
+                val colorSeed = colorSeedEditText.text.toString().toIntOrNull() ?: 0
+                val opacity = opacityEditText.text.toString().toIntOrNull()?.coerceIn(1, 100) ?: 100
                 val lineMaxMinsDelta = lineMaxMinsDeltaEditText.text.toString().toLongOrNull()
                     ?: settings.connectLinesMaxMinutesDelta
                 val drawLines = lineSwitch.isChecked

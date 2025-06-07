@@ -12,9 +12,8 @@ import android.renderscript.ScriptIntrinsicBlur
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.bitmap.SparseDensityMap
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbContract
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.ContinentDensityMapDbHelper
-import eu.tijlb.opengpslogger.model.database.densitymap.continent.SUBDIVISIONS_CONTINENT
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdaptor
+import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbContract
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.ColorUtil
 import eu.tijlb.opengpslogger.ui.view.bitmap.PointsBitmapRenderer.OnPointProgressUpdateListener
@@ -26,13 +25,14 @@ import kotlin.math.tan
 
 class DensityMapBitmapRenderer(val context: Context) {
 
-    private val continentDensityMapDbHelper: ContinentDensityMapDbHelper =
-        ContinentDensityMapDbHelper.getInstance(context)
+    private val densityMapAdaptor: DensityMapAdaptor =
+        DensityMapAdaptor.getInstance(context)
 
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 
     suspend fun draw(
         bbox: BBoxDto,
+        zoomLevel: Int,
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
@@ -43,13 +43,14 @@ class DensityMapBitmapRenderer(val context: Context) {
             return
         }
 
-        val sparseDensityMap = SparseDensityMap(SUBDIVISIONS_CONTINENT, SUBDIVISIONS_CONTINENT)
+        val subdivisions = densityMapAdaptor.getSubdivisions(zoomLevel)
+        val sparseDensityMap = SparseDensityMap(subdivisions, subdivisions)
         var adaptedClusterBitmap = createBitmap(renderDimension.first, renderDimension.second)
 
         assignBitmap(adaptedClusterBitmap)
 
         var i = 0
-        continentDensityMapDbHelper.getAllPoints()
+        densityMapAdaptor.getPoints(bbox, zoomLevel)
             .use { cursor ->
                 run {
                     if (!coroutineContext.isActive) {
@@ -66,13 +67,13 @@ class DensityMapBitmapRenderer(val context: Context) {
                         )
 
                         val xIndexColumnIndex =
-                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_X_INDEX)
+                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_X_INDEX)
                         val yIndexColumnIndex =
-                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_Y_INDEX)
+                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_Y_INDEX)
                         val timeColumnIndex =
-                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME)
+                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME)
                         val countColumnIndex =
-                            cursor.getColumnIndex(ContinentDensityMapDbContract.COLUMN_NAME_AMOUNT)
+                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_AMOUNT)
 
                         Log.d("ogl-imagerendererview-point", "Got first point from cursor")
                         do {
@@ -86,8 +87,7 @@ class DensityMapBitmapRenderer(val context: Context) {
                             val time = cursor.getLong(timeColumnIndex)
                             val amount = cursor.getLong(countColumnIndex)
 
-                            // TODO set the max correctly
-                            val color = ColorUtil.toDensityColor(amount, 10000L)
+                            val color = ColorUtil.toDensityColor(amount, 1000L)
                             if (xIndex >= 0 && xIndex <= sparseDensityMap.width && yIndex >= 0 && yIndex <= sparseDensityMap.height) {
                                 sparseDensityMap.put(xIndex, yIndex, color)
                             }
