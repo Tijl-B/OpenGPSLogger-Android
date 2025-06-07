@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 0.19.1
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Use different files for each level of density map
+
 ### 0.19.0
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
