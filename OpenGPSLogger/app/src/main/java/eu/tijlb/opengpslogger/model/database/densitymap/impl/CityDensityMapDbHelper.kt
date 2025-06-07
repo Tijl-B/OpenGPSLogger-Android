@@ -12,7 +12,7 @@ class CityDensityMapDbHelper(context: Context) :
 
     companion object {
         const val DATABASE_VERSION = 1
-        const val DATABASE_NAME = "densitymap_continent.sqlite"
+        const val DATABASE_NAME = "densitymap_city.sqlite"
 
         private var instance: CityDensityMapDbHelper? = null
         fun getInstance(context: Context): CityDensityMapDbHelper {
