@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.20.3
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Improve adaptive view zooming
+- In adaptive view, use tileserver from settings
+
 ### 0.20.2
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
