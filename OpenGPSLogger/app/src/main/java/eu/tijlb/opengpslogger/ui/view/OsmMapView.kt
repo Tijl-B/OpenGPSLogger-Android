@@ -23,6 +23,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.ln
 import kotlin.math.pow
 import androidx.core.graphics.createBitmap
+import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
+import kotlinx.coroutines.Job
 
 private const val MIN_ZOOM = 4.0
 private const val MAX_ZOOM = 20.0
@@ -36,6 +38,7 @@ class OsmMapView @JvmOverloads constructor(
     private val scaleGestureDetector = ScaleGestureDetector(context, this)
     private val osmImageBitmapRenderer = OsmImageBitmapRenderer(context)
     private val densityMapBitmapRenderer = DensityMapBitmapRenderer(context)
+    private val tileServerDbHelper: TileServerDbHelper = TileServerDbHelper(context)
 
     private var osmBitmap: Bitmap? = null
     private var pointsBitmap: Bitmap? = null
@@ -52,9 +55,8 @@ class OsmMapView @JvmOverloads constructor(
 
     private var needsRedraw = false
     private var coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
-    var tileServerUrl: String =
-        "https://cartodb-basemaps-b.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+    private var osmJob: Job? = null
+    private var pointsJob: Job? = null
 
     init {
         isFocusable = true
@@ -80,7 +82,7 @@ class OsmMapView @JvmOverloads constructor(
                 }
 
             }
-        } ?: loadTiles()
+        } ?: loadTilesAndPoints()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -96,21 +98,23 @@ class OsmMapView @JvmOverloads constructor(
 
     private fun redrawIfNeeded() {
         if (needsRedraw) {
-            commitPan()
             commitZoom()
+            commitPan()
             needsRedraw = false
-            loadTiles()
+            pointsJob?.cancel()
+            osmJob?.cancel()
+            loadTilesAndPoints()
         }
     }
 
-    private fun loadTiles() {
+    private fun loadTilesAndPoints() {
         Log.d("ogl-osmmapview", "Loading tiles $centerLat, $centerLon, $width, $height")
         val intZoom = zoomLevel.toInt()
         val bbox = bboxFromCenter(centerLat, centerLon, intZoom, width, height)
-        coroutineScope.launch {
+        osmJob = coroutineScope.launch {
             triggerTileDraw(bbox, intZoom)
         }
-        coroutineScope.launch {
+        pointsJob = coroutineScope.launch {
             densityMapBitmapRenderer.draw(
                 bbox,
                 intZoom,
@@ -123,8 +127,9 @@ class OsmMapView @JvmOverloads constructor(
 
     private suspend fun triggerTileDraw(bbox: BBoxDto, intZoom: Int) {
         var tmpBitmap: Bitmap? = null
+        val tileServer = tileServerDbHelper.getSelectedUrl()
         osmImageBitmapRenderer.draw(
-            bbox, intZoom, tileServerUrl,
+            bbox, intZoom, tileServer,
             { bmp -> tmpBitmap = bmp },
             {
                 osmBitmap?.let {
@@ -215,20 +220,14 @@ class OsmMapView @JvmOverloads constructor(
         val centerPixelXOldZoom = OsmGeometryUtil.lon2num(centerLon, oldZoomInt) * tileSize
         val centerPixelYOldZoom = OsmGeometryUtil.lat2num(centerLat, oldZoomInt) * tileSize
 
-        val focusPixelXOldZoom = centerPixelXOldZoom + (lastScaleFocusX - width / 2.0)
-        val focusPixelYOldZoom = centerPixelYOldZoom + (lastScaleFocusY - height / 2.0)
+        val centerLon = OsmGeometryUtil.numToLon(centerPixelXOldZoom / tileSize, oldZoomInt)
+        val centerLat = OsmGeometryUtil.numToLat(centerPixelYOldZoom / tileSize, oldZoomInt)
 
-        val focusLon = OsmGeometryUtil.numToLon(focusPixelXOldZoom / tileSize, oldZoomInt)
-        val focusLat = OsmGeometryUtil.numToLat(focusPixelYOldZoom / tileSize, oldZoomInt)
+        val focusPixelXNewZoom = OsmGeometryUtil.lon2num(centerLon, newZoomInt) * tileSize
+        val focusPixelYNewZoom = OsmGeometryUtil.lat2num(centerLat, newZoomInt) * tileSize
 
-        val focusPixelXNewZoom = OsmGeometryUtil.lon2num(focusLon, newZoomInt) * tileSize
-        val focusPixelYNewZoom = OsmGeometryUtil.lat2num(focusLat, newZoomInt) * tileSize
-
-        val newCenterPixelX = focusPixelXNewZoom - (lastScaleFocusX - width / 2.0)
-        val newCenterPixelY = focusPixelYNewZoom - (lastScaleFocusY - height / 2.0)
-
-        centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, newZoomInt)
-        centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, newZoomInt)
+        this.centerLon = OsmGeometryUtil.numToLon(focusPixelXNewZoom / tileSize, newZoomInt)
+        this.centerLat = OsmGeometryUtil.numToLat(focusPixelYNewZoom / tileSize, newZoomInt)
 
         zoomLevel = newZoomFloat.toFloat()
         zoomOsmBitmap()
