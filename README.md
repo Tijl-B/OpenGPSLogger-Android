@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 0.20.2
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Minor improvements
+- Reduce flickeriness of points when zooming and panning in adaptive view
 
 ### 0.20.1
 

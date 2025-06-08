@@ -232,6 +232,7 @@ class OsmMapView @JvmOverloads constructor(
 
         zoomLevel = newZoomFloat.toFloat()
         zoomOsmBitmap()
+        zoomPointsBitmap()
 
         visualZoomScale = 1f
     }
@@ -239,8 +240,8 @@ class OsmMapView @JvmOverloads constructor(
     private fun panMap(dx: Float, dy: Float) {
         offsetX -= dx
         offsetY -= dy
-        invalidate()
         needsRedraw = true
+        invalidate()
     }
 
 
@@ -274,6 +275,7 @@ class OsmMapView @JvmOverloads constructor(
         centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, zoom)
 
         panOsmBitmap()
+        panPointsBitmap()
 
         offsetX = 0f
         offsetY = 0f
@@ -289,6 +291,20 @@ class OsmMapView @JvmOverloads constructor(
     private fun zoomOsmBitmap() {
         osmBitmap?.let {
             osmBitmap = zoomBitmap(it)
+            invalidate()
+        }
+    }
+
+    private fun panPointsBitmap() {
+        pointsBitmap?.let {
+            pointsBitmap = panBitmap(it)
+            invalidate()
+        }
+    }
+
+    private fun zoomPointsBitmap() {
+        pointsBitmap?.let {
+            pointsBitmap = zoomBitmap(it)
             invalidate()
         }
     }

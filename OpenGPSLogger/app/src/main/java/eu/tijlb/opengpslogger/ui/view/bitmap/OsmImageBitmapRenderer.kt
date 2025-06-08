@@ -120,7 +120,7 @@ class OsmImageBitmapRenderer(val context: Context) {
                             )
                         }
                         refreshView()
-                        onTileProgressUpdateListener?.onTileProgressUpdate(++i, xRange * yRange)
+                        onTileProgressUpdateListener?.onTileProgressUpdate(++i)
                     }
 
                 } catch (e: Exception) {
