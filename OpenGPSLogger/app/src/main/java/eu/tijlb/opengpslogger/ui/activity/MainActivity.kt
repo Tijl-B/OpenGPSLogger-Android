@@ -22,7 +22,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
-import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdaptor
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.AdvancedFiltersHelper
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var visualisationSettingsHelper: VisualisationSettingsHelper
     private lateinit var locationDbHelper: LocationDbHelper
     private lateinit var tileServerDbHelper: TileServerDbHelper
-    private lateinit var densityMapAdaptor: DensityMapAdaptor
+    private lateinit var densityMapAdapter: DensityMapAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
         visualisationSettingsHelper = VisualisationSettingsHelper(this)
         locationDbHelper = LocationDbHelper.getInstance(this)
         tileServerDbHelper = TileServerDbHelper(this)
-        densityMapAdaptor = DensityMapAdaptor(this)
+        densityMapAdapter = DensityMapAdapter(this)
 
         setContentView(binding.root)
 
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
 
         button.setOnClickListener {
             Log.d("ogl-mainactivity", "Recalculating density map")
-            DensityMapUtil.recreateDatabaseAsync(densityMapAdaptor, locationDbHelper)
+            DensityMapUtil.recreateDatabaseAsync(densityMapAdapter, locationDbHelper)
             button.setBackgroundColor(Color.GRAY)
         }
         AlertDialog.Builder(this)

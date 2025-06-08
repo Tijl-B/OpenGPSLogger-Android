@@ -21,9 +21,13 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.R
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -39,6 +43,8 @@ class LocationNotificationService : Service() {
     private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var presetChangedListener: SharedPreferences.OnSharedPreferenceChangeListener
     private lateinit var presetName: String
+    private val locationDbHelper = LocationDbHelper.getInstance(this)
+    private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(this)
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
@@ -187,9 +193,12 @@ class LocationNotificationService : Service() {
     }
 
     private fun saveToDb(location: Location) {
-        val dbHelper = LocationDbHelper.getInstance(baseContext)
-        dbHelper.save(location, "app::OpenGpsLogger")
+        locationDbHelper.save(location, "app::OpenGpsLogger")
         savedPoints++
+        CoroutineScope(Dispatchers.IO)
+            .launch {
+                densityMapAdapter.addLocation(location)
+            }
 
         val formattedTime = Instant.ofEpochMilli(System.currentTimeMillis())
             .atZone(ZoneId.systemDefault())

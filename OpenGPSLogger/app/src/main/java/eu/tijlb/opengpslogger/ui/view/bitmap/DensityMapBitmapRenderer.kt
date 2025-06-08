@@ -12,7 +12,7 @@ import android.renderscript.ScriptIntrinsicBlur
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.bitmap.SparseDensityMap
-import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdaptor
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbContract
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.ColorUtil
@@ -25,8 +25,7 @@ import kotlin.math.tan
 
 class DensityMapBitmapRenderer(val context: Context) {
 
-    private val densityMapAdaptor: DensityMapAdaptor =
-        DensityMapAdaptor.getInstance(context)
+    private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(context)
 
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 
@@ -43,14 +42,14 @@ class DensityMapBitmapRenderer(val context: Context) {
             return
         }
 
-        val subdivisions = densityMapAdaptor.getSubdivisions(zoomLevel)
+        val subdivisions = densityMapAdapter.getSubdivisions(zoomLevel)
         val sparseDensityMap = SparseDensityMap(subdivisions, subdivisions)
         var adaptedClusterBitmap = createBitmap(renderDimension.first, renderDimension.second)
 
         assignBitmap(adaptedClusterBitmap)
 
         var i = 0
-        densityMapAdaptor.getPoints(bbox, zoomLevel)
+        densityMapAdapter.getPoints(bbox, zoomLevel)
             .use { cursor ->
                 run {
                     if (!coroutineContext.isActive) {
@@ -87,7 +86,7 @@ class DensityMapBitmapRenderer(val context: Context) {
                             val time = cursor.getLong(timeColumnIndex)
                             val amount = cursor.getLong(countColumnIndex)
 
-                            val color = ColorUtil.toDensityColor(amount, 1000L)
+                            val color = ColorUtil.toDensityColor(amount, 10_000L)
                             if (xIndex >= 0 && xIndex <= sparseDensityMap.width && yIndex >= 0 && yIndex <= sparseDensityMap.height) {
                                 sparseDensityMap.put(xIndex, yIndex, color)
                             }
