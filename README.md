@@ -8,6 +8,7 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 
 #### Fixes
 - Improve adaptive view zooming
+- In adaptive view, use tileserver from settings
 
 ### 0.20.2
 
