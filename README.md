@@ -2,6 +2,15 @@
 
 ## Releases
 
+### 0.20.0
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Features
+- On tracking, add points to density map databases
+- Improve density map color range
+
+
 ### 0.19.1
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 

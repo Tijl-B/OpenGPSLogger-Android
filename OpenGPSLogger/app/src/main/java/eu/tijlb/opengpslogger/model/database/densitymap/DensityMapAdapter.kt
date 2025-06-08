@@ -2,6 +2,7 @@ package eu.tijlb.opengpslogger.model.database.densitymap;
 
 import android.content.Context;
 import android.database.Cursor
+import android.location.Location
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.CityDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.ContinentDensityMapDbHelper
@@ -10,7 +11,7 @@ import eu.tijlb.opengpslogger.model.database.densitymap.impl.StreetDensityMapDbH
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.WorldDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 
-class DensityMapAdaptor(context: Context) {
+class DensityMapAdapter(context: Context) {
 
     private val worldDensityMapDbHelper: WorldDensityMapDbHelper =
         WorldDensityMapDbHelper.getInstance(context)
@@ -36,26 +37,27 @@ class DensityMapAdaptor(context: Context) {
     }
 
     fun drop() {
-        getAllDbHelpers().forEach { dbHelper ->
-            dbHelper.drop()
-        }
+        getAllDbHelpers().forEach { dbHelper -> dbHelper.drop() }
     }
 
     fun addPoint(latitude: Double, longitude: Double, time: Long) {
-        getAllDbHelpers().forEach { dbHelper ->
-            dbHelper.addPoint(latitude, longitude, time)
-        }
+        getAllDbHelpers().forEach { dbHelper -> dbHelper.addPoint(latitude, longitude, time) }
+    }
+
+    fun addLocation(location: Location) {
+        Log.d("ogl-densitymapadapter", "Adding location $location to all density map dbs")
+        getAllDbHelpers().forEach { dbHelper -> dbHelper.addLocation(location) }
     }
 
     private fun getDbHelper(zoomLevel: Int): AbstractDensityMapDbHelper {
         val helper = when {
-            zoomLevel >= 17 -> streetDensityMapDbHelper
-            zoomLevel >= 13 -> cityDensityMapDbHelper
+            zoomLevel >= 15 -> streetDensityMapDbHelper
+            zoomLevel >= 12 -> cityDensityMapDbHelper
             zoomLevel >= 9 -> countryDensityMapDbHelper
             zoomLevel >= 6 -> continentDensityMapDbHelper
             else -> worldDensityMapDbHelper
         }
-        Log.d("ogl-densitymapadaptor", "Using density map helper $helper for zoom $zoomLevel")
+        Log.d("ogl-densitymapadapter", "Using density map helper $helper for zoom $zoomLevel")
         return helper
     }
 
@@ -70,10 +72,10 @@ class DensityMapAdaptor(context: Context) {
     }
 
     companion object {
-        private var instance: DensityMapAdaptor? = null
-        fun getInstance(context: Context): DensityMapAdaptor {
+        private var instance: DensityMapAdapter? = null
+        fun getInstance(context: Context): DensityMapAdapter {
             return instance ?: synchronized(this) {
-                instance ?: DensityMapAdaptor(context).also { instance = it }
+                instance ?: DensityMapAdapter(context).also { instance = it }
             }
         }
     }
