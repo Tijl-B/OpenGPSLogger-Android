@@ -120,6 +120,7 @@ class OsmImageBitmapRenderer(val context: Context) {
                             )
                         }
                         refreshView()
+                        onTileProgressUpdateListener?.onTileProgressUpdate(++i, xRange * yRange)
                     }
 
                 } catch (e: Exception) {
@@ -130,7 +131,6 @@ class OsmImageBitmapRenderer(val context: Context) {
                     Log.d("ogl-osmhelper", "Interrupting...")
                     return
                 }
-                onTileProgressUpdateListener?.onTileProgressUpdate(++i)
             }
         }
         Log.d("ogl-osmhelper", "Done loading osm background")
