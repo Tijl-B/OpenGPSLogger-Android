@@ -2,6 +2,18 @@
 
 ## Releases
 
+
+### 0.20.1
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Minor improvements
+- Load osm tiles on opening adaptive view instead of after touch
+- Overwrite old tiles with new tiles as they come in on zoom and pan to avoid black flickers
+
+### Known issues
+- Zooming and panning translations aren't applied perfectly
+
 ### 0.20.0
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
