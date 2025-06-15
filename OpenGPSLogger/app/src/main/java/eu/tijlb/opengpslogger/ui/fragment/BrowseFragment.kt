@@ -16,23 +16,17 @@ class BrowseFragment : Fragment(R.layout.fragment_browse) {
         super.onViewCreated(view, savedInstanceState)
 
         osmMapView = view.findViewById(R.id.osmMapView)
-
-        // Initialize your map if needed
-        // osmMapView.init() or similar if your view requires it
     }
 
     override fun onResume() {
         super.onResume()
-        // osmMapView.onResume() if your custom map requires it
     }
 
     override fun onPause() {
         super.onPause()
-        // osmMapView.onPause() if needed
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // osmMapView.onDestroy() if needed
     }
 }
