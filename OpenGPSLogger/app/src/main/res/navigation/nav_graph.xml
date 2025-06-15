@@ -3,26 +3,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/FirstFragment">
+    app:startDestination="@id/item_browse">
 
     <fragment
-        android:id="@+id/FirstFragment"
-        android:name="eu.tijlb.opengpslogger.ui.fragment.HomeFragment"
-        android:label="@string/home_fragment_label"
-        tools:layout="@layout/fragment_home">
+        android:id="@+id/item_browse"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.BrowseFragment"
+        tools:layout="@layout/fragment_browse" />
 
-        <action
-            android:id="@+id/action_FirstFragment_to_SecondFragment"
-            app:destination="@id/SecondFragment" />
-    </fragment>
     <fragment
-        android:id="@+id/SecondFragment"
+        android:id="@+id/item_generate_image"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.ImageGeneratorFragment"
+        tools:layout="@layout/fragment_image_generator" />
+
+    <fragment
+        android:id="@+id/item_manage_data"
         android:name="eu.tijlb.opengpslogger.ui.fragment.LocationTableFragment"
-        android:label="@string/database_fragment_label"
-        tools:layout="@layout/fragment_database">
+        tools:layout="@layout/fragment_database" />
 
-        <action
-            android:id="@+id/action_SecondFragment_to_FirstFragment"
-            app:destination="@id/FirstFragment" />
-    </fragment>
+    <fragment
+        android:id="@+id/item_settings"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.SettingsFragment"
+        tools:layout="@layout/fragment_settings" />
 </navigation>

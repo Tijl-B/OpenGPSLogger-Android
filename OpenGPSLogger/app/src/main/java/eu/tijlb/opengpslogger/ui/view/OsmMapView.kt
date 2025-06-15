@@ -11,22 +11,20 @@ import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
+import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlin.math.ln
-import kotlin.math.pow
-import androidx.core.graphics.createBitmap
-import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
-import kotlinx.coroutines.Job
-import kotlin.math.floor
 import kotlin.math.log2
+import kotlin.math.pow
 
 private const val MIN_ZOOM = 4.0
 private const val MAX_ZOOM = 20.0

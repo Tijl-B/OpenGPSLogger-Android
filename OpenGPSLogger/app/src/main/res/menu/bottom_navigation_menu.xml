@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/item_browse"
+        android:enabled="true"
+        android:icon="@drawable/travel_explore_24px"
+        android:title="Browse" />
+    <item
+        android:id="@+id/item_generate_image"
+        android:enabled="true"
+        android:icon="@drawable/image_24px"
+        android:title="Generate image" />
+    <item
+        android:id="@+id/item_manage_data"
+        android:enabled="true"
+        android:icon="@drawable/database_24px"
+        android:title="Manage data" />
+    <item
+        android:id="@+id/item_settings"
+        android:enabled="true"
+        android:icon="@drawable/settings_24px"
+        android:title="Settings" />
+
+</menu>

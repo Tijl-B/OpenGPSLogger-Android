@@ -2,6 +2,15 @@
 
 ## Releases
 
+### 1.0.0
+[apk](release/opengpslogger-1-0-0.apk)
+
+Status: Alpha. Minor bugs and crashes are expected.
+
+### Features
+- Full UI / UX rework, with bottom bar navigation. Adaptive view is now the default.
+
+
 ### 0.20.5
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.

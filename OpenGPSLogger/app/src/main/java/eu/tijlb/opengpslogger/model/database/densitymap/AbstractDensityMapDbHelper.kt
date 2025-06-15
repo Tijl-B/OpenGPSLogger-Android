@@ -8,10 +8,7 @@ import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbContract
-import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
-import eu.tijlb.opengpslogger.model.database.location.util.LocationDbFilterUtil.getFilter
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
-import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import kotlin.math.atan
 import kotlin.math.ln
 import kotlin.math.sinh
