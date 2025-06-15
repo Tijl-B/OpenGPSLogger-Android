@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.20.5
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Fully fix OSM tiles panning and zooming, and requesting new tiles
+
+
 ### 0.20.4
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
