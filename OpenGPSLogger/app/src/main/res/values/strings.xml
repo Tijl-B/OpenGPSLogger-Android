@@ -3,7 +3,8 @@
 
     <string name="action_about">About</string>
 
-    <string name="home_fragment_label">Home</string>
+    <string name="browse_fragment_label">Browse</string>
+    <string name="image_generator_fragment_label">Image generator</string>
     <string name="database_fragment_label">Database</string>
 
     <string name="about_title">About</string>
@@ -29,7 +30,7 @@
     <string name="tracking_notification_bigtext">"Tracked %1$s points this session (polling mode: %2$s).\nLast update %3$s."</string>
     <string name="advanced_filters">Advanced Filters</string>
     <string name="min_accuracy">Min. accuracy (meters):</string>
-    <string name="visualisationSettings">Visualisation settings</string>
+    <string name="visualisationSettings">Image generator settings</string>
     <string name="dot_size">Dot radius (px):</string>
     <string name="line_size">Line width (px):</string>
     <string name="enable_lines">Enable lines:</string>

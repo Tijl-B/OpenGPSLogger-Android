@@ -14,7 +14,6 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
 import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
@@ -32,8 +31,6 @@ class LocationTableFragment : Fragment() {
     private lateinit var locationDatabaseFileProvider: LocationDatabaseFileProvider
     private lateinit var locationReceiver: LocationUpdateReceiver
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -51,9 +48,6 @@ class LocationTableFragment : Fragment() {
 
         tableLayout = view.findViewById(R.id.table_recent_locations)
         locationDatabaseFileProvider = LocationDatabaseFileProvider()
-        binding.buttonSecond.setOnClickListener {
-            findNavController().navigate(R.id.action_SecondFragment_to_FirstFragment)
-        }
 
         binding.buttonShare.setOnClickListener {
             locationDatabaseFileProvider.share(requireContext())
