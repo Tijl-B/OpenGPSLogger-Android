@@ -25,6 +25,7 @@ import kotlin.math.pow
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import kotlinx.coroutines.Job
+import kotlin.math.log
 
 private const val MIN_ZOOM = 4.0
 private const val MAX_ZOOM = 20.0
@@ -53,7 +54,7 @@ class OsmMapView @JvmOverloads constructor(
 
     private var visualZoomScale = 1f
 
-    private var needsRedraw = false
+    private var needsRedraw = true
     private var coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var osmJob: Job? = null
     private var pointsJob: Job? = null
@@ -82,7 +83,7 @@ class OsmMapView @JvmOverloads constructor(
                 }
 
             }
-        } ?: loadTilesAndPoints()
+        } ?: redrawIfNeeded()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

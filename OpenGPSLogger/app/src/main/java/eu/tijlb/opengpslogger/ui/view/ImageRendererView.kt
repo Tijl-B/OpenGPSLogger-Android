@@ -309,7 +309,6 @@ class ImageRendererView(
                     updateVisualisationSettings()
                     val pointsQuery = pointsQuery(realBbox)
 
-                    Log.d("ogl-imagerendererview", "Calculating amount of points...")
                     if (!isActive) {
                         Log.d("ogl-imagerendererview", "Stop calculating points!")
                         return@withLock
