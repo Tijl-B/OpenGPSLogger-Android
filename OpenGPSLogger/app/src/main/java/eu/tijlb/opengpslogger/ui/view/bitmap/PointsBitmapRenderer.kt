@@ -59,7 +59,10 @@ class PointsBitmapRenderer(
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
     ) {
-        Log.d("ogl-pointsbitmaprenderer", "Drawing coordinates...")
+        Log.d(
+            "ogl-pointsbitmaprenderer",
+            "Drawing coordinates with query: $query, renderDimension: $renderDimension"
+        )
         if (!coroutineContext.isActive) {
             Log.d("ogl-pointsbitmaprenderer", "Stop drawing points!")
             return

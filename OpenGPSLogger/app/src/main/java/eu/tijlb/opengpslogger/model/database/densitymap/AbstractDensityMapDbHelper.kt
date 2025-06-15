@@ -8,11 +8,20 @@ import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbContract
+import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
+import eu.tijlb.opengpslogger.model.database.location.util.LocationDbFilterUtil.getFilter
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import kotlin.math.atan
 import kotlin.math.ln
+import kotlin.math.sinh
 import kotlin.math.tan
 
-abstract class AbstractDensityMapDbHelper(context: Context, databaseName: String, databaseVersion: Int) :
+abstract class AbstractDensityMapDbHelper(
+    context: Context,
+    databaseName: String,
+    databaseVersion: Int
+) :
     SQLiteOpenHelper(context, databaseName, null, databaseVersion) {
 
     private val createTableSql =
@@ -103,6 +112,20 @@ abstract class AbstractDensityMapDbHelper(context: Context, databaseName: String
         return Pair(xIndex, yIndex)
     }
 
+    private fun fromIndex(xIndex: Long, yIndex: Long): Pair<Double, Double> {
+        val maxLat = 85.05112878
+        val n = subdivisions().toDouble()
+
+        val long = xIndex / n * 360.0 - 180.0
+
+        val yNorm = 1.0 - 2.0 * (yIndex.toDouble() / n)
+        val latRad = atan(sinh(Math.PI * yNorm))
+        val lat = Math.toDegrees(latRad).coerceIn(-maxLat, maxLat)
+
+        return Pair(lat, long)
+    }
+
+
     fun drop() {
         val db = this.writableDatabase
         db.execSQL("DELETE FROM ${DensityMapDbContract.TABLE_NAME}")
@@ -112,8 +135,11 @@ abstract class AbstractDensityMapDbHelper(context: Context, databaseName: String
         val (minX, maxY) = toIndex(bBoxDto.minLat, bBoxDto.minLon)
         val (maxX, minY) = toIndex(bBoxDto.maxLat, bBoxDto.maxLon)
 
-        val selection = "${DensityMapDbContract.COLUMN_NAME_X_INDEX} BETWEEN ? AND ? AND " +
-                "${DensityMapDbContract.COLUMN_NAME_Y_INDEX} BETWEEN ? AND ?"
+        val selection = """
+            ${DensityMapDbContract.COLUMN_NAME_X_INDEX} BETWEEN ? AND ? 
+            AND ${DensityMapDbContract.COLUMN_NAME_Y_INDEX} BETWEEN ? AND ?
+            ORDER BY ${DensityMapDbContract.COLUMN_NAME_AMOUNT} ASC
+        """.trimIndent()
         val selectionArgs = arrayOf(
             minX.toString(),
             maxX.toString(),
@@ -132,4 +158,37 @@ abstract class AbstractDensityMapDbHelper(context: Context, databaseName: String
         )
     }
 
+    fun getCoordsRange(): BBoxDto {
+        val query = """
+            SELECT MIN(${DensityMapDbContract.COLUMN_NAME_X_INDEX}) AS xMin, 
+                MAX(${DensityMapDbContract.COLUMN_NAME_X_INDEX}) AS xMax,
+                MIN(${DensityMapDbContract.COLUMN_NAME_Y_INDEX}) AS yMin, 
+                MAX(${DensityMapDbContract.COLUMN_NAME_Y_INDEX}) AS yMax 
+            FROM ${DensityMapDbContract.TABLE_NAME}
+        """.trimIndent()
+
+        readableDatabase.rawQuery(query, null)
+            .use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val xMin = cursor.getLong(cursor.getColumnIndexOrThrow("xMin"))
+                    val xMax = cursor.getLong(cursor.getColumnIndexOrThrow("xMax"))
+                    val yMin = cursor.getLong(cursor.getColumnIndexOrThrow("yMin"))
+                    val yMax = cursor.getLong(cursor.getColumnIndexOrThrow("yMax"))
+
+                    val (minLat, minLon) = fromIndex(xMin, yMin)
+                    val (maxLat, maxLon) = fromIndex(xMax + 1, yMax + 1)
+                    Log.d(
+                        "ogl-abstractdensitymapdbhelper",
+                        "Got bbox $minLon, $maxLon, $minLat, $maxLat"
+                    )
+                    return BBoxDto(
+                        minLat = minLat,
+                        maxLat = maxLat,
+                        minLon = minLon,
+                        maxLon = maxLon
+                    )
+                }
+            }
+        return BBoxDto.defaultBbox()
+    }
 }

@@ -20,6 +20,7 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.PointsBitmapRenderer.OnPointProgres
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 import kotlin.math.ln
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.tan
 
@@ -168,24 +169,29 @@ class DensityMapBitmapRenderer(val context: Context) {
 
                 paint.color = color
 
+
+                val maxHeightWidth = max(cellWidth, cellHeight)
+                canvas.drawCircle(mappedX, mappedY, max(2F, maxHeightWidth * 0.71F), paint)
+                /*
+                TODO make configurable
                 canvas.drawRect(
                     mappedX - cellWidth / 2F,
                     mappedY - cellHeight / 2F,
                     mappedX + cellWidth / 2F,
                     mappedY + cellHeight / 2F,
                     paint
-                )
+                )*/
             }
         }
 
         var result = targetBitmap
         if (blur) {
             val minCellDimension = min(cellWidth, cellHeight)
-            val passes = (minCellDimension * 0.5F).toInt().coerceIn(1, 10)
+            val passes = 1 //(minCellDimension * 0.5F).toInt().coerceIn(1, 10)
             result = blurBitmapMultiplePasses(
                 context,
                 targetBitmap,
-                radius = minCellDimension * 0.5F,
+                radius = 3F, //minCellDimension * 0.5F,
                 passes = passes
             )
         }

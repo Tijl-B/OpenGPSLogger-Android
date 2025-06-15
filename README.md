@@ -2,6 +2,14 @@
 
 ## Releases
 
+### 0.20.4
+
+Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
+
+#### Fixes
+- Use cirlces instead of squares for density map rendering
+- In adaptive view, cancel old tile requests if there are new requests
+
 ### 0.20.3
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
