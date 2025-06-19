@@ -13,6 +13,7 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
+import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
@@ -39,6 +40,7 @@ class OsmMapView @JvmOverloads constructor(
     private val osmImageBitmapRenderer = OsmImageBitmapRenderer(context)
     private val densityMapBitmapRenderer = DensityMapBitmapRenderer(context)
     private val tileServerDbHelper: TileServerDbHelper = TileServerDbHelper(context)
+    private val browseSettingsHelper = BrowseSettingsHelper(context)
 
     private var osmBitmap: Bitmap? = null
     private var pointsBitmap: Bitmap? = null
@@ -89,7 +91,17 @@ class OsmMapView @JvmOverloads constructor(
                 }
 
             }
-        } ?: redrawIfNeeded()
+        } ?: run {
+            setUpCenterAndZoom()
+            redrawIfNeeded()
+        }
+    }
+
+    private fun setUpCenterAndZoom() {
+        val centerCoords = browseSettingsHelper.getCenterCoords()
+        centerLat = centerCoords.first
+        centerLon = centerCoords.second
+        zoomLevel = browseSettingsHelper.getZoom()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -111,6 +123,8 @@ class OsmMapView @JvmOverloads constructor(
             pointsJob?.cancel()
             osmJob?.cancel()
             loadTilesAndPoints()
+            browseSettingsHelper.setCenterCoords(centerLat, centerLon)
+            browseSettingsHelper.setZoom(zoomLevel)
         }
     }
 
