@@ -14,12 +14,16 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
 import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.model.database.location.LocationDatabaseFileProvider
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -53,10 +57,6 @@ class LocationTableFragment : Fragment() {
             locationDatabaseFileProvider.share(requireContext())
         }
 
-        val entities = getLastEntities()
-        Log.d("ogl-locationtablefragment", "Got entities $entities")
-        populateTable(entities)
-
         locationReceiver = LocationUpdateReceiver().apply {
             setOnLocationReceivedListener { location ->
                 addNewLocation(location)
@@ -65,6 +65,15 @@ class LocationTableFragment : Fragment() {
 
         val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
         requireContext().registerReceiver(locationReceiver, filter, Context.RECEIVER_EXPORTED)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val tableRows = withContext(Dispatchers.IO) {
+                val entities = getLastEntities()
+                Log.d("ogl-locationtablefragment", "Got entities $entities")
+                toTableRows(entities)
+            }
+            populateTable(tableRows)
+        }
     }
 
 
@@ -87,7 +96,7 @@ class LocationTableFragment : Fragment() {
         }
     }
 
-    private fun populateTable(entities: List<List<String>>) {
+    private fun toTableRows(entities: List<List<String>>): List<TableRow> {
         val columnTitles =
             listOf(
                 "id",
@@ -101,10 +110,13 @@ class LocationTableFragment : Fragment() {
                 "created on"
             )
         val tail = if (entities.size == 500) listOf("...") else listOf("")
-        for (rowData in listOf(columnTitles) + entities + listOf(tail)) {
-            val tableRow = buildTableRow(rowData, requireContext())
-            tableLayout.addView(tableRow)
+        return (listOf(columnTitles) + entities + listOf(tail)).map {
+            buildTableRow(it, requireContext())
         }
+    }
+
+    private fun populateTable(tableRows: List<TableRow>) {
+        tableRows.forEach { tableLayout.addView(it) }
     }
 
     private fun buildTableRow(rowData: List<String>, context: Context): TableRow {
