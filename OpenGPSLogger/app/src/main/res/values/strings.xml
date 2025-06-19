@@ -65,4 +65,14 @@
     <string name="density_map_settings_confirm">Confirm</string>
     <string name="use_density_map">Use density map:</string>
     <string name="density_map">Density map</string>
+    <string name="stop_tracking">Stop tracking</string>
+    <string name="start_tracking">Start tracking</string>
+    <string name="single_color">Single color</string>
+    <string name="multi_color_1_year">Multi color (1 year)</string>
+    <string name="multi_color_30_days">Multi color (30 days)</string>
+    <string name="multi_color_1_day">Multi color (1 day)</string>
+    <string name="multi_color_1_hour">Multi color (1 hour)</string>
+    <string name="starting_tracking">Starting tracking</string>
+    <string name="location_permission_missing">Location permission missing</string>
+    <string name="notification_permission_missing">Notification permission missing</string>
 </resources>
