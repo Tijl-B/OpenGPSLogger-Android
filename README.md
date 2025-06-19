@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.1.0
+
+### Features
+- Persist location of browse view to continue next time where the user left
+
 ### 1.0.2
 
 ### Fixes
