@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.0.1
+
+### Fixes
+- The start / stop tracking button became inconsistent with the actual state in the last version, this is now fixed.
+- Improvements to the tracking notification
+
 ### 1.0.0
 [apk](release/opengpslogger-1-0-0.apk)
 

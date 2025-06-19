@@ -87,11 +87,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         view.findViewById<Button>(R.id.button_density_map_settings)
             .setOnClickListener { openDensityMapSettingsDialog() }
 
+        requestingLocation = trackingStatusHelper.isActive()
         trackingActiveChangedListener = trackingStatusHelper.registerActiveChangedListener {
             requestingLocation = it
         }
-
-        updateRequestLocationButton()
     }
 
     override fun onDestroyView() {
@@ -100,13 +99,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun toggleLocationTracking() {
-        requestLocationButton.text = "Starting tracking"
+        requestLocationButton.text = getString(R.string.starting_tracking)
         if (checkAndRequestPermission(Manifest.permission.ACCESS_FINE_LOCATION, 101)) {
-            requestLocationButton.text = "Location permission missing"
+            requestLocationButton.text = getString(R.string.location_permission_missing)
             return
         }
         if (checkAndRequestPermission(Manifest.permission.POST_NOTIFICATIONS, 102)) {
-            requestLocationButton.text = "Notification permission missing"
+            requestLocationButton.text = getString(R.string.notification_permission_missing)
             return
         }
 
@@ -214,11 +213,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val colorModeValues = ColorMode.entries
         val spinnerValues = colorModeValues.map {
             when (it) {
-                ColorMode.SINGLE_COLOR -> "Single color"
-                ColorMode.MULTI_COLOR_YEAR -> "Multi color (1 year)"
-                ColorMode.MULTI_COLOR_MONTH -> "Multi color (30 days)"
-                ColorMode.MULTI_COLOR_DAY -> "Multi color (1 day)"
-                ColorMode.MULTI_COLOR_HOUR -> "Multi color (1 hour)"
+                ColorMode.SINGLE_COLOR -> getString(R.string.single_color)
+                ColorMode.MULTI_COLOR_YEAR -> getString(R.string.multi_color_1_year)
+                ColorMode.MULTI_COLOR_MONTH -> getString(R.string.multi_color_30_days)
+                ColorMode.MULTI_COLOR_DAY -> getString(R.string.multi_color_1_day)
+                ColorMode.MULTI_COLOR_HOUR -> getString(R.string.multi_color_1_hour)
             }
         }
 
@@ -369,9 +368,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun updateRequestLocationButton() {
         if (requestingLocation) {
-            requestLocationButton.text = "Stop tracking"
+            requestLocationButton.text = getString(R.string.stop_tracking)
         } else {
-            requestLocationButton.text = "Start tracking"
+            requestLocationButton.text = getString(R.string.start_tracking)
         }
     }
 

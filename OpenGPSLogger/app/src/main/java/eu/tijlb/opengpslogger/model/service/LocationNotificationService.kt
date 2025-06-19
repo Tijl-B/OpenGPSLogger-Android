@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.os.IBinder
 import android.os.Looper
@@ -25,6 +26,7 @@ import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
+import eu.tijlb.opengpslogger.ui.activity.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -82,7 +84,7 @@ class LocationNotificationService : Service() {
         stopLocationUpdates()
         setLocationRequest()
         notificationBuilder = createNotificationBuilder()
-        startForeground(1, notificationBuilder.build())
+        startForegroundNotification()
         startLocationUpdates()
     }
 
@@ -113,7 +115,7 @@ class LocationNotificationService : Service() {
         Log.d("ogl-locationnotificationservice", "Setting active to true")
         trackingStatusHelper.setActive(true)
         notificationBuilder = createNotificationBuilder()
-        startForeground(1, notificationBuilder.build())
+        startForegroundNotification()
 
         startLocationUpdates()
         return START_STICKY
@@ -171,23 +173,40 @@ class LocationNotificationService : Service() {
         val channel = NotificationChannel(
             notificationChannelId,
             "Location Service",
-            NotificationManager.IMPORTANCE_LOW
+            NotificationManager.IMPORTANCE_MIN
         )
         val manager = getSystemService(NotificationManager::class.java)
         manager?.createNotificationChannel(channel)
 
-        val deleteIntent = Intent(this, LocationNotificationService::class.java)
+        val stopIntent = Intent(this, LocationNotificationService::class.java)
             .apply { action = STOP_SERVICE }
+        val stopPendingIntent =
+            PendingIntent.getService(this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE)
 
-        val deletePendingIntent =
-            PendingIntent.getService(this, 0, deleteIntent, PendingIntent.FLAG_IMMUTABLE)
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        val openAppPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
             .setContentTitle("OpenGPSLogger Location Service")
             .setContentText(getNotificationContent())
             .setSmallIcon(R.drawable.ic_launcher_background)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setDeleteIntent(deletePendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setContentIntent(openAppPendingIntent)
+            .setAutoCancel(false)
+            .setOngoing(true)
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                "Stop Tracking",
+                stopPendingIntent
+            )
 
         return notificationBuilder
     }
@@ -213,7 +232,15 @@ class LocationNotificationService : Service() {
             )
         )
 
-        startForeground(1, notificationBuilder.build())
+        startForegroundNotification()
+    }
+
+    private fun startForegroundNotification() {
+        startForeground(
+            1,
+            notificationBuilder.build(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+        )
     }
 
     private fun getNotificationContent() = getString(
