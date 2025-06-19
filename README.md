@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.0.2
+
+### Fixes
+- Improved asynchronicity in image renderer and data view to not block the main thread.
+
 ### 1.0.1
 
 ### Fixes

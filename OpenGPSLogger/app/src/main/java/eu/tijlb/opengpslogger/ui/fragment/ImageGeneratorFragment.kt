@@ -20,6 +20,7 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.R
@@ -204,15 +205,21 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
             }
 
         imageRendererView.setOnClickListener { showZoomableImage() }
-
-        initializeBeginAndEndTime()
-        setUpDataSourcesSpinner()
         imageRendererView.pointsRenderWidth = 4000
-        imageRendererView.redrawPointsAndOsm()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val datasources = withContext(Dispatchers.IO) {
+                locationDbHelper.getDataSources()
+            }
+            setUpDataSourcesSpinner(datasources)
+            withContext(Dispatchers.IO) {
+                initializeBeginAndEndTime()
+                imageRendererView.redrawPointsAndOsm()
+            }
+        }
     }
 
-    private fun setUpDataSourcesSpinner() {
-        val datasources = locationDbHelper.getDataSources()
+    private fun setUpDataSourcesSpinner(datasources: List<String>) {
         val adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
