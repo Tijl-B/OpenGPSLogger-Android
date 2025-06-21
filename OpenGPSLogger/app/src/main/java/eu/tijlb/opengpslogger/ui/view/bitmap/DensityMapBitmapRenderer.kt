@@ -36,11 +36,11 @@ class DensityMapBitmapRenderer(val context: Context) {
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
-    ) {
+    ): Bitmap? {
         Log.d("ogl-imagerendererview", "Drawing density map...")
         if (!coroutineContext.isActive) {
             Log.d("ogl-imagerendererview", "Stop drawing density map!")
-            return
+            return null
         }
 
         val subdivisions = densityMapAdapter.getSubdivisions(zoomLevel)
@@ -55,7 +55,7 @@ class DensityMapBitmapRenderer(val context: Context) {
                 run {
                     if (!coroutineContext.isActive) {
                         Log.d("ogl-imagerendererview-point", "Stop drawing density map!")
-                        return
+                        return null
                     }
                     Log.d("ogl-imagerendererview-point", "Start iterating over points cursor")
                     if (cursor.moveToFirst()) {
@@ -79,7 +79,7 @@ class DensityMapBitmapRenderer(val context: Context) {
                         do {
                             if (!coroutineContext.isActive) {
                                 Log.d("ogl-imagerendererview-point", "Stop drawing density map!")
-                                return
+                                return null
                             }
 
                             val xIndex = cursor.getFloat(xIndexColumnIndex)
@@ -118,6 +118,7 @@ class DensityMapBitmapRenderer(val context: Context) {
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
         Log.d("ogl-imagerendererview-point", "Done drawing density map...")
         refreshView()
+        return adaptedClusterBitmap
     }
 
     private fun extractAndScaleBitmap(
