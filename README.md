@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.1.1
+
+### Fixes
+- Improve responsiveness of browse view
+
 ### 1.1.0
 
 ### Features
