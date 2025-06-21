@@ -22,8 +22,9 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -60,9 +61,10 @@ class OsmMapView @JvmOverloads constructor(
         }
 
     private var needsRedraw = true
-    private var coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var osmJob: Job? = null
     private var pointsJob: Job? = null
+
+    private val redrawMutex = Mutex()
 
     init {
         isFocusable = true
@@ -115,16 +117,20 @@ class OsmMapView @JvmOverloads constructor(
     }
 
     private fun redrawIfNeeded() {
-        if (needsRedraw) {
-            commitZoom()
-            commitPan()
-            invalidate()
-            needsRedraw = false
-            pointsJob?.cancel()
-            osmJob?.cancel()
-            loadTilesAndPoints()
-            browseSettingsHelper.setCenterCoords(centerLat, centerLon)
-            browseSettingsHelper.setZoom(zoomLevel)
+        CoroutineScope(Dispatchers.IO).launch {
+            redrawMutex.withLock {
+                if (needsRedraw) {
+                    needsRedraw = false
+                    pointsJob?.cancel()
+                    osmJob?.cancel()
+                    commitZoom()
+                    commitPan()
+                    invalidate()
+                    loadTilesAndPoints()
+                    browseSettingsHelper.setCenterCoords(centerLat, centerLon)
+                    browseSettingsHelper.setZoom(zoomLevel)
+                }
+            }
         }
     }
 
@@ -132,17 +138,24 @@ class OsmMapView @JvmOverloads constructor(
         Log.d("ogl-osmmapview", "Loading tiles $centerLat, $centerLon, $width, $height")
         val intZoom = zoomLevel.toInt()
         val bbox = bboxFromCenter(centerLat, centerLon, intZoom, width, height)
-        osmJob = coroutineScope.launch {
+        osmJob = CoroutineScope(Dispatchers.IO).launch {
             triggerTileDraw(bbox, intZoom)
         }
-        pointsJob = coroutineScope.launch {
-            densityMapBitmapRenderer.draw(
-                bbox,
-                intZoom,
-                Pair(width, height),
-                { bmp -> pointsBitmap = bmp },
-                { invalidate() }
-            )
+        pointsJob = CoroutineScope(Dispatchers.IO).launch {
+            triggerPointsDraw(bbox, intZoom)
+        }
+    }
+
+    private suspend fun triggerPointsDraw(bbox: BBoxDto, intZoom: Int) {
+        densityMapBitmapRenderer.draw(
+            bbox,
+            intZoom,
+            Pair(width, height),
+            { },
+            { }
+        ).let {
+            pointsBitmap = it
+            invalidate()
         }
     }
 
@@ -246,9 +259,15 @@ class OsmMapView @JvmOverloads constructor(
         this.centerLat = OsmGeometryUtil.numToLat(focusPixelYNewZoom / tileSize, newZoomInt)
 
         zoomLevel = newZoom.toFloat()
-        zoomOsmBitmap(oldZoomInt, zoomLevel.toInt())
-        zoomPointsBitmap(oldZoomInt, zoomLevel.toInt())
+        val zoomedOsmBitMap = osmBitmap?.let {
+            zoomBitmap(it, oldZoomInt, newZoomInt)
+        }
+        val zoomedPointsBitmap = pointsBitmap?.let {
+            zoomBitmap(it, oldZoomInt, newZoomInt)
+        }
 
+        osmBitmap = zoomedOsmBitMap
+        pointsBitmap = zoomedPointsBitmap
         visualZoomScale = 1f
     }
 
@@ -299,35 +318,17 @@ class OsmMapView @JvmOverloads constructor(
         centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, zoom)
         centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, zoom)
 
-        panOsmBitmap()
-        panPointsBitmap()
+        val newOsmBitmap = osmBitmap?.let {
+            panBitmap(it)
+        }
+        val newPointsBitmap = pointsBitmap?.let {
+            panBitmap(it)
+        }
 
+        osmBitmap = newOsmBitmap
+        pointsBitmap = newPointsBitmap
         offsetX = 0f
         offsetY = 0f
-    }
-
-    private fun panOsmBitmap() {
-        osmBitmap?.let {
-            osmBitmap = panBitmap(it)
-        }
-    }
-
-    private fun zoomOsmBitmap(oldZoom: Int, newZoom: Int) {
-        osmBitmap?.let {
-            osmBitmap = zoomBitmap(it, oldZoom, newZoom)
-        }
-    }
-
-    private fun panPointsBitmap() {
-        pointsBitmap?.let {
-            pointsBitmap = panBitmap(it)
-        }
-    }
-
-    private fun zoomPointsBitmap(oldZoom: Int, newZoom: Int) {
-        pointsBitmap?.let {
-            pointsBitmap = zoomBitmap(it, oldZoom, newZoom)
-        }
     }
 
     private fun panBitmap(it: Bitmap): Bitmap {
