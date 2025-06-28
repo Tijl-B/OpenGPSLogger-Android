@@ -2,9 +2,6 @@ package eu.tijlb.opengpslogger.ui.view.bitmap
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
@@ -20,8 +17,6 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.PointsBitmapRenderer.OnPointProgres
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.tan
 
 class DensityMapBitmapRenderer(val context: Context) {
@@ -82,14 +77,13 @@ class DensityMapBitmapRenderer(val context: Context) {
                                 return null
                             }
 
-                            val xIndex = cursor.getFloat(xIndexColumnIndex)
-                            val yIndex = cursor.getFloat(yIndexColumnIndex)
+                            val xIndex = cursor.getLong(xIndexColumnIndex)
+                            val yIndex = cursor.getLong(yIndexColumnIndex)
                             val time = cursor.getLong(timeColumnIndex)
                             val amount = cursor.getLong(countColumnIndex)
 
-                            val color = ColorUtil.toDensityColor(amount, 10_000L)
                             if (xIndex >= 0 && xIndex <= sparseDensityMap.width && yIndex >= 0 && yIndex <= sparseDensityMap.height) {
-                                sparseDensityMap.put(xIndex, yIndex, color)
+                                sparseDensityMap.put(xIndex, yIndex, amount)
                             }
 
                             if ((++i) % 10000 == 0) {
@@ -112,8 +106,7 @@ class DensityMapBitmapRenderer(val context: Context) {
                 }
             }
 
-        adaptedClusterBitmap =
-            extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox, true)
+        adaptedClusterBitmap = extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
         assignBitmap(adaptedClusterBitmap)
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
         Log.d("ogl-imagerendererview-point", "Done drawing density map...")
@@ -125,7 +118,6 @@ class DensityMapBitmapRenderer(val context: Context) {
         sourceBitMap: SparseDensityMap,
         targetBitmap: Bitmap,
         bbox: BBoxDto,
-        blur: Boolean = false
     ): Bitmap {
         Log.d(
             "ogl-imagerendererview",
@@ -153,49 +145,36 @@ class DensityMapBitmapRenderer(val context: Context) {
         val dstWidth = targetBitmap.width
         val dstHeight = targetBitmap.height
 
-        val cellWidth = dstWidth.toFloat() / srcWidth
-        val cellHeight = dstHeight.toFloat() / srcHeight
+        val pixels = IntArray(dstWidth * dstHeight)
+        for (i in pixels.indices) {
+            val x = i % dstWidth
+            val y = i / dstWidth
 
-        val canvas = Canvas(targetBitmap)
-        canvas.drawColor(Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+            val originalX = (x.toDouble() / dstWidth) * srcWidth + left - 0.5
+            val originalY = (y.toDouble() / dstHeight) * srcHeight + top - 0.5
 
-        val paint = Paint()
+            val originalXL = originalX.toLong()
+            val originalYL = originalY.toLong()
 
-        for ((pos, color) in sourceBitMap.data) {
-            val (x, y) = pos
-            if (x in left.toFloat()..right.toFloat() && y in top.toFloat()..bottom.toFloat()) {
-                val mappedX = ((x - left).toDouble() / srcWidth * dstWidth).toFloat()
-                val mappedY = ((y - top).toDouble() / srcHeight * dstHeight).toFloat()
+            val fx = originalX - originalXL
+            val fy = originalY - originalYL
 
+            val q11 = sourceBitMap.get(originalXL, originalYL)
+            val q21 = sourceBitMap.get(originalXL + 1, originalYL)
+            val q12 = sourceBitMap.get(originalXL, originalYL + 1)
+            val q22 = sourceBitMap.get(originalXL + 1, originalYL + 1)
 
-                paint.color = color
+            val amount = (1 - fx) * (1 - fy) * q11 +
+                    fx * (1 - fy) * q21 +
+                    (1 - fx) * fy * q12 +
+                    fx * fy * q22
 
-
-                val maxHeightWidth = max(cellWidth, cellHeight)
-                canvas.drawCircle(mappedX, mappedY, max(2F, maxHeightWidth * 0.71F), paint)
-                /*
-                TODO make configurable
-                canvas.drawRect(
-                    mappedX - cellWidth / 2F,
-                    mappedY - cellHeight / 2F,
-                    mappedX + cellWidth / 2F,
-                    mappedY + cellHeight / 2F,
-                    paint
-                )*/
-            }
+            pixels[i] = if (amount > 0) ColorUtil.toDensityColor(amount.toLong(), 10_000L) else 0
         }
+        targetBitmap.setPixels(pixels, 0, dstWidth, 0, 0, dstWidth, dstHeight)
+
 
         var result = targetBitmap
-        if (blur) {
-            val minCellDimension = min(cellWidth, cellHeight)
-            val passes = 1 //(minCellDimension * 0.5F).toInt().coerceIn(1, 10)
-            result = blurBitmapMultiplePasses(
-                context,
-                targetBitmap,
-                radius = 3F, //minCellDimension * 0.5F,
-                passes = passes
-            )
-        }
         return result
     }
 

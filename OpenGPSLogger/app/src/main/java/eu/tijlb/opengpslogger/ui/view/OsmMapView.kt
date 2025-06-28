@@ -326,7 +326,7 @@ class OsmMapView @JvmOverloads constructor(
         val scaleBetweenLevels = 2.0.pow((visualZoomLevel - zoom))
         Log.d(
             "ogl-osmmapview",
-            "$scaleBetweenLevels = 2^($osmBitmapZoomLevel - $zoom)"
+            "$scaleBetweenLevels = 2^($visualZoomLevel - $zoom)"
         )
         return scaleBetweenLevels.toFloat()
     }

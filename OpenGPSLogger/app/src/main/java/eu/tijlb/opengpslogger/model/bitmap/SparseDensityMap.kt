@@ -1,24 +1,17 @@
 package eu.tijlb.opengpslogger.model.bitmap
 
-import android.graphics.Canvas
-import android.graphics.Paint
+import androidx.collection.MutableLongLongMap
 
 class SparseDensityMap(val width: Int, val height: Int) {
-    val data = mutableMapOf<Pair<Float, Float>, Int>()
+    private val data = MutableLongLongMap()
 
-    fun put(x: Float, y: Float, color: Int) {
-        data[Pair(x, y)] = color
+    fun put(x: Long, y: Long, amount: Long) {
+        data.put(key(x, y), amount)
     }
 
-    fun draw(canvas: Canvas) {
-        val paint = Paint().apply {
-            isAntiAlias = false
-            strokeWidth = 1f
-            style = Paint.Style.FILL
-        }
-        for ((pos, color) in data) {
-            paint.color = color
-            canvas.drawPoint(pos.first, pos.second, paint)
-        }
+    fun get(x: Long, y: Long): Long = data.getOrElse(key(x, y)) { 0L }
+
+    private fun key(x: Long, y: Long): Long {
+        return (x shl 32) or (y and 0xFFFFFFFFL)
     }
 }
