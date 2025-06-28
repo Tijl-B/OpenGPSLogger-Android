@@ -6,9 +6,11 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.location.Location
+import android.os.Looper
 import android.provider.BaseColumns
 import android.util.Log
 import android.widget.Toast
+import eu.tijlb.opengpslogger.model.database.location.migration.MigrationV10
 import eu.tijlb.opengpslogger.model.database.location.migration.MigrationV8
 import eu.tijlb.opengpslogger.model.database.location.migration.MigrationV9
 import eu.tijlb.opengpslogger.model.database.location.util.LocationDbCreationUtil
@@ -27,6 +29,7 @@ class LocationDbHelper(val context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        Looper.prepare()
         Toast.makeText(
             context,
             "Starting database migration. Do not close the app ($oldVersion -> $newVersion).",
@@ -37,6 +40,9 @@ class LocationDbHelper(val context: Context) :
         }
         if (oldVersion < 9) {
             MigrationV9(context).migrate(db)
+        }
+        if (oldVersion < 10) {
+            MigrationV10.migrate(db)
         }
         Toast.makeText(context, "Done migrating database.", Toast.LENGTH_SHORT).show()
     }
@@ -154,7 +160,7 @@ class LocationDbHelper(val context: Context) :
     }
 
     companion object {
-        private const val DATABASE_VERSION = 9 // Increment on schema change
+        private const val DATABASE_VERSION = 10 // Increment on schema change
         private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000
 
         private var instance: LocationDbHelper? = null
