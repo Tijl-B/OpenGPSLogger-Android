@@ -47,14 +47,15 @@ class OsmMapView @JvmOverloads constructor(
     private var pointsBitmap: Bitmap? = null
     private var centerLat = 0.0
     private var centerLon = 0.0
-    private var zoomLevel = 4f
+    private var osmBitmapZoomLevel = 4
+    private var pointsBitmapZoomLevel = 4
 
     private var offsetX = 0f
     private var offsetY = 0f
     private var lastScaleFocusX = 0f
     private var lastScaleFocusY = 0f
 
-    private var visualZoomScale = 1f
+    private var visualZoomLevel = 4.0
         set(value) {
             field = value
             Log.d("ogl-osmmapview", "Set visualZoomScale to $value")
@@ -75,27 +76,30 @@ class OsmMapView @JvmOverloads constructor(
         super.onDraw(canvas)
         Log.d("ogl-osmmapview", "onDraw OsmMapView with bitmap? ${osmBitmap != null}")
         osmBitmap?.let {
-            canvas.withTranslation(offsetX, offsetY) {
-                val scaleAmount = calculateScaleAmount()
-                scale(
-                    scaleAmount,
-                    scaleAmount,
-                    width / 2f,
-                    height / 2f
-                )
-                Log.d(
-                    "ogl-osmmapview",
-                    "Drawing bitmap with translation x $offsetX y $offsetY and scale $scaleAmount"
-                )
-                drawBitmap(it, 0f, 0f, null)
-                pointsBitmap?.let {
-                    drawBitmap(it, 0f, 0f, null)
-                }
-
-            }
+            translateAndScale(canvas, it, osmBitmapZoomLevel)
         } ?: run {
             setUpCenterAndZoom()
             redrawIfNeeded()
+        }
+        pointsBitmap?.let {
+            translateAndScale(canvas, it, pointsBitmapZoomLevel)
+        }
+    }
+
+    private fun translateAndScale(canvas: Canvas, bitmap: Bitmap, zoom: Int) {
+        canvas.withTranslation(offsetX, offsetY) {
+            val scaleAmount = calculateScaleAmount(zoom)
+            scale(
+                scaleAmount,
+                scaleAmount,
+                width / 2F,
+                height / 2F
+            )
+            Log.d(
+                "ogl-osmmapview",
+                "Drawing bitmap with translation x $offsetX y $offsetY and scale $scaleAmount"
+            )
+            drawBitmap(bitmap, 0f, 0f, null)
         }
     }
 
@@ -103,17 +107,7 @@ class OsmMapView @JvmOverloads constructor(
         val centerCoords = browseSettingsHelper.getCenterCoords()
         centerLat = centerCoords.first
         centerLon = centerCoords.second
-        zoomLevel = browseSettingsHelper.getZoom()
-    }
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        gestureDetector.onTouchEvent(event)
-        scaleGestureDetector.onTouchEvent(event)
-
-        if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-            redrawIfNeeded()
-        }
-        return true
+        visualZoomLevel = browseSettingsHelper.getZoom().toDouble()
     }
 
     private fun redrawIfNeeded() {
@@ -123,12 +117,12 @@ class OsmMapView @JvmOverloads constructor(
                     needsRedraw = false
                     pointsJob?.cancel()
                     osmJob?.cancel()
-                    commitZoom()
                     commitPan()
+                    commitZoom()
                     invalidate()
                     loadTilesAndPoints()
                     browseSettingsHelper.setCenterCoords(centerLat, centerLon)
-                    browseSettingsHelper.setZoom(zoomLevel)
+                    browseSettingsHelper.setZoom(visualZoomLevel.toFloat())
                 }
             }
         }
@@ -136,13 +130,13 @@ class OsmMapView @JvmOverloads constructor(
 
     private fun loadTilesAndPoints() {
         Log.d("ogl-osmmapview", "Loading tiles $centerLat, $centerLon, $width, $height")
-        val intZoom = zoomLevel.toInt()
-        val bbox = bboxFromCenter(centerLat, centerLon, intZoom, width, height)
+        val newBitmapZoom = visualZoomLevel.toInt()
+        val bbox = bboxFromCenter(centerLat, centerLon, newBitmapZoom, width, height)
         osmJob = CoroutineScope(Dispatchers.IO).launch {
-            triggerTileDraw(bbox, intZoom)
+            triggerTileDraw(bbox, newBitmapZoom)
         }
         pointsJob = CoroutineScope(Dispatchers.IO).launch {
-            triggerPointsDraw(bbox, intZoom)
+            triggerPointsDraw(bbox, newBitmapZoom)
         }
     }
 
@@ -153,7 +147,7 @@ class OsmMapView @JvmOverloads constructor(
             Pair(width, height),
             { },
             { }
-        ).let {
+        )?.let {
             pointsBitmap = it
             invalidate()
         }
@@ -214,68 +208,79 @@ class OsmMapView @JvmOverloads constructor(
 
     override fun onDown(e: MotionEvent) = true
 
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        gestureDetector.onTouchEvent(event)
+        scaleGestureDetector.onTouchEvent(event)
+
+        if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+            redrawIfNeeded()
+        }
+        return true
+    }
+
     override fun onScroll(
         e1: MotionEvent?,
         e2: MotionEvent,
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        Log.d("ogl-osmmapview", "scrolling x $distanceX y $distanceY")
+        Log.d("ogl-osmmapview", "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
         panMap(distanceX, distanceY)
         return true
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         Log.d("ogl-osmmapview", "scaling with factor ${detector.scaleFactor}")
+        val scaleFactor = detector.scaleFactor
+        visualZoomLevel = calculateNewZoom(scaleFactor)
+            .coerceIn(MIN_ZOOM, MAX_ZOOM)
         lastScaleFocusX = detector.focusX
         lastScaleFocusY = detector.focusY
 
-        visualZoomScale *= detector.scaleFactor
-        visualZoomScale = visualZoomScale.coerceIn(0.25f, 9f)
-        needsRedraw = true
+        if (visualZoomLevel.toInt() != osmBitmapZoomLevel || visualZoomLevel.toInt() != pointsBitmapZoomLevel) {
+            needsRedraw = true
+            redrawIfNeeded()
+        }
+
         invalidate()
         return true
     }
 
 
     private fun commitZoom() {
-        Log.d("ogl-osmmapview", "Commit visualZoomScale to $visualZoomScale")
+        Log.d("ogl-osmmapview", "Commit visualZoomScale to $visualZoomLevel")
 
         val tileSize = 256.0
-        val oldZoomInt = zoomLevel.toInt()
-        val newZoom = calculateNewZoom()
-        val newZoomInt = newZoom.toInt()
+        val oldZoom = osmBitmapZoomLevel
+        val newZoom = visualZoomLevel.toInt()
 
-        val centerPixelXOldZoom = OsmGeometryUtil.lon2num(centerLon, oldZoomInt) * tileSize
-        val centerPixelYOldZoom = OsmGeometryUtil.lat2num(centerLat, oldZoomInt) * tileSize
+        val centerPixelXOldZoom = OsmGeometryUtil.lon2num(centerLon, oldZoom) * tileSize
+        val centerPixelYOldZoom = OsmGeometryUtil.lat2num(centerLat, oldZoom) * tileSize
 
-        val centerLon = OsmGeometryUtil.numToLon(centerPixelXOldZoom / tileSize, oldZoomInt)
-        val centerLat = OsmGeometryUtil.numToLat(centerPixelYOldZoom / tileSize, oldZoomInt)
+        val centerLon = OsmGeometryUtil.numToLon(centerPixelXOldZoom / tileSize, oldZoom)
+        val centerLat = OsmGeometryUtil.numToLat(centerPixelYOldZoom / tileSize, oldZoom)
 
-        val focusPixelXNewZoom = OsmGeometryUtil.lon2num(centerLon, newZoomInt) * tileSize
-        val focusPixelYNewZoom = OsmGeometryUtil.lat2num(centerLat, newZoomInt) * tileSize
+        val focusPixelXNewZoom = OsmGeometryUtil.lon2num(centerLon, newZoom) * tileSize
+        val focusPixelYNewZoom = OsmGeometryUtil.lat2num(centerLat, newZoom) * tileSize
 
-        this.centerLon = OsmGeometryUtil.numToLon(focusPixelXNewZoom / tileSize, newZoomInt)
-        this.centerLat = OsmGeometryUtil.numToLat(focusPixelYNewZoom / tileSize, newZoomInt)
+        this.centerLon = OsmGeometryUtil.numToLon(focusPixelXNewZoom / tileSize, newZoom)
+        this.centerLat = OsmGeometryUtil.numToLat(focusPixelYNewZoom / tileSize, newZoom)
 
-        zoomLevel = newZoom.toFloat()
-        val zoomedOsmBitMap = osmBitmap?.let {
-            zoomBitmap(it, oldZoomInt, newZoomInt)
+        osmBitmap = osmBitmap?.let {
+            zoomBitmap(it, oldZoom, newZoom)
         }
-        val zoomedPointsBitmap = pointsBitmap?.let {
-            zoomBitmap(it, oldZoomInt, newZoomInt)
-        }
+        osmBitmapZoomLevel = newZoom
 
-        osmBitmap = zoomedOsmBitMap
-        pointsBitmap = zoomedPointsBitmap
-        visualZoomScale = 1f
+        pointsBitmap = pointsBitmap?.let {
+            zoomBitmap(it, oldZoom, newZoom)
+        }
+        pointsBitmapZoomLevel = newZoom
     }
 
-    private fun calculateNewZoom(): Double {
-        val oldMapScale = 2.0.pow(zoomLevel.toDouble())
+    private fun calculateNewZoom(scale: Float): Double {
+        val oldMapScale = 2.0.pow(visualZoomLevel.toDouble())
 
-        val newMapScale = (oldMapScale * visualZoomScale)
-            .coerceIn(2.0.pow(MIN_ZOOM), 2.0.pow(MAX_ZOOM))
+        val newMapScale = (oldMapScale * scale)
 
         val newZoom = log2(newMapScale)
         return newZoom
@@ -291,12 +296,15 @@ class OsmMapView @JvmOverloads constructor(
 
     private fun commitPan() {
         val tileSize = 256.0
-        val zoom = zoomLevel.toInt()
+        val zoom = osmBitmapZoomLevel
         val scale = 2.0.pow(zoom)
         val mapSize = tileSize * scale
 
-        val deltaX = -offsetX / calculateScaleAmount()
-        val deltaY = -offsetY / calculateScaleAmount()
+        val amountToPanX = -offsetX
+        val amountToPanY = -offsetY
+
+        val deltaX = amountToPanX / calculateScaleAmount(osmBitmapZoomLevel)
+        val deltaY = amountToPanY / calculateScaleAmount(osmBitmapZoomLevel)
 
         val centerPixelX = OsmGeometryUtil.lon2num(centerLon, zoom) * tileSize
         val centerPixelY = OsmGeometryUtil.lat2num(centerLat, zoom) * tileSize
@@ -327,16 +335,16 @@ class OsmMapView @JvmOverloads constructor(
 
         osmBitmap = newOsmBitmap
         pointsBitmap = newPointsBitmap
-        offsetX = 0f
-        offsetY = 0f
+        offsetX += amountToPanX
+        offsetY += amountToPanY
     }
 
     private fun panBitmap(it: Bitmap): Bitmap {
         val pannedBitMap = createBitmap(it.width, it.height)
         val canvas = Canvas(pannedBitMap)
 
-        val deltaX = offsetX / calculateScaleAmount()
-        val deltaY = offsetY / calculateScaleAmount()
+        val deltaX = offsetX / calculateScaleAmount(osmBitmapZoomLevel)
+        val deltaY = offsetY / calculateScaleAmount(osmBitmapZoomLevel)
 
 
         Log.d("ogl-osmmapview", "Panning bitmap with offset x $offsetX and y $offsetY")
@@ -349,10 +357,10 @@ class OsmMapView @JvmOverloads constructor(
     }
 
     private fun zoomBitmap(bitMap: Bitmap, oldZoom: Int, newZoom: Int): Bitmap {
-        if (visualZoomScale == 1F)
+        if (oldZoom == newZoom)
             return bitMap
 
-        Log.d("ogl-osmmapview", "Zooming bitmap with scale $visualZoomScale")
+        Log.d("ogl-osmmapview", "Zooming bitmap from $oldZoom to $newZoom")
 
         val zoomedBitmap = createBitmap(bitMap.width, bitMap.height)
         val canvas = Canvas(zoomedBitmap)
@@ -372,12 +380,13 @@ class OsmMapView @JvmOverloads constructor(
     }
 
 
-    private fun calculateScaleAmount(): Float {
-        val intZoom = zoomLevel.toInt()
-        val scaleBetweenLevels = 2.0F.pow((zoomLevel - intZoom))
-        val scaleAmount = visualZoomScale * scaleBetweenLevels
-        Log.d("ogl-osmmapview", "$scaleAmount = $visualZoomScale * 2^($zoomLevel - $intZoom)")
-        return scaleAmount
+    private fun calculateScaleAmount(zoom: Int): Float {
+        val scaleBetweenLevels = 2.0.pow((visualZoomLevel - zoom))
+        Log.d(
+            "ogl-osmmapview",
+            "$scaleBetweenLevels = 2^($osmBitmapZoomLevel - $zoom)"
+        )
+        return scaleBetweenLevels.toFloat()
     }
 
 

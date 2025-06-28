@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.1.3
+
+### Fixes
+- Update zoom level while scrolling instead of on finger lift
+
 ### 1.1.2
 
 ### Fixes
