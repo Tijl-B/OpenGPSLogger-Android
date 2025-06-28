@@ -51,10 +51,10 @@ class DensityMapAdapter(context: Context) {
 
     private fun getDbHelper(zoomLevel: Int): AbstractDensityMapDbHelper {
         val helper = when {
-            zoomLevel >= 15 -> streetDensityMapDbHelper
-            zoomLevel >= 12 -> cityDensityMapDbHelper
-            zoomLevel >= 9 -> countryDensityMapDbHelper
-            zoomLevel >= 6 -> continentDensityMapDbHelper
+            zoomLevel >= 14 -> streetDensityMapDbHelper
+            zoomLevel >= 11 -> cityDensityMapDbHelper
+            zoomLevel >= 8 -> countryDensityMapDbHelper
+            zoomLevel >= 5 -> continentDensityMapDbHelper
             else -> worldDensityMapDbHelper
         }
         Log.d("ogl-densitymapadapter", "Using density map helper $helper for zoom $zoomLevel")
