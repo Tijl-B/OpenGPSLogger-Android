@@ -21,7 +21,6 @@ object LocationDbContract : BaseColumns {
 }
 
 object LocationDbMigrationContract : BaseColumns {
-        const val FILE_NAME = LocationDbContract.FILE_NAME
         const val TABLE_NAME = "migration"
 
         const val COLUMN_NAME_VERSION = "version"

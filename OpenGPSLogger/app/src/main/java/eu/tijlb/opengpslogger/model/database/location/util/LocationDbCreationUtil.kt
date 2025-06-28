@@ -21,8 +21,7 @@ object LocationDbCreationUtil {
             ${LocationDbContract.COLUMN_NAME_HASH_50M_1D} LONG,
             ${LocationDbContract.COLUMN_NAME_HASH_250M_1D} LONG,
             ${LocationDbContract.COLUMN_NAME_NEIGHBOR_DISTANCE} DOUBLE,
-            ${LocationDbContract.COLUMN_NAME_NEIGHBOR_ANGLE} DOUBLE,
-            UNIQUE(${LocationDbContract.COLUMN_NAME_TIMESTAMP}, ${LocationDbContract.COLUMN_NAME_SOURCE})
+            ${LocationDbContract.COLUMN_NAME_NEIGHBOR_ANGLE} DOUBLE
             )
         """.trimIndent()
 
@@ -68,30 +67,6 @@ object LocationDbCreationUtil {
             """
                 CREATE INDEX IF NOT EXISTS idx_data_source 
                 ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_SOURCE})
-                """
-        )
-        db.execSQL(
-            """
-                CREATE INDEX IF NOT EXISTS idx_hash_50m_1d 
-                ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_HASH_50M_1D})
-                """
-        )
-        db.execSQL(
-            """
-                CREATE INDEX IF NOT EXISTS idx_hash_250m_1d 
-                ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_HASH_250M_1D})
-                """
-        )
-        db.execSQL(
-            """
-                CREATE INDEX IF NOT EXISTS idx_hash_neighbor_distance 
-                ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_NEIGHBOR_DISTANCE})
-                """
-        )
-        db.execSQL(
-            """
-                CREATE INDEX IF NOT EXISTS idx_hash_neighbor_angle
-                ON ${LocationDbContract.TABLE_NAME} (${LocationDbContract.COLUMN_NAME_NEIGHBOR_ANGLE})
                 """
         )
     }
