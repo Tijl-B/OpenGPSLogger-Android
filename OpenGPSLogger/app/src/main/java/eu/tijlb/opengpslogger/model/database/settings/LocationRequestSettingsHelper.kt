@@ -34,29 +34,29 @@ class LocationRequestSettingsHelper(val context: Context) {
     private val highestPresetWaitForAccurateLocation = true
 
     private val highPresetAccuracy = Priority.PRIORITY_HIGH_ACCURACY
-    private val highPresetIntervalMillis = TimeUnit.MINUTES.toMillis(1)
-    private val highPresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(3)
-    private val highPresetMaxUpdateAgeMillis = TimeUnit.SECONDS.toMillis(50)
+    private val highPresetIntervalMillis = TimeUnit.SECONDS.toMillis(15)
+    private val highPresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(1)
+    private val highPresetMaxUpdateAgeMillis = TimeUnit.SECONDS.toMillis(10)
     private val highPresetMinUpdateDistanceMeters = 10F
     private val highPresetWaitForAccurateLocation = true
 
     private val mediumPresetAccuracy = Priority.PRIORITY_HIGH_ACCURACY
-    private val mediumPresetIntervalMillis = TimeUnit.MINUTES.toMillis(2)
-    private val mediumPresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(5)
-    private val mediumPresetMaxUpdateAgeMillis = TimeUnit.SECONDS.toMillis(100)
-    private val mediumPresetMinUpdateDistanceMeters = 35F
+    private val mediumPresetIntervalMillis = TimeUnit.MINUTES.toMillis(1)
+    private val mediumPresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(1)
+    private val mediumPresetMaxUpdateAgeMillis = TimeUnit.SECONDS.toMillis(50)
+    private val mediumPresetMinUpdateDistanceMeters = 20F
     private val mediumPresetWaitForAccurateLocation = true
 
     private val lowPresetAccuracy = Priority.PRIORITY_BALANCED_POWER_ACCURACY
-    private val lowPresetIntervalMillis = TimeUnit.MINUTES.toMillis(5)
-    private val lowPresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(5)
-    private val lowPresetMaxUpdateAgeMillis = TimeUnit.MINUTES.toMillis(4)
+    private val lowPresetIntervalMillis = TimeUnit.MINUTES.toMillis(3)
+    private val lowPresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(1)
+    private val lowPresetMaxUpdateAgeMillis = TimeUnit.MINUTES.toMillis(2)
     private val lowPresetMinUpdateDistanceMeters = 50F
     private val lowPresetWaitForAccurateLocation = false
 
-    private val passivePresetAccuracy = Priority.PRIORITY_BALANCED_POWER_ACCURACY
+    private val passivePresetAccuracy = Priority.PRIORITY_PASSIVE
     private val passivePresetIntervalMillis = PASSIVE_INTERVAL
-    private val passivePresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(5)
+    private val passivePresetMinUpdateIntervalMillis = TimeUnit.SECONDS.toMillis(1)
     private val passivePresetMaxUpdateAgeMillis = TimeUnit.MINUTES.toMillis(15)
     private val passivePresetMinUpdateDistanceMeters = 50F
     private val passivePresetWaitForAccurateLocation = false

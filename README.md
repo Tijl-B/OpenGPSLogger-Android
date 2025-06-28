@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.1.2
+
+### Fixes
+- Improve location request preset values
+
 ### 1.1.1
 
 ### Fixes
