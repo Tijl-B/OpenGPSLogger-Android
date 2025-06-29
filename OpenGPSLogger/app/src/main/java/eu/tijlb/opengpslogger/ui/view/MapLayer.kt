@@ -82,7 +82,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         bitmap = newBitmap
         offsetX += amountToPanX
         offsetY += amountToPanY
-        Log.d("ogl-osmmapview", "Committing pan by $amountToPanX, $amountToPanY")
+        Log.d("ogl-maplayer", "Committing pan by $amountToPanX, $amountToPanY")
 
         val deltaX = amountToPanX / calculateScaleAmount(visualZoom)
         val deltaY = amountToPanY / calculateScaleAmount(visualZoom)
@@ -101,7 +101,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         val deltaX = -amountToPanX / calculateScaleAmount(visualZoom)
         val deltaY = -amountToPanY / calculateScaleAmount(visualZoom)
 
-        Log.d("ogl-osmmapview", "Panning bitmap with offset x $amountToPanX and y $amountToPanY")
+        Log.d("ogl-maplayer", "Panning bitmap with offset x $amountToPanX and y $amountToPanY")
         val matrix = Matrix().apply {
             setTranslate(deltaX, deltaY)
         }
@@ -113,7 +113,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     private fun calculateScaleAmount(visualZoom: Double): Float {
         val scaleBetweenLevels = 2.0.pow((visualZoom - zoom))
         Log.d(
-            "ogl-osmmapview",
+            "ogl-maplayer",
             "scaleBetweenLevels $scaleBetweenLevels = 2^($visualZoom - $zoom)"
         )
         return scaleBetweenLevels.toFloat()
@@ -165,14 +165,14 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         if (oldZoom == newZoom)
             return bitMap
 
-        Log.d("ogl-osmmapview", "Zooming bitmap from $oldZoom to $newZoom")
+        Log.d("ogl-maplayer", "Zooming bitmap from $oldZoom to $newZoom")
 
         val zoomedBitmap = createBitmap(bitMap.width, bitMap.height)
         val canvas = Canvas(zoomedBitmap)
 
         val scale = 2.0F.pow((newZoom - oldZoom))
         Log.d(
-            "ogl-osmmapview",
+            "ogl-maplayer",
             "Need to scale by $scale to go from zoom $oldZoom to $newZoom"
         )
 

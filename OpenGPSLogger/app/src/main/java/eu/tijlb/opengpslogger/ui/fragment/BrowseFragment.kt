@@ -15,7 +15,7 @@ class BrowseFragment : Fragment(R.layout.fragment_browse) {
         Log.d("ogl-brosefragment", "Creating brose fragment view")
         super.onViewCreated(view, savedInstanceState)
 
-        layeredMapView = view.findViewById(R.id.osmMapView)
+        layeredMapView = view.findViewById(R.id.layeredMapView)
     }
 
     override fun onResume() {

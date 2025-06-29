@@ -9,7 +9,7 @@
     tools:context=".ui.fragment.BrowseFragment">
 
     <eu.tijlb.opengpslogger.ui.view.LayeredMapView
-        android:id="@+id/osmMapView"
+        android:id="@+id/layeredMapView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="#000"

@@ -6,7 +6,7 @@
     android:background="@android:color/black">
 
     <eu.tijlb.opengpslogger.ui.view.LayeredMapView
-        android:id="@+id/osmMapView"
+        android:id="@+id/layeredMapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitCenter" />

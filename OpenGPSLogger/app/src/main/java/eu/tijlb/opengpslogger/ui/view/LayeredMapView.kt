@@ -55,7 +55,7 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        Log.d("ogl-osmmapview", "onDraw")
+        Log.d("ogl-layeredmapview", "onDraw")
         if (!isSetUp) {
             setUpCenterAndZoom()
             redrawIfNeeded()
@@ -90,7 +90,7 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     private fun loadLayers() {
-        Log.d("ogl-osmmapview", "Loading tiles $centerLat, $centerLon, $width, $height")
+        Log.d("ogl-layeredmapview", "Loading tiles $centerLat, $centerLon, $width, $height")
         val newBitmapZoom = visualZoomLevel.toInt()
         val bbox = bboxFromCenter(centerLat, centerLon, newBitmapZoom, width, height)
         layers.forEach {
@@ -146,7 +146,7 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun commitZoom() {
         val newZoom = visualZoomLevel.toInt()
-        Log.d("ogl-osmmapview", "Commit visualZoomScale to $newZoom")
+        Log.d("ogl-layeredmapview", "Commit visualZoomScale to $newZoom")
         layers.forEach { it.commitZoom(newZoom) }
     }
 
@@ -189,10 +189,10 @@ class LayeredMapView @JvmOverloads constructor(
                 newCenterPixelY = newCenterPixelY.coerceIn(minCenterY, maxCenterY)
 
 
-                Log.d("ogl-osmmapview", "Center before pan: $centerLon, $centerLat")
+                Log.d("ogl-layeredmapview", "Center before pan: $centerLon, $centerLat")
                 centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, zoom)
                 centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, zoom)
-                Log.d("ogl-osmmapview", "Center after pan: $centerLon, $centerLat")
+                Log.d("ogl-layeredmapview", "Center after pan: $centerLon, $centerLat")
             }
     }
 
@@ -216,13 +216,13 @@ class LayeredMapView @JvmOverloads constructor(
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        Log.d("ogl-osmmapview", "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
+        Log.d("ogl-layeredmapview", "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
         panMap(distanceX, distanceY)
         return true
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
-        Log.d("ogl-osmmapview", "scaling with factor ${detector.scaleFactor}")
+        Log.d("ogl-layeredmapview", "scaling with factor ${detector.scaleFactor}")
         val scaleFactor = detector.scaleFactor
         scaleMap(scaleFactor)
         return true
