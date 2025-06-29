@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.database.locationbuffer.LocationBufferDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.ui.activity.MainActivity
@@ -45,8 +46,7 @@ class LocationNotificationService : Service() {
     private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var presetChangedListener: SharedPreferences.OnSharedPreferenceChangeListener
     private lateinit var presetName: String
-    private val locationDbHelper = LocationDbHelper.getInstance(this)
-    private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(this)
+    private val locationBufferDbHelper = LocationBufferDbHelper.getInstance(this)
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
@@ -69,11 +69,12 @@ class LocationNotificationService : Service() {
                 val location = locationResult.lastLocation
                 if (location != null) {
                     Log.d("ogl-locationnotificationservice", "Location from service: $location")
+                    saveToDb(location)
                     val intent = Intent("eu.tijlb.LOCATION_UPDATE")
                     intent.putExtra("location", location)
-                    sendBroadcast(intent)
+                    intent.setPackage(applicationContext.packageName)
                     Log.d("ogl-locationnotificationservice", "Broadcast location $location")
-                    saveToDb(location)
+                    sendBroadcast(intent)
                 }
             }
         }
@@ -212,12 +213,8 @@ class LocationNotificationService : Service() {
     }
 
     private fun saveToDb(location: Location) {
-        locationDbHelper.save(location, "app::OpenGpsLogger")
+        locationBufferDbHelper.save(location, "app::OpenGpsLogger")
         savedPoints++
-        CoroutineScope(Dispatchers.IO)
-            .launch {
-                densityMapAdapter.addLocation(location)
-            }
 
         val formattedTime = Instant.ofEpochMilli(System.currentTimeMillis())
             .atZone(ZoneId.systemDefault())

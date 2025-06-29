@@ -17,7 +17,7 @@ class CountryDensityMapDbHelper(context: Context) :
         private var instance: CountryDensityMapDbHelper? = null
         fun getInstance(context: Context): CountryDensityMapDbHelper {
             return instance ?: synchronized(this) {
-                instance ?: CountryDensityMapDbHelper(context).also { instance = it }
+                instance ?: CountryDensityMapDbHelper(context.applicationContext).also { instance = it }
             }
         }
     }

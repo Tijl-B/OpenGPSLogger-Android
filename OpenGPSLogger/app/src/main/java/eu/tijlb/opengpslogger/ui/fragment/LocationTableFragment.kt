@@ -69,7 +69,7 @@ class LocationTableFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val tableRows = withContext(Dispatchers.IO) {
                 val entities = getLastEntities()
-                Log.d("ogl-locationtablefragment", "Got entities $entities")
+                Log.d("ogl-locationtablefragment", "Got ${entities.size} entities")
                 toTableRows(entities)
             }
             populateTable(tableRows)

@@ -81,20 +81,10 @@
 
         <service
             android:name=".model.service.LocationNotificationService"
-            android:exported="true"
+            android:exported="false"
             android:foregroundServiceType="location">
-            <intent-filter>
-                <action android:name="eu.tijlb.LOCATION_UPDATE" />
-            </intent-filter>
         </service>
 
-        <receiver
-            android:name=".model.broadcast.LocationUpdateReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="eu.tijlb.LOCATION_UPDATE" />
-            </intent-filter>
-        </receiver>
 
         <provider
             android:name=".model.database.location.LocationDatabaseFileProvider"

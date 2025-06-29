@@ -75,7 +75,7 @@ class DensityMapAdapter(context: Context) {
         private var instance: DensityMapAdapter? = null
         fun getInstance(context: Context): DensityMapAdapter {
             return instance ?: synchronized(this) {
-                instance ?: DensityMapAdapter(context).also { instance = it }
+                instance ?: DensityMapAdapter(context.applicationContext).also { instance = it }
             }
         }
     }
