@@ -1,6 +1,5 @@
 package eu.tijlb.opengpslogger.ui.activity
 
-import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
@@ -74,9 +73,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
-        this.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
-
+        registerLocationReceiver()
         Log.d("ogl-mainactivity", "Finished MainActivity onCreate")
     }
 
@@ -86,10 +83,31 @@ class MainActivity : AppCompatActivity() {
         recreate()
     }
 
+    override fun onStop() {
+        unregisterLocationReceiver()
+        super.onStop()
+    }
+
+    override fun onRestart() {
+        registerLocationReceiver()
+        super.onRestart()
+    }
+
     override fun onDestroy() {
         Log.d("ogl-mainactivity", "Destroying MainActivity")
-        this.unregisterReceiver(locationReceiver)
+        unregisterLocationReceiver()
         super.onDestroy()
+    }
+
+    private fun unregisterLocationReceiver() {
+        this.unregisterReceiver(locationReceiver)
+        Log.d("ogl-mainactivity", "Unregistered location receiver in MainActivity")
+    }
+
+    private fun registerLocationReceiver() {
+        val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
+        this.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
+        Log.d("ogl-mainactivity", "Registered location receiver in MainActivity")
     }
 
     private fun startPollingLocation() {

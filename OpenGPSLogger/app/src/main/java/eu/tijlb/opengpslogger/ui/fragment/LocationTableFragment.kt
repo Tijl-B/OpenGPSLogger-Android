@@ -133,9 +133,9 @@ class LocationTableFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
         requireContext().unregisterReceiver(locationReceiver)
+        _binding = null
+        super.onDestroyView()
     }
 
     @SuppressLint("Range")

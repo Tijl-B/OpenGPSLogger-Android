@@ -60,6 +60,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("ogl-settingsfragment", "Start creating settings fragment")
         context = requireContext()
         locationRequestSettingsHelper = LocationRequestSettingsHelper(context)
         advancedFiltersHelper = AdvancedFiltersHelper(context)
@@ -68,9 +69,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         tileServerDbHelper = TileServerDbHelper.getInstance(context)
         locationDbHelper = LocationDbHelper.getInstance(context)
         trackingStatusHelper = TrackingStatusHelper(context)
+        Log.d("ogl-settingsfragment", "Done creating settings fragment")
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        Log.d("ogl-settingsfragment", "Start creating settings fragment view")
         requestLocationButton = view.findViewById<Button>(R.id.button_request_location)
         requestLocationButton.setOnClickListener { toggleLocationTracking() }
 
@@ -91,11 +94,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         trackingActiveChangedListener = trackingStatusHelper.registerActiveChangedListener {
             requestingLocation = it
         }
+        Log.d("ogl-settingsfragment", "Done creating settings fragment view")
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        Log.d("ogl-settingsfragment", "Destroying SettingsFragment")
         trackingStatusHelper.deregisterActiveChangedListener(trackingActiveChangedListener)
+        super.onDestroyView()
     }
 
     private fun toggleLocationTracking() {

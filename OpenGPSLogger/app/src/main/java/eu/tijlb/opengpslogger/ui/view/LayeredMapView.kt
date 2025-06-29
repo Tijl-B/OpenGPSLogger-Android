@@ -66,6 +66,11 @@ class LayeredMapView @JvmOverloads constructor(
         layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
     }
 
+    override fun onDetachedFromWindow() {
+        Log.d("ogl-layeredmapview", "Detaching LayeredMapView from window...")
+        layers.forEach { it.cancelJob() }
+        super.onDetachedFromWindow()
+    }
 
     private fun setUpCenterAndZoom() {
         val centerCoords = browseSettingsHelper.getCenterCoords()
