@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <eu.tijlb.opengpslogger.ui.view.OsmMapView
-        android:id="@+id/osmMapView"
+    <eu.tijlb.opengpslogger.ui.view.LayeredMapView
+        android:id="@+id/layeredMapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#000" />

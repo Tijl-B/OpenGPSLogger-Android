@@ -5,17 +5,17 @@ import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
 import eu.tijlb.opengpslogger.R
-import eu.tijlb.opengpslogger.ui.view.OsmMapView
+import eu.tijlb.opengpslogger.ui.view.LayeredMapView
 
 class BrowseFragment : Fragment(R.layout.fragment_browse) {
 
-    private lateinit var osmMapView: OsmMapView
+    private lateinit var layeredMapView: LayeredMapView
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         Log.d("ogl-brosefragment", "Creating brose fragment view")
         super.onViewCreated(view, savedInstanceState)
 
-        osmMapView = view.findViewById(R.id.osmMapView)
+        layeredMapView = view.findViewById(R.id.layeredMapView)
     }
 
     override fun onResume() {
