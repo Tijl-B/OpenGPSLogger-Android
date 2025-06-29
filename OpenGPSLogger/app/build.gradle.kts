@@ -11,8 +11,8 @@ android {
         applicationId = "eu.tijlb.opengpslogger"
         minSdk = 34
         targetSdk = 35
-        versionCode = 43
-        versionName = "1.2.1"
+        versionCode = 44
+        versionName = "1.2.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

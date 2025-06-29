@@ -22,15 +22,10 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.R
-import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
-import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.locationbuffer.LocationBufferDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.ui.activity.MainActivity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

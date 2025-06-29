@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.2.2
+
+### Minor improvements
+- Some battery usage optimisations
+
 ### 1.2.1
 
 ### Minor improvements

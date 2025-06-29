@@ -183,7 +183,7 @@ class ImageRendererView(
     }
 
     override fun onDetachedFromWindow() {
-        Log.d("ogl-imagerendererview", "Detaching from window...")
+        Log.d("ogl-imagerendererview", "Detaching ImageRendererView from window...")
         super.onDetachedFromWindow()
         visualisationSettingsHelper.deregisterAdvancedFiltersChangedListener(
             visualisationSettingsChangedListener
