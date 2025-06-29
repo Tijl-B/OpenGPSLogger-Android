@@ -24,15 +24,15 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.tan
 
-class DensityMapBitmapRenderer(val context: Context) {
+class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
     private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(context)
 
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 
-    suspend fun draw(
+    override suspend fun draw(
         bbox: BBoxDto,
-        zoomLevel: Int,
+        zoom: Int,
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
@@ -42,15 +42,19 @@ class DensityMapBitmapRenderer(val context: Context) {
             Log.d("ogl-imagerendererview", "Stop drawing density map!")
             return null
         }
+        if (renderDimension.first == 0 || renderDimension.second == 0) {
+            Log.d("ogl-imagerendererview", "renderDimension: $renderDimension")
+            return null
+        }
 
-        val subdivisions = densityMapAdapter.getSubdivisions(zoomLevel)
+        val subdivisions = densityMapAdapter.getSubdivisions(zoom)
         val sparseDensityMap = SparseDensityMap(subdivisions, subdivisions)
         var adaptedClusterBitmap = createBitmap(renderDimension.first, renderDimension.second)
 
         assignBitmap(adaptedClusterBitmap)
 
         var i = 0
-        densityMapAdapter.getPoints(bbox, zoomLevel)
+        densityMapAdapter.getPoints(bbox, zoom)
             .use { cursor ->
                 run {
                     if (!coroutineContext.isActive) {

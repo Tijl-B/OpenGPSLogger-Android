@@ -8,7 +8,7 @@
     android:padding="0dp"
     tools:context=".ui.fragment.BrowseFragment">
 
-    <eu.tijlb.opengpslogger.ui.view.OsmMapView
+    <eu.tijlb.opengpslogger.ui.view.LayeredMapView
         android:id="@+id/osmMapView"
         android:layout_width="0dp"
         android:layout_height="0dp"

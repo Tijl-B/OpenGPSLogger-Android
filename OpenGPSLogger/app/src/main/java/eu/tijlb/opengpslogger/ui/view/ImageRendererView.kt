@@ -8,10 +8,10 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
-import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.dto.query.DATASOURCE_ALL
@@ -42,7 +42,6 @@ class ImageRendererView(
     private var visualisationSettingsHelper: VisualisationSettingsHelper =
         VisualisationSettingsHelper(context)
     private var visualisationSettingsChangedListener: OnSharedPreferenceChangeListener
-    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper(context)
 
     var onTilesLoadedListener: OnTilesLoadedListener? = null
     var onPointsLoadedListener: OnPointsLoadedListener? = null
@@ -108,7 +107,7 @@ class ImageRendererView(
     private val densityMapBitmapRenderer: DensityMapBitmapRenderer =
         DensityMapBitmapRenderer(context)
     private val copyRightNoticeBitmapRenderer: CopyRightNoticeBitmapRenderer =
-        CopyRightNoticeBitmapRenderer()
+        CopyRightNoticeBitmapRenderer(context)
     private val pointsBitmapRenderer: PointsBitmapRenderer
 
     private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
@@ -277,7 +276,7 @@ class ImageRendererView(
         densityMapBitmapRenderer.draw(
             bbox,
             zoom,
-            Pair(pointsRenderWidth, pointsRenderHeight),
+            Pair(width, height),
             { bitmap -> densityMapBitMap = bitmap }
         ) { invalidate() }
         onPointsLoadedListener?.onPointsLoaded()
@@ -357,28 +356,24 @@ class ImageRendererView(
 
     private fun loadOsmBackgroundAsync(bbox: BBoxDto) {
         osmJob = CoroutineScope(Dispatchers.IO).launch {
-            val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val clusterBitmap = createBitmap(width, height)
             osmBitMap = clusterBitmap
             osmImageBitmapRenderer.draw(
                 bbox,
                 zoom,
-                getBasemapUrl(),
+                Pair(width, height),
                 { bitmap -> osmBitMap = bitmap }
             )
             { invalidate() }
             onTilesLoadedListener?.onTilesLoaded()
+            updateCopyrightNotice(bbox)
         }
     }
 
-    private fun getBasemapUrl(): String {
-        updateCopyrightNotice()
-        return tileServerDbHelper.getSelectedUrl()
-    }
-
-    private fun updateCopyrightNotice() {
-        val copyrightNotice = tileServerDbHelper.getSelectedCopyrightNotice()
+    private suspend fun updateCopyrightNotice(bbox: BBoxDto) {
         copyRightNoticeBitmapRenderer.draw(
-            copyrightNotice,
+            bbox,
+            zoom,
             Pair(width, height),
             { bitmap -> copyrightBitMap = bitmap })
         { invalidate() }

@@ -63,7 +63,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
         set(value) {
             field = value
             imageRendererView.dataSource = value
-            initializeBeginAndEndTime()
+            initialiseBeginAndEndTimeAsync()
             resetProgressBars()
             updateDataSourceDeleteButtonVisibility()
             imageRendererView.redrawPointsAndOsm()
@@ -87,7 +87,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
         set(value) {
             field = value
             imageRendererView.inputBbox = value
-            initializeBeginAndEndTime()
+            initialiseBeginAndEndTimeAsync()
             resetProgressBars()
             imageRendererView.redrawPointsAndOsm()
         }
@@ -175,7 +175,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
             Log.d("ogl-homefragment", "AdvancedFiltersChangedLister triggered")
             imageRendererView.minAccuracy = advancedFiltersHelper.getMinAccuracy()
             imageRendererView.minAngle = advancedFiltersHelper.getMinAngle()
-            initializeBeginAndEndTime()
+            initialiseBeginAndEndTimeAsync()
             resetProgressBars()
             imageRendererView.redrawPointsAndOsm()
         }
@@ -207,15 +207,17 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
         imageRendererView.setOnClickListener { showZoomableImage() }
         imageRendererView.pointsRenderWidth = 4000
 
+        initialiseBeginAndEndTimeAsync()
+        initialiseDatasourcesSpinnerAsync()
+        imageRendererView.redrawPointsAndOsm()
+    }
+
+    private fun initialiseDatasourcesSpinnerAsync() {
         viewLifecycleOwner.lifecycleScope.launch {
             val datasources = withContext(Dispatchers.IO) {
                 locationDbHelper.getDataSources()
             }
             setUpDataSourcesSpinner(datasources)
-            withContext(Dispatchers.IO) {
-                initializeBeginAndEndTime()
-                imageRendererView.redrawPointsAndOsm()
-            }
         }
     }
 
@@ -248,21 +250,28 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
         }
     }
 
-    private fun initializeBeginAndEndTime() {
+    private fun initialiseBeginAndEndTimeAsync() {
         val query = PointsQuery(
             dataSource = selectedDataSource,
             bbox = inputBbox,
             minAccuracy = advancedFiltersHelper.getMinAccuracy(),
             minAngle = advancedFiltersHelper.getMinAngle()
         )
-        val (youngestPointUnix, oldestPointUnix) = locationDbHelper.getTimeRange(query)
+        viewLifecycleOwner.lifecycleScope.launch {
+            var (sTime, eTime) = Pair(startTime, endTime)
+            withContext(Dispatchers.IO) {
+                val (youngestPointUnix, oldestPointUnix) = locationDbHelper.getTimeRange(query)
 
-        startTime = Instant.ofEpochMilli(youngestPointUnix)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-        endTime = Instant.ofEpochMilli(oldestPointUnix)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
+                sTime = Instant.ofEpochMilli(youngestPointUnix)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                eTime = Instant.ofEpochMilli(oldestPointUnix)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+            }
+            startTime = sTime
+            endTime = eTime
+        }
     }
 
     override fun onDestroyView() {

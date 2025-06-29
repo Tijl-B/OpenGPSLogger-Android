@@ -10,6 +10,7 @@ import android.util.Log
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
+import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import kotlinx.coroutines.Job
@@ -19,20 +20,24 @@ import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
-class OsmImageBitmapRenderer(val context: Context) {
+class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
+
+    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper(context)
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 
     var currentJob: Job? = null
 
-    suspend fun draw(
+    override suspend fun draw(
         bbox: BBoxDto,
         zoom: Int,
-        smurl: String,
+        renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
-    ) {
+    ): Bitmap? {
         currentJob?.cancel()
+
+        val smurl = tileServerDbHelper.getSelectedUrl()
 
         val minLat = bbox.minLat
         val maxLat = bbox.maxLat
@@ -63,7 +68,7 @@ class OsmImageBitmapRenderer(val context: Context) {
                 "ogl-osmimagebitmaprenderer",
                 "Cannot get image cluster, width $width ($xmax - $xmin) and / or height $height ($ymax - $ymin) is 0"
             )
-            return
+            return null
         }
 
         val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -77,7 +82,7 @@ class OsmImageBitmapRenderer(val context: Context) {
         var i = 0
         if (!coroutineContext.isActive) {
             Log.d("ogl-osmhelper", "Interrupting...")
-            return
+            return null
         }
         val job = Job()
         currentJob = job
@@ -142,11 +147,12 @@ class OsmImageBitmapRenderer(val context: Context) {
                 }
                 if (!coroutineContext.isActive) {
                     Log.d("ogl-osmimagebitmaprenderer", "Interrupting...")
-                    return
+                    return null
                 }
             }
         }
         Log.d("ogl-osmimagebitmaprenderer", "Done loading osm background")
+        return null
     }
 
     private fun getOrDownloadImage(url: String, callback: (Bitmap) -> Unit): () -> Unit {
