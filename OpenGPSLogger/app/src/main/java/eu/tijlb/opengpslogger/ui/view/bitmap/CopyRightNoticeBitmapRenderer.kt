@@ -19,7 +19,7 @@ class CopyRightNoticeBitmapRenderer(val context: Context): AbstractBitmapRendere
     private val textPaint = Paint().apply {
         isAntiAlias = true
         color = Color.WHITE
-        textSize = 16f
+        textSize = 26f
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
     }
     private val copyrightBarPaint = Paint().apply {

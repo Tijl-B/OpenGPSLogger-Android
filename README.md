@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.2.0
+
+### Features
+- Display copyright notice on browse view
+
 ### 1.1.3
 
 ### Fixes
