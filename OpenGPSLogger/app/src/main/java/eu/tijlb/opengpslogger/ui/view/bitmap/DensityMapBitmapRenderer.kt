@@ -96,7 +96,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
                                 sparseDensityMap.put(xIndex, yIndex, color)
                             }
 
-                            if ((++i) % 10000 == 0) {
+                            if ((++i) % 100000 == 0) {
                                 Log.d(
                                     "ogl-imagerendererview-point",
                                     "refreshing density map bitmap $i"
