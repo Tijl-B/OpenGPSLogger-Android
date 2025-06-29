@@ -199,5 +199,13 @@ class TileServerDbHelper(context: Context) :
     companion object {
         const val DATABASE_VERSION = 2
         const val DATABASE_NAME = "tileserver.sqlite"
+
+        private var instance: TileServerDbHelper? = null
+
+        fun getInstance(context: Context): TileServerDbHelper {
+            return instance ?: synchronized(this) {
+                instance ?: TileServerDbHelper(context.applicationContext).also { instance = it }
+            }
+        }
     }
 }

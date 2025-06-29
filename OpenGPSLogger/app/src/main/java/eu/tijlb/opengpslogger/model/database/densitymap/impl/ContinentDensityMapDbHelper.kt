@@ -24,7 +24,7 @@ class ContinentDensityMapDbHelper(context: Context) :
         private var instance: ContinentDensityMapDbHelper? = null
         fun getInstance(context: Context): ContinentDensityMapDbHelper {
             return instance ?: synchronized(this) {
-                instance ?: ContinentDensityMapDbHelper(context).also { instance = it }
+                instance ?: ContinentDensityMapDbHelper(context.applicationContext).also { instance = it }
             }
         }
     }

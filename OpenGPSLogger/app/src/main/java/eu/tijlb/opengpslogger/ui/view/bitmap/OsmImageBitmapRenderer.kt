@@ -22,7 +22,7 @@ import kotlin.math.min
 
 class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
 
-    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper(context)
+    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper.getInstance(context)
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 

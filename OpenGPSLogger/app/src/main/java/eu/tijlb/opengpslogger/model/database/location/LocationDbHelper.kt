@@ -167,7 +167,7 @@ class LocationDbHelper(val context: Context) :
 
         fun getInstance(context: Context): LocationDbHelper {
             return instance ?: synchronized(this) {
-                instance ?: LocationDbHelper(context).also { instance = it }
+                instance ?: LocationDbHelper(context.applicationContext).also { instance = it }
             }
         }
 

@@ -127,5 +127,13 @@ class BoundingBoxDbHelper(context: Context) :
     companion object {
         const val DATABASE_VERSION = 1
         const val DATABASE_NAME = "boundingbox.sqlite"
+
+        private var instance: BoundingBoxDbHelper? = null
+
+        fun getInstance(context: Context): BoundingBoxDbHelper {
+            return instance ?: synchronized(this) {
+                instance ?: BoundingBoxDbHelper(context.applicationContext).also { instance = it }
+            }
+        }
     }
 }

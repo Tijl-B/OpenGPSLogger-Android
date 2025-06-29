@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.2.1
+
+### Minor improvements
+- Make the location polling notification write to a separate small buffer database
+- Better handling of database connections in general
+
 ### 1.2.0
 
 ### Features

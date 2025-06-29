@@ -1,6 +1,8 @@
 package eu.tijlb.opengpslogger.ui.activity
 
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
@@ -9,7 +11,9 @@ import androidx.navigation.findNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
+import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.database.locationbuffer.LocationBufferUtil
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.model.service.LocationNotificationService
 import kotlinx.coroutines.CoroutineScope
@@ -20,13 +24,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var locationDbHelper: LocationDbHelper
+    private lateinit var locationBufferUtil: LocationBufferUtil
     private lateinit var trackingStatusHelper: TrackingStatusHelper
+    private lateinit var locationReceiver: LocationUpdateReceiver
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("ogl-mainactivity", "Running MainActivity onCreate")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationDbHelper = LocationDbHelper.getInstance(this)
+        locationBufferUtil = LocationBufferUtil(this)
         trackingStatusHelper = TrackingStatusHelper(this)
 
         setContentView(binding.root)
@@ -57,12 +66,30 @@ class MainActivity : AppCompatActivity() {
             .launch {
                 locationDbHelper.updateDistAngleIfNeeded()
             }
+        locationBufferUtil.flushBufferAsync()
+
+        locationReceiver = LocationUpdateReceiver().apply {
+            setOnLocationReceivedListener { location ->
+                locationBufferUtil.flushBufferAsync()
+            }
+        }
+
+        val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
+        this.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
+
+        Log.d("ogl-mainactivity", "Finished MainActivity onCreate")
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
         recreate()
+    }
+
+    override fun onDestroy() {
+        Log.d("ogl-mainactivity", "Destroying MainActivity")
+        this.unregisterReceiver(locationReceiver)
+        super.onDestroy()
     }
 
     private fun startPollingLocation() {
