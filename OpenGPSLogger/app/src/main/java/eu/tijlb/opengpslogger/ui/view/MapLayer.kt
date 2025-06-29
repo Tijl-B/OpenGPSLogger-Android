@@ -43,8 +43,12 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         return zoom != visualZoom.toInt()
     }
 
-    fun translateAndScale(canvas: Canvas, visualZoom: Double) {
+    fun drawBitmapOnCanvas(canvas: Canvas, visualZoom: Double) {
         bitmap?.let {
+            if(!bitmapRenderer.redrawOnTranslation()) {
+                canvas.drawBitmap(it, 0f, 0f, null)
+                return
+            }
             canvas.withTranslation(offsetX, offsetY) {
                 val scaleAmount = calculateScaleAmount(visualZoom)
                 scale(
@@ -63,6 +67,9 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     }
 
     fun commitZoom(newZoom: Int) {
+        if(!bitmapRenderer.redrawOnTranslation()) {
+            return
+        }
         val oldZoom = zoom
         bitmap = bitmap?.let {
             zoomBitmap(it, oldZoom, newZoom)
@@ -71,6 +78,10 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     }
 
     fun commitPan(visualZoom: Double): Triple<Float, Float, Int>? {
+        if(!bitmapRenderer.redrawOnTranslation()) {
+            return null
+        }
+
         val amountToPanX = -offsetX
         val amountToPanY = -offsetY
         if (amountToPanX == 0F && amountToPanY == 0F) {

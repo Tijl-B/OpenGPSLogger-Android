@@ -12,6 +12,7 @@ import android.view.View
 import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
+import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +37,8 @@ class LayeredMapView @JvmOverloads constructor(
 
     private val layers = listOf(
         MapLayer(OsmImageBitmapRenderer(context)),
-        MapLayer(DensityMapBitmapRenderer(context))
+        MapLayer(DensityMapBitmapRenderer(context)),
+        MapLayer(CopyRightNoticeBitmapRenderer(context))
     )
 
     private var centerLat = 0.0
@@ -61,7 +63,7 @@ class LayeredMapView @JvmOverloads constructor(
             redrawIfNeeded()
             isSetUp = true
         }
-        layers.forEach { it.translateAndScale(canvas, visualZoomLevel) }
+        layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
     }
 
 
