@@ -41,7 +41,7 @@ class LocationNotificationService : Service() {
     private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var presetChangedListener: SharedPreferences.OnSharedPreferenceChangeListener
     private lateinit var presetName: String
-    private val locationBufferDbHelper = LocationBufferDbHelper.getInstance(this)
+    private lateinit var locationBufferDbHelper: LocationBufferDbHelper
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
@@ -52,6 +52,7 @@ class LocationNotificationService : Service() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
         trackingStatusHelper = TrackingStatusHelper(this)
+        locationBufferDbHelper = LocationBufferDbHelper.getInstance(this)
 
         presetChangedListener =
             locationRequestSettingsHelper.registerPresetChangedListener { updateLocationRequest() }
