@@ -100,8 +100,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun unregisterLocationReceiver() {
-        this.unregisterReceiver(locationReceiver)
-        Log.d("ogl-mainactivity", "Unregistered location receiver in MainActivity")
+        try {
+            unregisterReceiver(locationReceiver)
+            Log.d("ogl-mainactivity", "Unregistered location receiver in MainActivity")
+        } catch (e: IllegalArgumentException) {
+            Log.i("ogl-mainactivity", "Failed to unregistered location receiver in MainActivity", e)
+        }
     }
 
     private fun registerLocationReceiver() {

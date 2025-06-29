@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.2.3
+
+### Fixes
+- Fix notification service being destroyed on app closure
+
 ### 1.2.2
 
 ### Minor improvements
