@@ -75,7 +75,7 @@ class LocationDbHelper(val context: Context) :
         }
 
         val db = writableDatabase
-        val newRowId = db.replace(LocationDbContract.TABLE_NAME, null, values)
+        val newRowId = db.insert(LocationDbContract.TABLE_NAME, null, values)
         if (newRowId % 1000 == 0L) {
             Log.d("ogl-locationdbhelper", "Saved $newRowId: $values to database")
         }

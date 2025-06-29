@@ -16,7 +16,9 @@ import eu.tijlb.opengpslogger.model.util.ColorUtil
 import eu.tijlb.opengpslogger.ui.view.bitmap.PointsBitmapRenderer.OnPointProgressUpdateListener
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
+import kotlin.math.ceil
 import kotlin.math.ln
+import kotlin.math.sqrt
 import kotlin.math.tan
 
 class DensityMapBitmapRenderer(val context: Context) {
@@ -123,6 +125,7 @@ class DensityMapBitmapRenderer(val context: Context) {
             "ogl-imagerendererview",
             "Extracting and scaling sparse bitmap into full bitmap with bbox $bbox"
         )
+
         val worldWidth = sourceBitMap.width.toDouble()
         val worldHeight = sourceBitMap.height.toDouble()
 
@@ -144,7 +147,7 @@ class DensityMapBitmapRenderer(val context: Context) {
 
         val dstWidth = targetBitmap.width
         val dstHeight = targetBitmap.height
-
+        
         val pixels = IntArray(dstWidth * dstHeight)
         for (i in pixels.indices) {
             val x = i % dstWidth
@@ -171,12 +174,11 @@ class DensityMapBitmapRenderer(val context: Context) {
 
             pixels[i] = if (amount > 0) ColorUtil.toDensityColor(amount.toLong(), 10_000L) else 0
         }
+
         targetBitmap.setPixels(pixels, 0, dstWidth, 0, 0, dstWidth, dstHeight)
-
-
-        var result = targetBitmap
-        return result
+        return targetBitmap
     }
+
 
     fun blurBitmapMultiplePasses(
         context: Context,
