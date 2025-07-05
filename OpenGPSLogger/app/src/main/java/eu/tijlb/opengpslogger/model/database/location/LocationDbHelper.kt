@@ -51,6 +51,7 @@ class LocationDbHelper(val context: Context) :
         super.onConfigure(db)
         db.enableWriteAheadLogging()
         db.execSQL("PRAGMA synchronous = NORMAL")
+        db.rawQuery("PRAGMA busy_timeout = 5000", null).use {}
     }
 
     fun save(location: Location, source: String): Long {

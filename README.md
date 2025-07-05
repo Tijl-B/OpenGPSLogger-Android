@@ -2,6 +2,20 @@
 
 ## Releases
 
+### 1.2.4
+[apk](release/opengpslogger-1-2-4.apk)
+
+### Fixes
+- Set max wait time to 5 seconds on database connections to prevent deadlocks
+- When opening the app after being in the background, force a point buffer sync
+- Fix the image generator view not populating correctly initially
+- When importing data from a file, add the data to the density maps
+
+#### Images
+<img src="images/1.2.4/browse_view_edinburgh.jpg" width="40%" height="40%">
+<img src="images/1.2.4/image_generator_nyc.jpg" width="40%" height="40%">
+<img src="images/1.2.4/settings.jpg" width="40%" height="40%">
+
 ### 1.2.3
 
 ### Fixes

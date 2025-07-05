@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRestart() {
         registerLocationReceiver()
+        locationBufferUtil.flushBufferAsync()
         super.onRestart()
     }
 

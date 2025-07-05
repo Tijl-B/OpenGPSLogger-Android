@@ -37,6 +37,14 @@ abstract class AbstractDensityMapDbHelper(
         db.execSQL(createTableSql)
     }
 
+    override fun onConfigure(db: SQLiteDatabase) {
+        super.onConfigure(db)
+        db.enableWriteAheadLogging()
+        db.execSQL("PRAGMA synchronous = NORMAL")
+        db.rawQuery("PRAGMA busy_timeout = 5000", null).use {}
+    }
+
+
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
     }
 
@@ -47,7 +55,6 @@ abstract class AbstractDensityMapDbHelper(
     abstract fun subdivisions(): Int
 
     fun addLocation(location: Location) {
-        Log.d("ogl-densitymapdbhelper", "Saving location $location")
         val (xIndex, yIndex) = toIndex(location.latitude, location.longitude)
         val locationTime = location.time
 
