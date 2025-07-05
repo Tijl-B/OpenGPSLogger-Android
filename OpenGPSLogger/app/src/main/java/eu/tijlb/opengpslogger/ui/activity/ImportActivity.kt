@@ -12,6 +12,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityImportBinding
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.parser.gpx.GpxParser
 import eu.tijlb.opengpslogger.model.parser.json.JsonParser
@@ -26,11 +27,13 @@ class ImportActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityImportBinding
     private lateinit var locationDbHelper: LocationDbHelper
+    private lateinit var densityMapAdapter: DensityMapAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         locationDbHelper = LocationDbHelper.getInstance(this)
+        densityMapAdapter = DensityMapAdapter.getInstance(this)
         handleIncomingIntent(intent)
 
         binding = ActivityImportBinding.inflate(layoutInflater)
@@ -131,6 +134,7 @@ class ImportActivity : AppCompatActivity() {
             point.accuracy?.let { accuracy = it }
         }
         locationDbHelper.save(location, "$source::$importStart")
+        densityMapAdapter.addLocation(location)
     }
 
     override fun onSupportNavigateUp(): Boolean {

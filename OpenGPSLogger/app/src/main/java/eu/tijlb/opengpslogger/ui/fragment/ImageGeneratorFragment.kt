@@ -75,6 +75,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
             imageRendererView.beginTime = value
             binding.pickDateFrom.text = "from ${value.format(DateTimeFormatter.ISO_DATE)}"
             resetProgressBars()
+            imageRendererView.redrawPointsAndOsm()
         }
     private var endTime = LocalDate.MAX
         set(value) {
@@ -82,6 +83,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
             imageRendererView.endTime = value
             binding.pickDateTo.text = "to ${value.format(DateTimeFormatter.ISO_DATE)}"
             resetProgressBars()
+            imageRendererView.redrawPointsAndOsm()
         }
     private var inputBbox: BBoxDto? = null
         set(value) {

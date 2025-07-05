@@ -37,6 +37,7 @@ class LocationBufferDbHelper(val context: Context) :
         super.onConfigure(db)
         db.enableWriteAheadLogging()
         db.execSQL("PRAGMA synchronous = NORMAL")
+        db.rawQuery("PRAGMA busy_timeout = 5000", null).use {}
     }
 
     fun save(location: Location, source: String): Long {
@@ -90,7 +91,9 @@ class LocationBufferDbHelper(val context: Context) :
 
         fun getInstance(context: Context): LocationBufferDbHelper {
             return instance ?: synchronized(this) {
-                instance ?: LocationBufferDbHelper(context.applicationContext).also { instance = it }
+                instance ?: LocationBufferDbHelper(context.applicationContext).also {
+                    instance = it
+                }
             }
         }
     }
