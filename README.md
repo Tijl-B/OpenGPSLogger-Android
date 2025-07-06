@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.3.0
+
+### Features
+- Add privacy policy
+
 ### 1.2.4
 [apk](release/opengpslogger-1-2-4.apk)
 

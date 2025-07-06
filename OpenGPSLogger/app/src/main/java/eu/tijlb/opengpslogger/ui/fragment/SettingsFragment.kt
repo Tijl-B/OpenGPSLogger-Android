@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.switchmaterial.SwitchMaterial
+import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
@@ -77,6 +78,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         requestLocationButton = view.findViewById<Button>(R.id.button_request_location)
         requestLocationButton.setOnClickListener { toggleLocationTracking() }
 
+        view.findViewById<Button>(R.id.button_privacy_policy)
+            .setOnClickListener { openPrivacyPolicyDialog() }
         view.findViewById<Button>(R.id.button_about)
             .setOnClickListener { openAboutDialog() }
         view.findViewById<Button>(R.id.button_tracking_settings)
@@ -346,6 +349,24 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             .setNegativeButton(R.string.tracking_settings_cancel) { dialog, _ ->
                 dialog.dismiss()
             }
+            .create()
+            .show()
+        return true
+    }
+
+    private fun openPrivacyPolicyDialog(): Boolean {
+        val policy = getString(
+            R.string.privacy_policy_long,
+            BuildConfig.PRIVACY_POLICY_DEVELOPER,
+            BuildConfig.PRIVACY_POLICY_EMAIL,
+            BuildConfig.PRIVACY_POLICY_WEBSITE,
+            getString(R.string.app_name)
+        )
+
+        AlertDialog.Builder(context)
+            .setTitle(getString(R.string.privacy_policy))
+            .setMessage(policy)
+            .setPositiveButton(R.string.privacy_policy_confirm) { dialog, _ -> dialog.dismiss() }
             .create()
             .show()
         return true
