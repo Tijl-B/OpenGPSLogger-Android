@@ -21,9 +21,11 @@
 - When importing data from a file, add the data to the density maps
 
 #### Images
-<img src="images/1.2.4/browse_view_edinburgh.jpg" width="40%" height="40%">
-<img src="images/1.2.4/image_generator_nyc.jpg" width="40%" height="40%">
-<img src="images/1.2.4/settings.jpg" width="40%" height="40%">
+<div style="display: flex; gap: 10px; align-items: center;">
+  <img src="images/1.2.4/browse_view_edinburgh.jpg" width="30%" height="30%">
+  <img src="images/1.2.4/image_generator_nyc.jpg" width="30%" height="30%">
+  <img src="images/1.2.4/settings.jpg" width="30%" height="30%">
+</div>
 
 ### 1.2.3
 
