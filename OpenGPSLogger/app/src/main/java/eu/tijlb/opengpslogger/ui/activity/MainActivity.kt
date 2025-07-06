@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import eu.tijlb.opengpslogger.R
@@ -15,7 +16,6 @@ import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.locationbuffer.LocationBufferUtil
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.model.service.LocationNotificationService
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -29,8 +29,8 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         Log.d("ogl-mainactivity", "Running MainActivity onCreate")
+        super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationDbHelper = LocationDbHelper.getInstance(this)
@@ -39,37 +39,24 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(binding.root)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-
-        bottomNav.setOnItemSelectedListener { item ->
-            run {
-                when (item.itemId) {
-                    R.id.item_browse -> navController.navigate(R.id.item_browse)
-                    R.id.item_generate_image -> navController.navigate(R.id.item_generate_image)
-                    R.id.item_manage_data -> navController.navigate(R.id.item_manage_data)
-                    R.id.item_settings -> navController.navigate(R.id.item_settings)
-                }
-                return@run true
-            }
-
+        if (trackingStatusHelper.isActive()) {
+            startPollingLocation()
         }
-        CoroutineScope(Dispatchers.Default)
-            .launch {
-                if (trackingStatusHelper.isActive()) {
-                    startPollingLocation()
-                }
-            }
-        CoroutineScope(Dispatchers.IO)
-            .launch {
-                locationDbHelper.updateDistAngleIfNeeded()
-            }
-        locationBufferUtil.flushBufferAsync()
+
+        binding.root.post {
+            setupBottomNavigation()
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            locationBufferUtil.flushBuffer()
+            locationDbHelper.updateDistAngleIfNeeded()
+        }
 
         locationReceiver = LocationUpdateReceiver().apply {
             setOnLocationReceivedListener { location ->
-                locationBufferUtil.flushBufferAsync()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    locationBufferUtil.flushBuffer()
+                }
             }
         }
 
@@ -78,19 +65,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onNewIntent(intent: Intent?) {
+        Log.d("ogl-mainactivity", "Running MainActivity onNewIntent")
         super.onNewIntent(intent)
-        setIntent(intent)
-        recreate()
     }
 
     override fun onStop() {
+        Log.d("ogl-mainactivity", "Running MainActivity onStop")
         unregisterLocationReceiver()
         super.onStop()
     }
 
     override fun onRestart() {
+        Log.d("ogl-mainactivity", "Running MainActivity onRestart")
         registerLocationReceiver()
-        locationBufferUtil.flushBufferAsync()
+        lifecycleScope.launch(Dispatchers.IO) {
+            locationBufferUtil.flushBuffer()
+        }
         super.onRestart()
     }
 
@@ -98,6 +88,21 @@ class MainActivity : AppCompatActivity() {
         Log.d("ogl-mainactivity", "Destroying MainActivity")
         unregisterLocationReceiver()
         super.onDestroy()
+    }
+
+    private fun setupBottomNavigation() {
+        val navController = findNavController(R.id.nav_host_fragment_content_main)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.item_browse -> navController.navigate(R.id.item_browse)
+                R.id.item_generate_image -> navController.navigate(R.id.item_generate_image)
+                R.id.item_manage_data -> navController.navigate(R.id.item_manage_data)
+                R.id.item_settings -> navController.navigate(R.id.item_settings)
+            }
+            true
+        }
     }
 
     private fun unregisterLocationReceiver() {
