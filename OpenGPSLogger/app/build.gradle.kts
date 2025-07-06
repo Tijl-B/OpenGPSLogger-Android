@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -11,10 +13,32 @@ android {
         applicationId = "eu.tijlb.opengpslogger"
         minSdk = 34
         targetSdk = 35
-        versionCode = 46
-        versionName = "1.2.4"
+        versionCode = 47
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProps = Properties()
+        val localPropsFile = rootProject.file("local.properties")
+        if (localPropsFile.exists()) {
+            localPropsFile.inputStream().use { localProps.load(it) }
+        }
+
+        buildConfigField(
+            "String",
+            "PRIVACY_POLICY_DEVELOPER",
+            "\"${localProps["privacyPolicyDeveloper"]}\""
+        )
+        buildConfigField(
+            "String",
+            "PRIVACY_POLICY_EMAIL",
+            "\"${localProps["privacyPolicyEmail"]}\""
+        )
+        buildConfigField(
+            "String",
+            "PRIVACY_POLICY_WEBSITE",
+            "\"${localProps["privacyPolicyWebsite"]}\""
+        )
     }
 
     buildTypes {
@@ -35,6 +59,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
     testOptions {
         unitTests {
@@ -73,7 +98,7 @@ dependencies {
     implementation(libs.core.ktx)
 
     annotationProcessor(libs.compiler)
-    
+
     testImplementation(libs.junit)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockito.core)

@@ -75,4 +75,6 @@
     <string name="starting_tracking">Starting tracking</string>
     <string name="location_permission_missing">Location permission missing</string>
     <string name="notification_permission_missing">Notification permission missing</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_confirm">Ok</string>
 </resources>

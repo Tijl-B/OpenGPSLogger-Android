@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy_policy_long">
+        Privacy Policy for %4$s\n
+        Effective Date: July 5, 2025\n
+        Developer: %1$s\n
+        App Name: %4$s\n\n
+
+        1. Overview\n
+        %4$s is a privacy-focused app that records accurate location data on your device. This privacy policy explains how your data is handled. In short: your data stays on your device and is never uploaded, shared, or collected by the developer.\n\n
+
+        2. Data Collection and Usage\n
+        Location Data\n
+        The app collects your device’s location data with your permission. This data is:\n
+        - Stored only locally on your device.\n
+        - Never transmitted to any external servers.\n
+        - Never accessible to the app developer or third parties.\n\n
+
+        Storage\n
+        All collected and derived data is saved in local SQLite databases on your phone. You have full control over this data.\n\n
+
+        Export\n
+        The app provides a manual export feature that allows you to share the raw database of the collected location data via Android’s share menu (e.g. to Google Drive, email, etc.). These exports are:\n
+        - Triggered only by the user.\n
+        - Unencrypted.\n
+        - Entirely under your control.\n\n
+
+        3. Data Sharing\n
+        %4$s does not:\n
+        - Send any data to remote servers.\n
+        - Use third-party analytics.\n
+        - Use any form of tracking.\n
+        - Require a user account or login.\n\n
+
+        Your data is never shared with the developer or any third party.\n\n
+
+        4. Permissions\n
+        %4$s may request the following Android permissions:\n
+        - Location: To record your GPS position while logging.\n
+        - Storage access: To read imported files and to save exported files if you choose to import or export your data.\n\n
+
+        All permissions are requested transparently and only used for their intended purpose.\n\n
+
+        5. Data Retention and Deletion\n
+        All data is stored locally on your device and remains there until you choose to delete the app or manually delete the data within it.\n
+        You can delete all collected data at any time by:\n
+        - Clearing app data via your device settings.\n
+        - Uninstalling the app.\n\n
+
+        6. Children’s Privacy\n
+        %4$s is not intended for use by children under 13. The app does not knowingly collect any data from children.\n\n
+
+        7. Contact\n
+        If you have any questions about this privacy policy, you can contact the developer at:\n
+        Email: %2$s\n
+        Website: %3$s\n\n
+    </string>
+</resources>

@@ -2,78 +2,88 @@
 
 ## Releases
 
+### 1.3.0
+[apk](release/opengpslogger-1-3-0.apk)
+
+#### Features
+- Add privacy policy
+
+#### Fixes
+- Stability improvements
+
 ### 1.2.4
 [apk](release/opengpslogger-1-2-4.apk)
 
-### Fixes
+#### Fixes
 - Set max wait time to 5 seconds on database connections to prevent deadlocks
 - When opening the app after being in the background, force a point buffer sync
 - Fix the image generator view not populating correctly initially
 - When importing data from a file, add the data to the density maps
 
 #### Images
-<img src="images/1.2.4/browse_view_edinburgh.jpg" width="40%" height="40%">
-<img src="images/1.2.4/image_generator_nyc.jpg" width="40%" height="40%">
-<img src="images/1.2.4/settings.jpg" width="40%" height="40%">
+<div style="display: flex; gap: 10px; align-items: center;">
+  <img src="images/1.2.4/browse_view_edinburgh.jpg" width="30%" height="30%">
+  <img src="images/1.2.4/image_generator_nyc.jpg" width="30%" height="30%">
+  <img src="images/1.2.4/settings.jpg" width="30%" height="30%">
+</div>
 
 ### 1.2.3
 
-### Fixes
+#### Fixes
 - Fix notification service being destroyed on app closure
 
 ### 1.2.2
 
-### Minor improvements
+#### Minor improvements
 - Some battery usage optimisations
 
 ### 1.2.1
 
-### Minor improvements
+#### Minor improvements
 - Make the location polling notification write to a separate small buffer database
 - Better handling of database connections in general
 
 ### 1.2.0
 
-### Features
+#### Features
 - Display copyright notice on browse view
 
 ### 1.1.3
 
-### Fixes
+#### Fixes
 - Update zoom level while scrolling instead of on finger lift
 
 ### 1.1.2
 
-### Fixes
+#### Fixes
 - Improve location request preset values
 
 ### 1.1.1
 
-### Fixes
+#### Fixes
 - Improve responsiveness of browse view
 
 ### 1.1.0
 
-### Features
+#### Features
 - Persist location of browse view to continue next time where the user left
 
 ### 1.0.2
 
-### Fixes
+#### Fixes
 - Improved asynchronicity in image renderer and data view to not block the main thread.
 
 ### 1.0.1
 
-### Fixes
+#### Fixes
 - The start / stop tracking button became inconsistent with the actual state in the last version, this is now fixed.
 - Improvements to the tracking notification
 
 ### 1.0.0
-[apk](release/opengpslogger-1-0-0.apk)
 
 Status: Alpha. Minor bugs and crashes are expected.
 
-### Features
+#### Features
 - Full UI / UX rework, with bottom bar navigation. Adaptive view is now the default.
 
 
@@ -116,7 +126,7 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Load osm tiles on opening adaptive view instead of after touch
 - Overwrite old tiles with new tiles as they come in on zoom and pan to avoid black flickers
 
-### Known issues
+#### Known issues
 - Zooming and panning translations aren't applied perfectly
 
 ### 0.20.0
@@ -163,7 +173,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Add continent density map visualisation
 
 ### 0.16.0
-[apk](release/opengpslogger-0-16-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -191,7 +200,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
   - Allow specifying color opacity percentage
 
 ### 0.13.0
-[apk](release/opengpslogger-0-13-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -201,7 +209,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
   - Choose color randomizer seed
 
 ### 0.12.0
-[apk](release/opengpslogger-0-12-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -218,7 +225,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 <img src="images/0.12.0/dropdown_menu.jpg" width="40%" height="40%">
 
 ### 0.11.1
-[apk](release/opengpslogger-0-11-1.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -231,7 +237,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Fix issue where app would crash if the bounding box of selected points is too small
 
 ### 0.11.0
-[apk](release/opengpslogger-0-11-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -239,7 +244,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - New settings menu with the ability to select one of the default tile servers, or to add custom tile servers
 
 ### 0.10.0
-[apk](release/opengpslogger-0-10-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -247,7 +251,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Allow importing json from local (phone) export of Google Maps Timeline data (Timeline.json)
 
 ### 0.9.0
-[apk](release/opengpslogger-0-9-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -255,7 +258,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Allow importing json from local (phone) export of Google Maps Timeline data (location-history.json)
 
 ### 0.8.0
-[apk](release/opengpslogger-0-8-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -281,7 +283,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Store angle and distance to neighbors for future outlier detection
 
 ### 0.6.0
-[apk](release/opengpslogger-0-6-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -293,7 +294,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
   - specify line disconnection by time
 
 ### 0.5.0
-[apk](release/opengpslogger-0-5-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -307,7 +307,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Fix notification sometimes showing 0 points tracked instead of actual amount
 
 ### 0.4.0
-[apk](release/opengpslogger-0-4-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -315,7 +314,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Allow deleting user provided bounding boxes
 
 ### 0.3.0
-[apk](release/opengpslogger-0-3-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -323,7 +321,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - When clicking on the preview image, a popup opens allowing to zoom in
 
 ### 0.2.0
-[apk](release/opengpslogger-0-2-0.apk)
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.
 
@@ -342,7 +339,6 @@ Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality wo
 - Add about page
 
 ### 0.0.1
-[apk](release/opengpslogger-0-0-1.apk)
 
 
 Status: proof of concept. Bugs and bad UI/UX are expected. Core functionality works.

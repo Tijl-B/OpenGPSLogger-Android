@@ -57,6 +57,13 @@
             android:text="@string/advanced_filters" />
 
         <Button
+            android:id="@+id/button_privacy_policy"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/privacy_policy" />
+
+        <Button
             android:id="@+id/button_about"
             style="?android:attr/buttonBarButtonStyle"
             android:layout_width="match_parent"
