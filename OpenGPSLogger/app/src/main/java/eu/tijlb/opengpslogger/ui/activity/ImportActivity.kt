@@ -22,6 +22,8 @@ private const val GPX_EXTENSION = ".gpx"
 private const val GPX_MIMETYPE = "application/gpx+xml"
 private const val JSON_MIMETYPE = "application/json"
 
+private const val TAG = "ogl-importactivity"
+
 class ImportActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -30,7 +32,7 @@ class ImportActivity : AppCompatActivity() {
     private lateinit var densityMapAdapter: DensityMapAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        super.onCreate(null)
 
         locationDbHelper = LocationDbHelper.getInstance(this)
         densityMapAdapter = DensityMapAdapter.getInstance(this)
@@ -52,7 +54,7 @@ class ImportActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingIntent(intent: Intent?) {
-        Log.d("ogl-importactivity", "Got intent $intent.")
+        Log.d(TAG, "Got intent $intent.")
         when(intent?.action) {
             Intent.ACTION_SEND -> {
                 val uri = intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
@@ -70,7 +72,7 @@ class ImportActivity : AppCompatActivity() {
                 val uri = intent.data
                 uri?.let { handleUri(it) }
             }
-            else -> Log.w("ogl-importactivity", "Ignoring intent $intent.")
+            else -> Log.w(TAG, "Ignoring intent $intent.")
         }
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -82,13 +84,13 @@ class ImportActivity : AppCompatActivity() {
     private fun handleUri(it: Uri): Any {
         val fileType = contentResolver.getType(it)
         return if (fileType == GPX_MIMETYPE || isGpxFile(it)) {
-            Log.d("ogl-importactivity-gpx", "Processing GPX file: $it")
+            Log.d(TAG, "Processing GPX file: $it")
             parseAndStoreGpxFile(it)
         } else if (fileType == JSON_MIMETYPE) {
-            Log.d("ogl-importactivity-json", "Processing JSON file: $it")
+            Log.d(TAG, "Processing JSON file: $it")
             parserAndStoreJsonFile(it)
         } else {
-            Log.d("ogl-importactivity", "Skipping unsupported file type: $it")
+            Log.d(TAG, "Skipping unsupported file type: $it")
         }
     }
 
@@ -125,7 +127,7 @@ class ImportActivity : AppCompatActivity() {
         importStart: Long,
         source: String,
     ) {
-        Log.d("ogl-importactivity", "Storing point $point")
+        Log.d(TAG, "Storing point $point")
         var location = Location(source).apply {
             latitude = point.lat
             longitude = point.lon

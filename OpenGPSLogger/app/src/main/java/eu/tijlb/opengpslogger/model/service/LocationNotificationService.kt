@@ -10,6 +10,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.location.Location
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -32,6 +33,8 @@ import java.time.format.DateTimeFormatter
 
 private const val STOP_SERVICE = "STOP_SERVICE"
 
+private const val TAG = "ogl-locationnotificationservice"
+
 class LocationNotificationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -42,6 +45,7 @@ class LocationNotificationService : Service() {
     private lateinit var presetChangedListener: SharedPreferences.OnSharedPreferenceChangeListener
     private lateinit var presetName: String
     private lateinit var locationBufferDbHelper: LocationBufferDbHelper
+    private lateinit var pollerThread: HandlerThread
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
@@ -57,6 +61,8 @@ class LocationNotificationService : Service() {
         presetChangedListener =
             locationRequestSettingsHelper.registerPresetChangedListener { updateLocationRequest() }
 
+        pollerThread = HandlerThread("OpenGPSLogger-LocationThread").apply { start() }
+
         setLocationRequest()
 
         locationCallback = object : LocationCallback() {
@@ -64,12 +70,12 @@ class LocationNotificationService : Service() {
                 super.onLocationResult(locationResult)
                 val location = locationResult.lastLocation
                 if (location != null) {
-                    Log.d("ogl-locationnotificationservice", "Location from service: $location")
+                    Log.d(TAG, "Location from service: $location")
                     saveToDb(location)
                     val intent = Intent("eu.tijlb.LOCATION_UPDATE")
                     intent.putExtra("location", location)
                     intent.setPackage(applicationContext.packageName)
-                    Log.d("ogl-locationnotificationservice", "Broadcast location $location")
+                    Log.d(TAG, "Broadcast location $location")
                     sendBroadcast(intent)
                 }
             }
@@ -77,7 +83,7 @@ class LocationNotificationService : Service() {
     }
 
     private fun updateLocationRequest() {
-        Log.d("ogl-locationnotificationservice", "Updating location request")
+        Log.d(TAG, "Updating location request")
         stopLocationUpdates()
         setLocationRequest()
         notificationBuilder = createNotificationBuilder()
@@ -93,7 +99,7 @@ class LocationNotificationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == STOP_SERVICE) {
-            Log.d("ogl-locationnotificationservice", "Stopping location polling from delete intent")
+            Log.d(TAG, "Stopping location polling from delete intent")
             stop()
             stopSelf()
             return START_NOT_STICKY
@@ -104,12 +110,12 @@ class LocationNotificationService : Service() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e("ogl-locationnotificationservice", "Permission not granted for notifications.")
+            Log.e(TAG, "Permission not granted for notifications.")
             toast("Permission not granted for notifications, not tracking.")
             return START_NOT_STICKY
         }
 
-        Log.d("ogl-locationnotificationservice", "Setting active to true")
+        Log.d(TAG, "Setting active to true")
         trackingStatusHelper.setActive(true)
         notificationBuilder = createNotificationBuilder()
         startForegroundNotification()
@@ -129,9 +135,10 @@ class LocationNotificationService : Service() {
 
     private fun stop() {
         locationRequestSettingsHelper.deregisterPresetChangedListener(presetChangedListener)
-        Log.d("ogl-locationnotificationservice", "Setting active to false")
+        Log.d(TAG, "Setting active to false")
         trackingStatusHelper.setActive(false)
         stopLocationUpdates()
+        pollerThread.quitSafely()
     }
 
     private fun startLocationUpdates() {
@@ -140,7 +147,7 @@ class LocationNotificationService : Service() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.e("ogl-locationnotificationservice", "Permission not granted for location updates.")
+            Log.e(TAG, "Permission not granted for location updates.")
             toast("Permission not granted for location updates, not tracking.")
             return
         }
@@ -148,7 +155,7 @@ class LocationNotificationService : Service() {
         fusedLocationClient.requestLocationUpdates(
             locationRequest,
             locationCallback,
-            Looper.getMainLooper()
+            pollerThread.looper
         )
     }
 
@@ -192,9 +199,9 @@ class LocationNotificationService : Service() {
         )
 
         val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
-            .setContentTitle("OpenGPSLogger Location Service")
+            .setContentTitle(getString(R.string.app_name))
             .setContentText(getNotificationContent())
-            .setSmallIcon(R.drawable.ic_launcher_background)
+            .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(openAppPendingIntent)
             .setAutoCancel(false)

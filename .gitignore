@@ -30,3 +30,7 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+OpenGPSLogger/app/src/main/ic_launcher-playstore.png
+OpenGPSLogger/app/src/main/res/mipmap-*/
+OpenGPSLogger/app/src/main/res/drawable/ic_launcher_foreground.xml

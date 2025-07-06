@@ -33,7 +33,7 @@ class LocationTableFragment : Fragment() {
 
     private var _binding: FragmentDatabaseBinding? = null
     private lateinit var locationDatabaseFileProvider: LocationDatabaseFileProvider
-    private lateinit var locationReceiver: LocationUpdateReceiver
+   // private lateinit var locationReceiver: LocationUpdateReceiver
 
     private val binding get() = _binding!!
 
@@ -48,7 +48,7 @@ class LocationTableFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, null)
 
         tableLayout = view.findViewById(R.id.table_recent_locations)
         locationDatabaseFileProvider = LocationDatabaseFileProvider()
@@ -57,7 +57,7 @@ class LocationTableFragment : Fragment() {
             locationDatabaseFileProvider.share(requireContext())
         }
 
-        locationReceiver = LocationUpdateReceiver().apply {
+/*        locationReceiver = LocationUpdateReceiver().apply {
             setOnLocationReceivedListener { location ->
                 addNewLocation(location)
             }
@@ -65,7 +65,7 @@ class LocationTableFragment : Fragment() {
 
         val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
         requireContext().registerReceiver(locationReceiver, filter, Context.RECEIVER_EXPORTED)
-
+*/
         viewLifecycleOwner.lifecycleScope.launch {
             val tableRows = withContext(Dispatchers.IO) {
                 val entities = getLastEntities()
@@ -133,7 +133,7 @@ class LocationTableFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        requireContext().unregisterReceiver(locationReceiver)
+        //requireContext().unregisterReceiver(locationReceiver)
         _binding = null
         super.onDestroyView()
     }
