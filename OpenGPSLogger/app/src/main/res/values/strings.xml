@@ -1,6 +1,4 @@
 <resources>
-    <string name="app_name">OpenGPSLogger</string>
-
     <string name="action_about">About</string>
 
     <string name="browse_fragment_label">Browse</string>

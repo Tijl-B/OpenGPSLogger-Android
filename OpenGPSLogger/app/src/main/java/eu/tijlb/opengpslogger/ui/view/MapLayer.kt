@@ -3,6 +3,7 @@ package eu.tijlb.opengpslogger.ui.view
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
+import android.graphics.Rect
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
@@ -128,23 +129,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
             "scaleBetweenLevels $scaleBetweenLevels = 2^($visualZoom - $zoom)"
         )
         return scaleBetweenLevels.toFloat()
-    }
-
-    private suspend fun drawLayerWhenReady(
-        bbox: BBoxDto,
-        renderDimension: Pair<Int, Int>,
-        invalidate: () -> Unit
-    ) {
-        bitmapRenderer.draw(
-            bbox,
-            zoom,
-            renderDimension,
-            { },
-            { }
-        )?.let {
-            bitmap = it
-            invalidate()
-        }
     }
 
     private suspend fun drawLayerOverride(

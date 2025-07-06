@@ -117,7 +117,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, null)
 
         binding.buttonSaveImage.setOnClickListener {
             saveCanvasAsPng(requireContext())

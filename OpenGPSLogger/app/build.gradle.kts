@@ -9,21 +9,27 @@ android {
     namespace = "eu.tijlb.opengpslogger"
     compileSdk = 34
 
+    val localProps = Properties()
+    val localPropsFile = rootProject.file("local.properties")
+
     defaultConfig {
         applicationId = "eu.tijlb.opengpslogger"
         minSdk = 34
         targetSdk = 35
-        versionCode = 47
-        versionName = "1.3.0"
+        versionCode = 48
+        versionName = "1.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val localProps = Properties()
-        val localPropsFile = rootProject.file("local.properties")
         if (localPropsFile.exists()) {
             localPropsFile.inputStream().use { localProps.load(it) }
         }
 
+        buildConfigField(
+            "String",
+            "APP_NAME",
+            "\"${localProps["appName"]?:"OpenGPSLogger"}\""
+        )
         buildConfigField(
             "String",
             "PRIVACY_POLICY_DEVELOPER",
@@ -72,6 +78,8 @@ android {
     productFlavors {
         create("default") {
             dimension = "version"
+            val nameFromProp = localProps["appName"]?.toString() ?: "OpenGPSLogger"
+            resValue("string", "app_name", nameFromProp)
         }
         create("dev") {
             dimension = "version"

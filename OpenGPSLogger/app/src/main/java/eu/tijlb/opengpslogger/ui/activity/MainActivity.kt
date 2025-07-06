@@ -19,6 +19,8 @@ import eu.tijlb.opengpslogger.model.service.LocationNotificationService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+private const val TAG = "ogl-mainactivity"
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -29,8 +31,8 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("ogl-mainactivity", "Running MainActivity onCreate")
-        super.onCreate(savedInstanceState)
+        Log.d(TAG, "Running MainActivity onCreate")
+        super.onCreate(null)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationDbHelper = LocationDbHelper.getInstance(this)
@@ -61,22 +63,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         registerLocationReceiver()
-        Log.d("ogl-mainactivity", "Finished MainActivity onCreate")
+        Log.d(TAG, "Finished MainActivity onCreate")
     }
 
     override fun onNewIntent(intent: Intent?) {
-        Log.d("ogl-mainactivity", "Running MainActivity onNewIntent")
+        Log.d(TAG, "Running MainActivity onNewIntent")
         super.onNewIntent(intent)
     }
 
     override fun onStop() {
-        Log.d("ogl-mainactivity", "Running MainActivity onStop")
+        Log.d(TAG, "Running MainActivity onStop")
         unregisterLocationReceiver()
         super.onStop()
     }
 
     override fun onRestart() {
-        Log.d("ogl-mainactivity", "Running MainActivity onRestart")
+        Log.d(TAG, "Running MainActivity onRestart")
         registerLocationReceiver()
         lifecycleScope.launch(Dispatchers.IO) {
             locationBufferUtil.flushBuffer()
@@ -85,7 +87,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        Log.d("ogl-mainactivity", "Destroying MainActivity")
+        Log.d(TAG, "Destroying MainActivity")
         unregisterLocationReceiver()
         super.onDestroy()
     }
@@ -108,20 +110,20 @@ class MainActivity : AppCompatActivity() {
     private fun unregisterLocationReceiver() {
         try {
             unregisterReceiver(locationReceiver)
-            Log.d("ogl-mainactivity", "Unregistered location receiver in MainActivity")
+            Log.d(TAG, "Unregistered location receiver in MainActivity")
         } catch (e: IllegalArgumentException) {
-            Log.i("ogl-mainactivity", "Failed to unregistered location receiver in MainActivity", e)
+            Log.i(TAG, "Failed to unregistered location receiver in MainActivity", e)
         }
     }
 
     private fun registerLocationReceiver() {
         val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
         this.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
-        Log.d("ogl-mainactivity", "Registered location receiver in MainActivity")
+        Log.d(TAG, "Registered location receiver in MainActivity")
     }
 
     private fun startPollingLocation() {
-        Log.d("ogl-mainactivity", "Start polling location")
+        Log.d(TAG, "Start polling location")
         val intent = Intent(this, LocationNotificationService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }
