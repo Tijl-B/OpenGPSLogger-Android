@@ -14,24 +14,26 @@ private const val DEFAULT_CENTER_LAT = 0f
 private const val DEFAULT_CENTER_LON = 0f
 private const val DEFAULT_ZOOM = 4f
 
+private const val TAG = "ogl-browsesettingshelper"
+
 class BrowseSettingsHelper(val context: Context) {
 
     fun getCenterCoords(): Pair<Double, Double> {
         val preferences = sharedPreferences()
         val centerLat = preferences.getFloat(CENTER_LAT, DEFAULT_CENTER_LAT).toDouble()
         val centerLon = preferences.getFloat(CENTER_LON, DEFAULT_CENTER_LON).toDouble()
-        Log.d("ogl-browsesettingshelper", "Got center coords $centerLat, $centerLon")
+        Log.d(TAG, "Got center coords $centerLat, $centerLon")
         return Pair(centerLat, centerLon)
     }
 
     fun getZoom(): Float {
         val zoom = sharedPreferences().getFloat(ZOOM, DEFAULT_ZOOM)
-        Log.d("ogl-browsesettingshelper", "Got zoom $zoom")
+        Log.d(TAG, "Got zoom $zoom")
         return zoom
     }
 
     fun setCenterCoords(lat: Double, lon: Double) {
-        Log.d("ogl-browsesettingshelper", "Setting center coords to $lat $lon")
+        Log.d(TAG, "Setting center coords to $lat $lon")
         val preferences = sharedPreferences()
         with(preferences.edit()) {
             putFloat(CENTER_LAT, lat.toFloat())
@@ -41,14 +43,16 @@ class BrowseSettingsHelper(val context: Context) {
     }
 
     fun setZoom(zoom: Float) {
-        Log.d("ogl-browsesettingshelper", "Setting zoom to $zoom")
+        Log.d(TAG, "Setting zoom to $zoom")
         with(sharedPreferences().edit()) {
             putFloat(ZOOM, zoom)
             apply()
         }
     }
 
-    private fun sharedPreferences(): SharedPreferences =
-        context.getSharedPreferences(BROWSE_SETTINGS, Context.MODE_PRIVATE)
+    private fun sharedPreferences(): SharedPreferences {
+        Log.d(TAG, "Getting shared preferences of $BROWSE_SETTINGS")
+        return context.getSharedPreferences(BROWSE_SETTINGS, Context.MODE_PRIVATE)
+    }
 
 }

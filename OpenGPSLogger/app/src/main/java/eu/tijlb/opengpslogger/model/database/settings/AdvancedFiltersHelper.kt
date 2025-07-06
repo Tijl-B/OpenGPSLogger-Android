@@ -13,18 +13,18 @@ private const val NO_MIN_ACCURACY = -1F
 private const val DEFAULT_MIN_ACCURACY = NO_MIN_ACCURACY
 private const val DEFAULT_MIN_ANGLE = 0F
 
+private const val TAG = "ogl-advancedfiltershelper"
+
 class AdvancedFiltersHelper(val context: Context) {
 
     fun getMinAccuracy(): Float? {
-        val locationRequestPreferences =
-            context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        val locationRequestPreferences = getLocationRequestPreferences()
         val accuracy = locationRequestPreferences.getFloat(MIN_ACCURACY, DEFAULT_MIN_ACCURACY)
         return accuracy.takeUnless { it == NO_MIN_ACCURACY }
     }
 
     fun setMinAccuracy(accuracy: Float?) {
-        val locationRequestPreferences =
-            context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        val locationRequestPreferences = getLocationRequestPreferences()
         with(locationRequestPreferences.edit()) {
             putFloat(MIN_ACCURACY, accuracy ?: NO_MIN_ACCURACY)
             apply()
@@ -32,16 +32,14 @@ class AdvancedFiltersHelper(val context: Context) {
     }
 
     fun getMinAngle(): Float {
-        val locationRequestPreferences =
-            context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        val locationRequestPreferences = getLocationRequestPreferences()
         val accuracy = locationRequestPreferences.getFloat(MIN_ANGLE, DEFAULT_MIN_ANGLE)
         return accuracy
     }
 
     fun setMinAngle(angle: Float?) {
         val boundedAngle = angle?.coerceIn(0F, 180F)
-        val locationRequestPreferences =
-            context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        val locationRequestPreferences = getLocationRequestPreferences()
         with(locationRequestPreferences.edit()) {
             putFloat(MIN_ANGLE, boundedAngle ?: DEFAULT_MIN_ANGLE)
             apply()
@@ -49,13 +47,13 @@ class AdvancedFiltersHelper(val context: Context) {
     }
 
     fun registerMinAccuracyChangedListener(function: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
-        Log.d("ogl-advancedfiltershelper", "Registering active changed listener")
-        val preferences = context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        Log.d(TAG, "Registering active changed listener")
+        val preferences = getLocationRequestPreferences()
 
         val preferencesListener =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                 Log.d(
-                    "ogl-advancedfiltershelper",
+                    TAG,
                     "SharedPreferences.OnSharedPreferenceChangeListener called for key $key"
                 )
                 function()
@@ -65,7 +63,12 @@ class AdvancedFiltersHelper(val context: Context) {
     }
 
     fun deregisterAdvancedFiltersChangedListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
-        val preferences = context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
+        val preferences = getLocationRequestPreferences()
         preferences.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    private fun getLocationRequestPreferences(): SharedPreferences {
+        Log.d(TAG, "Getting shared preferences of $ADVANCED_FILTERS")
+        return context.getSharedPreferences(ADVANCED_FILTERS, Context.MODE_PRIVATE)
     }
 }

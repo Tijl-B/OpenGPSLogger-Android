@@ -3,12 +3,14 @@ package eu.tijlb.opengpslogger.ui.activity
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.os.StrictMode
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
@@ -41,8 +43,13 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(binding.root)
 
-        if (trackingStatusHelper.isActive()) {
-            startPollingLocation()
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
+            )
         }
 
         binding.root.post {
@@ -50,6 +57,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
+            if (trackingStatusHelper.isActive()) {
+                startPollingLocation()
+            }
+
             locationBufferUtil.flushBuffer()
             locationDbHelper.updateDistAngleIfNeeded()
         }

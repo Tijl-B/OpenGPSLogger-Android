@@ -9,6 +9,7 @@ import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
@@ -49,6 +50,7 @@ class LayeredMapView @JvmOverloads constructor(
     private var needsRedraw = true
     private var isSetUp = false
     private val redrawMutex = Mutex()
+    private val setupMutex = Mutex()
 
     init {
         isFocusable = true
@@ -59,11 +61,17 @@ class LayeredMapView @JvmOverloads constructor(
         super.onDraw(canvas)
         Log.d("ogl-layeredmapview", "onDraw")
         if (!isSetUp) {
-            setUpCenterAndZoom()
-            redrawIfNeeded()
-            isSetUp = true
+            CoroutineScope(Dispatchers.IO).launch {
+                setupMutex.tryLockOrSkip {
+                    setUpCenterAndZoom()
+                    redrawIfNeeded()
+                    isSetUp = true
+                    invalidate()
+                }
+            }
+        } else {
+            layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
         }
-        layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
     }
 
     override fun onDetachedFromWindow() {
@@ -81,7 +89,7 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun redrawIfNeeded() {
         CoroutineScope(Dispatchers.IO).launch {
-            redrawMutex.withLock {
+            redrawMutex.tryLockOrSkip {
                 if (needsRedraw) {
                     needsRedraw = false
                     layers.forEach { it.cancelJob() }
@@ -94,6 +102,16 @@ class LayeredMapView @JvmOverloads constructor(
                 }
             }
         }
+    }
+
+    fun <T> Mutex.tryLockOrSkip(block: () -> T): T? {
+        return if (tryLock()) {
+            try {
+                block()
+            } finally {
+                unlock()
+            }
+        } else null
     }
 
     private fun loadLayers() {

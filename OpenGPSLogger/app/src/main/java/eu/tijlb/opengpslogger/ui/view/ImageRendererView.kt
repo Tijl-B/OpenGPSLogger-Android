@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
+import androidx.lifecycle.LifecycleOwner
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
@@ -132,7 +133,10 @@ class ImageRendererView(
             pointsBitmapRenderer?.visualisationSettings = value
         }
 
+    private var initialised = false
+
     init {
+
         visualisationSettingsChangedListener =
             visualisationSettingsHelper.registerVisualisationSettingsChangedListener {
                 Log.d(

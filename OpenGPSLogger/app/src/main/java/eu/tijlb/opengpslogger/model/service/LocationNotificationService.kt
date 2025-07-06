@@ -10,6 +10,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.location.Location
+import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
@@ -38,19 +39,19 @@ private const val TAG = "ogl-locationnotificationservice"
 class LocationNotificationService : Service() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationRequest: LocationRequest
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequestSettingsHelper: LocationRequestSettingsHelper
     private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var presetChangedListener: SharedPreferences.OnSharedPreferenceChangeListener
-    private lateinit var presetName: String
     private lateinit var locationBufferDbHelper: LocationBufferDbHelper
     private lateinit var pollerThread: HandlerThread
+    private var presetName = ""
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
 
     override fun onCreate() {
+        Log.d(TAG, "Running onCreate of LocationNotificationService")
         super.onCreate()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
@@ -58,12 +59,7 @@ class LocationNotificationService : Service() {
         trackingStatusHelper = TrackingStatusHelper(this)
         locationBufferDbHelper = LocationBufferDbHelper.getInstance(this)
 
-        presetChangedListener =
-            locationRequestSettingsHelper.registerPresetChangedListener { updateLocationRequest() }
-
         pollerThread = HandlerThread("OpenGPSLogger-LocationThread").apply { start() }
-
-        setLocationRequest()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -80,24 +76,25 @@ class LocationNotificationService : Service() {
                 }
             }
         }
+
+        Handler(pollerThread.looper).post {
+            presetChangedListener =
+                locationRequestSettingsHelper.registerPresetChangedListener { updateLocationRequest() }
+        }
     }
 
     private fun updateLocationRequest() {
-        Log.d(TAG, "Updating location request")
-        stopLocationUpdates()
-        setLocationRequest()
-        notificationBuilder = createNotificationBuilder()
-        startForegroundNotification()
-        startLocationUpdates()
-    }
-
-    private fun setLocationRequest() {
-        val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
-        locationRequest = request
-        presetName = preset
+        Handler(pollerThread.looper).post {
+            Log.d(TAG, "Updating location request of LocationNotificationService")
+            stopLocationUpdates()
+            notificationBuilder = createNotificationBuilder()
+            startForegroundNotification()
+            startLocationUpdates()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "Running onStartCommand of LocationNotificationService")
         if (intent?.action == STOP_SERVICE) {
             Log.d(TAG, "Stopping location polling from delete intent")
             stop()
@@ -105,26 +102,30 @@ class LocationNotificationService : Service() {
             return START_NOT_STICKY
         }
 
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.e(TAG, "Permission not granted for notifications.")
-            toast("Permission not granted for notifications, not tracking.")
-            return START_NOT_STICKY
-        }
-
-        Log.d(TAG, "Setting active to true")
-        trackingStatusHelper.setActive(true)
         notificationBuilder = createNotificationBuilder()
         startForegroundNotification()
 
-        startLocationUpdates()
+        Handler(pollerThread.looper).post {
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                Log.e(TAG, "Permission not granted for notifications.")
+                toast("Permission not granted for notifications, not tracking.")
+                return@post
+            }
+
+            Log.d(TAG, "Setting active to true")
+            trackingStatusHelper.setActive(true)
+
+            startLocationUpdates()
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
+        Log.d(TAG, "Running onDestroy of LocationNotificationService")
         super.onDestroy()
         stop()
     }
@@ -152,8 +153,11 @@ class LocationNotificationService : Service() {
             return
         }
 
+        val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
+        presetName = preset
+
         fusedLocationClient.requestLocationUpdates(
-            locationRequest,
+            request,
             locationCallback,
             pollerThread.looper
         )
