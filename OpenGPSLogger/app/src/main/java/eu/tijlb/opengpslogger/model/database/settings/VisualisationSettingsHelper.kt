@@ -28,11 +28,12 @@ private const val AUTO_LINE_SIZE = -1F
 private const val DEFAULT_DOT_SIZE = AUTO_DOT_SIZE
 private const val DEFAULT_LINE_SIZE = AUTO_LINE_SIZE
 
+private const val TAG = "ogl-advancedfiltershelper"
+
 class VisualisationSettingsHelper(val context: Context) {
 
     fun getVisualisationSettings(): VisualisationSettingsDto {
-        val locationRequestPreferences =
-            context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
+        val locationRequestPreferences = getLocationRequestPreferences()
         val drawLines = locationRequestPreferences.getBoolean(DRAW_LINES, DEFAULT_DRAW_LINES)
         val drawDensityMap = locationRequestPreferences.getBoolean(DRAW_DENSITY_MAP, DEFAULT_DRAW_DENSITY_MAP)
         val dotSize = locationRequestPreferences.getFloat(DOT_SIZE, DEFAULT_DOT_SIZE)
@@ -64,8 +65,7 @@ class VisualisationSettingsHelper(val context: Context) {
 
     fun setVisualisationSettings(settingsDto: VisualisationSettingsDto) {
         Log.d("ogl-visualisationsettingshelper", "Updating visualisation settings to $settingsDto")
-        val locationRequestPreferences =
-            context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
+        val locationRequestPreferences = getLocationRequestPreferences()
         with(locationRequestPreferences.edit()) {
             putBoolean(DRAW_LINES, settingsDto.drawLines)
             putBoolean(DRAW_DENSITY_MAP, settingsDto.drawDensityMap)
@@ -80,13 +80,13 @@ class VisualisationSettingsHelper(val context: Context) {
     }
 
     fun registerVisualisationSettingsChangedListener(function: (VisualisationSettingsDto) -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
-        Log.d("ogl-advancedfiltershelper", "Registering active changed listener")
-        val preferences = context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
+        Log.d(TAG, "Registering active changed listener")
+        val preferences = getLocationRequestPreferences()
 
         val preferencesListener =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                 Log.d(
-                    "ogl-advancedfiltershelper",
+                    TAG,
                     "SharedPreferences.OnSharedPreferenceChangeListener called for key $key"
                 )
                 function(getVisualisationSettings())
@@ -96,7 +96,12 @@ class VisualisationSettingsHelper(val context: Context) {
     }
 
     fun deregisterAdvancedFiltersChangedListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
-        val preferences = context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
+        val preferences = getLocationRequestPreferences()
         preferences.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    private fun getLocationRequestPreferences(): SharedPreferences {
+        Log.d(TAG, "Getting shared preferences of $VISUALISATION_SETTINGS")
+        return context.getSharedPreferences(VISUALISATION_SETTINGS, Context.MODE_PRIVATE)
     }
 }

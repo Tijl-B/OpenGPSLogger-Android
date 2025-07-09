@@ -21,7 +21,7 @@ class ZoomableImageDialog(private val bitmap: Bitmap, private val onDismiss: () 
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, null)
+        super.onViewCreated(view, savedInstanceState)
 
         val zoomableImageView: ZoomableImageView = view.findViewById(R.id.zoomableImageView)
         val closeButton: View = view.findViewById(R.id.closeButton)

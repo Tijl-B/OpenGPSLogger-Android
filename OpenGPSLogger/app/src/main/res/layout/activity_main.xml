@@ -10,12 +10,15 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-        <FrameLayout
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/nav_host_fragment"
+            android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
-            <include layout="@layout/content_main" />
-        </FrameLayout>
+            android:layout_weight="1"
+            app:navGraph="@navigation/nav_graph"
+            app:defaultNavHost="true" />
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation"
@@ -23,5 +26,4 @@
             android:layout_height="wrap_content"
             app:menu="@menu/bottom_navigation_menu" />
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
