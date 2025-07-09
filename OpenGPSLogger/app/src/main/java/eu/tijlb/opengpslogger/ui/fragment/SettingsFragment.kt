@@ -60,7 +60,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(null)
+        super.onCreate(savedInstanceState)
         Log.d("ogl-settingsfragment", "Start creating settings fragment")
         context = requireContext()
         locationRequestSettingsHelper = LocationRequestSettingsHelper(context)

@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
+import androidx.navigation.ui.NavigationUI
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d(TAG, "Running MainActivity onCreate")
-        super.onCreate(null)
+        super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationDbHelper = LocationDbHelper.getInstance(this)
@@ -104,18 +105,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
+        val navController = findNavController(R.id.nav_host_fragment)
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.item_browse -> navController.navigate(R.id.item_browse)
-                R.id.item_generate_image -> navController.navigate(R.id.item_generate_image)
-                R.id.item_manage_data -> navController.navigate(R.id.item_manage_data)
-                R.id.item_settings -> navController.navigate(R.id.item_settings)
-            }
-            true
-        }
+        NavigationUI.setupWithNavController(bottomNav, navController)
     }
 
     private fun unregisterLocationReceiver() {

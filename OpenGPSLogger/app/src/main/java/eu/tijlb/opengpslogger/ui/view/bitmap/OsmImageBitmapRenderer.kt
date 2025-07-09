@@ -13,20 +13,29 @@ import com.bumptech.glide.request.transition.Transition
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
+import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
-class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
+private const val TAG = "ogl-osmimagebitmaprenderer"
+
+class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
     private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper.getInstance(context)
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 
     var currentJob: Job? = null
+
+    private var drawMutex = Mutex()
+    private val latestDrawJob = AtomicReference<Job?>(null)
 
     override suspend fun draw(
         bbox: BBoxDto,
@@ -35,6 +44,32 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
     ): Bitmap? {
+        Log.d(TAG, "Starting osm draw")
+        val currentJob = Job()
+        latestDrawJob.getAndSet(currentJob)?.cancel()
+        if (!currentJob.isActive) {
+            Log.d(TAG, "CurrentJob is not active, not drawing osm bitmap")
+            return null
+        }
+
+        drawMutex.withLock {
+            if (latestDrawJob.get() != currentJob || !currentJob.isActive) {
+                Log.d(TAG, "Got lock but job is not active, not drawing osm bitmap")
+                return null
+            }
+            Log.d(TAG, "Start drawing osm bitmap")
+            draww(bbox, zoom, assignBitmap, refreshView)
+            currentJob.complete()
+        }
+        return null
+    }
+
+    private suspend fun draww(
+        bbox: BBoxDto,
+        zoom: Int,
+        assignBitmap: (Bitmap) -> Unit,
+        refreshView: () -> Any
+    ) {
         currentJob?.cancel()
 
         val smurl = tileServerDbHelper.getSelectedUrl()
@@ -48,7 +83,7 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
         val (xmax, ymin) = OsmGeometryUtil.deg2num(maxLat, maxLon, zoom)
 
         Log.d(
-            "ogl-osmimagebitmaprenderer",
+            TAG,
             "Requesting tiles from ($xmin, $ymin) to ($xmax, $ymax) with zoom $zoom for bbox $bbox"
         )
 
@@ -65,10 +100,10 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
 
         if (width == 0 || height == 0) {
             Log.e(
-                "ogl-osmimagebitmaprenderer",
+                TAG,
                 "Cannot get image cluster, width $width ($xmax - $xmin) and / or height $height ($ymax - $ymin) is 0"
             )
-            return null
+            return
         }
 
         val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -81,8 +116,8 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
         // Fetch and draw tiles within the requested area
         var i = 0
         if (!coroutineContext.isActive) {
-            Log.d("ogl-osmhelper", "Interrupting...")
-            return null
+            Log.d(TAG, "Interrupting...")
+            return
         }
         val job = Job()
         currentJob = job
@@ -92,10 +127,10 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
                     val imgUrl = smurl.replace("{z}", zoom.toString())
                         .replace("{x}", xtile.toString())
                         .replace("{y}", ytile.toString())
-                    Log.d("ogl-osmimagebitmaprenderer", "Requesting osm url $imgUrl")
+                    Log.d(TAG, "Requesting osm url $imgUrl")
                     val cancellationLambda = getOrDownloadImage(imgUrl) { tileBitMap ->
                         if (!job.isActive) {
-                            Log.d("ogl-osmimagebitmaprenderer", "Interrupting...")
+                            Log.d(TAG, "Interrupting...")
                             return@getOrDownloadImage
                         }
 
@@ -111,10 +146,6 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
                             val srcRight = ((visibleMaxX - xtile) * imgSizePx).toInt()
                             val srcBottom = ((visibleMaxY - ytile) * imgSizePx).toInt()
 
-                            Log.d(
-                                "ogl-osmimagebitmaprenderer",
-                                "srcRect: left=$srcLeft, top=$srcTop, right=$srcRight, bottom=$srcBottom"
-                            )
                             val srcRect = Rect(srcLeft, srcTop, srcRight, srcBottom)
 
                             val destLeft = ((visibleMinX - xmin) / realXRange * width).toInt()
@@ -122,16 +153,12 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
                             val destRight = ((visibleMaxX - xmin) / realXRange * width).toInt()
                             val destBottom = ((visibleMaxY - ymin) / realYRange * height).toInt()
 
-                            Log.d(
-                                "ogl-osmimagebitmaprenderer",
-                                "destRect: left=$destLeft, top=$destTop, right=$destRight, bottom=$destBottom"
-                            )
                             val destRect = Rect(destLeft, destTop, destRight, destBottom)
 
                             canvas.drawBitmap(tileBitMap, srcRect, destRect, paint)
                         } else {
                             Log.w(
-                                "ogl-osmimagebitmaprenderer",
+                                TAG,
                                 "Tile ($xtile, $ytile) does not intersect with the requested area"
                                         + "xtile $xtile xmin $xmin ytile $ytile "
                             )
@@ -142,17 +169,17 @@ class OsmImageBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
                     job.invokeOnCompletion { cancellationLambda() }
 
                 } catch (e: Exception) {
-                    Log.e("ogl-osmimagebitmaprenderer", "Couldn't download image: ${e.message}", e)
+                    Log.e(TAG, "Couldn't download image: ${e.message}", e)
 
                 }
                 if (!coroutineContext.isActive) {
-                    Log.d("ogl-osmimagebitmaprenderer", "Interrupting...")
-                    return null
+                    Log.d(TAG, "Interrupting...")
+                    return
                 }
             }
         }
-        Log.d("ogl-osmimagebitmaprenderer", "Done loading osm background")
-        return null
+        Log.d(TAG, "Done loading osm background")
+        return
     }
 
     private fun getOrDownloadImage(url: String, callback: (Bitmap) -> Unit): () -> Unit {

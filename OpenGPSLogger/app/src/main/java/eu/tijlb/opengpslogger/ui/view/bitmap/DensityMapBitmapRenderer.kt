@@ -192,7 +192,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
         var result = targetBitmap
         if (blur) {
             val minCellDimension = min(cellWidth, cellHeight)
-            val passes = 1 //(minCellDimension * 0.5F).toInt().coerceIn(1, 10)
+            val passes = 0 //(minCellDimension * 0.5F).toInt().coerceIn(1, 10)
             result = blurBitmapMultiplePasses(
                 context,
                 targetBitmap,
