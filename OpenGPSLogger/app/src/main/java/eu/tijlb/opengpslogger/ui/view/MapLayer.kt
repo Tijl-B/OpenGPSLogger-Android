@@ -3,7 +3,6 @@ package eu.tijlb.opengpslogger.ui.view
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
-import android.graphics.Rect
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
@@ -36,7 +35,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         Log.d(TAG, "Starting draw job coroutine")
         val coroutine = CoroutineScope(Dispatchers.IO).launch {
             drawLayerOverride(bbox, renderDimension, invalidate)
-            invalidate
         }
         job = coroutine
         return coroutine

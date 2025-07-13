@@ -13,8 +13,7 @@ import com.bumptech.glide.request.transition.Transition
 import eu.tijlb.opengpslogger.model.database.tileserver.TileServerDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
-import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
-import eu.tijlb.opengpslogger.ui.util.LockUtil.withTimeoutLock
+import eu.tijlb.opengpslogger.ui.util.LockUtil.lockWithTimeout
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
@@ -53,10 +52,10 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
             return null
         }
 
-        drawMutex.withTimeoutLock(30.seconds) {
+        drawMutex.lockWithTimeout(30.seconds) {
             if (latestDrawJob.get() != currentJob || !currentJob.isActive) {
                 Log.d(TAG, "Got lock but job is not active, not drawing osm bitmap")
-                return@withTimeoutLock null
+                return@lockWithTimeout null
             }
             Log.d(TAG, "Start drawing osm bitmap")
             draww(bbox, zoom, assignBitmap, refreshView)

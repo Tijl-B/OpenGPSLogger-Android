@@ -5,10 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.renderscript.Allocation
-import android.renderscript.Element
-import android.renderscript.RenderScript
-import android.renderscript.ScriptIntrinsicBlur
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.bitmap.SparseDensityMap
@@ -21,7 +17,6 @@ import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 import kotlin.math.ln
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.tan
 
 class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
@@ -117,7 +112,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
             }
 
         adaptedClusterBitmap =
-            extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox, true)
+            extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
         assignBitmap(adaptedClusterBitmap)
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
         Log.d("ogl-imagerendererview-point", "Done drawing density map...")
@@ -128,8 +123,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
     private fun extractAndScaleBitmap(
         sourceBitMap: SparseDensityMap,
         targetBitmap: Bitmap,
-        bbox: BBoxDto,
-        blur: Boolean = false
+        bbox: BBoxDto
     ): Bitmap {
         Log.d(
             "ogl-imagerendererview",

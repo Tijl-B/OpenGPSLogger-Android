@@ -13,14 +13,12 @@ import android.location.Location
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import eu.tijlb.opengpslogger.R
@@ -153,6 +151,7 @@ class LocationNotificationService : Service() {
             return
         }
 
+        stopLocationUpdates()
         val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
         presetName = preset
 

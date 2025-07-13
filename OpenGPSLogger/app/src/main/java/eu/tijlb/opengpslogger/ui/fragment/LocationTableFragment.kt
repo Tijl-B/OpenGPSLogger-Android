@@ -1,8 +1,6 @@
 package eu.tijlb.opengpslogger.ui.fragment
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.IntentFilter
 import android.location.Location
 import android.os.Bundle
 import android.provider.BaseColumns
@@ -17,7 +15,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
-import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.model.database.location.LocationDatabaseFileProvider
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
@@ -76,7 +73,7 @@ class LocationTableFragment : Fragment() {
 
 
     private fun addNewLocation(location: Location) {
-        context?.let { c ->
+        context?.let { _ ->
             {
                 var formattedTime = formatUnixTime(location.time)
                 var row = listOf(

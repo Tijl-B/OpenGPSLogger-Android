@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         locationReceiver = LocationUpdateReceiver().apply {
-            setOnLocationReceivedListener { location ->
+            setOnLocationReceivedListener { _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
                     locationBufferUtil.flushBuffer()
                 }

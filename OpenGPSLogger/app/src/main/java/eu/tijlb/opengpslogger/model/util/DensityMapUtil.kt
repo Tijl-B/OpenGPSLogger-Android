@@ -5,20 +5,31 @@ import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 
 object DensityMapUtil {
+
+    val mutex = Mutex()
+    val jobReference: AtomicReference<Job?> = AtomicReference(null)
 
     fun recreateDatabaseAsync(
         densityMapAdapter: DensityMapAdapter,
         locationDbHelper: LocationDbHelper
     ) {
         CoroutineScope(Dispatchers.IO)
-            .launch { recreateDatabase(densityMapAdapter, locationDbHelper) }
+            .launch {
+                mutex.runIfLast(jobReference) {
+                    recreateDatabase(densityMapAdapter, locationDbHelper)
+                }
+            }
     }
 
     private suspend fun recreateDatabase(

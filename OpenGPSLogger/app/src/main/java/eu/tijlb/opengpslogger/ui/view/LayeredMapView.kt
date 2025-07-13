@@ -9,7 +9,6 @@ import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import androidx.lifecycle.findViewTreeLifecycleOwner
 import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
@@ -53,10 +52,11 @@ class LayeredMapView @JvmOverloads constructor(
     private var visualZoomLevel = 4.0
 
     private var needsRedraw = true
-    private var isSetUp = false
     private val redrawMutex = Mutex()
     private val latestRedrawJob = AtomicReference<Job?>(null)
     private val setupMutex = Mutex()
+    private var setupJob: Job? = null
+    private var redrawJob: Job? = null
 
     init {
         isFocusable = true
@@ -66,12 +66,11 @@ class LayeredMapView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         Log.d(TAG, "onDraw")
-        if (!isSetUp) {
-            CoroutineScope(Dispatchers.IO).launch {
+        if (setupJob == null) {
+            setupJob = CoroutineScope(Dispatchers.IO).launch {
                 setupMutex.tryLockOrSkip {
                     setUpCenterAndZoom()
                     redrawIfNeeded()
-                    isSetUp = true
                     invalidate()
                 }
             }
@@ -82,8 +81,14 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         Log.d(TAG, "Detaching LayeredMapView from window...")
-        layers.forEach { it.cancelJob() }
+        cancelJobs()
         super.onDetachedFromWindow()
+    }
+
+    public fun cancelJobs() {
+        layers.forEach { it.cancelJob() }
+        setupJob?.cancel()
+        redrawJob?.cancel()
     }
 
     private fun setUpCenterAndZoom() {
@@ -94,10 +99,12 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     private fun redrawIfNeeded() {
-        CoroutineScope(Dispatchers.IO).launch {
+        val oldJob = redrawJob
+        redrawJob = CoroutineScope(Dispatchers.IO).launch {
             redrawMutex.runIfLast(latestRedrawJob) {
                 if (needsRedraw) {
                     Log.d(TAG, "Starting redraw")
+                    oldJob?.cancel()
                     needsRedraw = false
                     layers.forEach { it.cancelJob() }
                     browseSettingsHelper.setCenterCoords(centerLat, centerLon)

@@ -290,11 +290,9 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
         val canvas = Canvas(bitmap)
 
         GlobalScope.launch(Dispatchers.IO) {
-            withContext(Dispatchers.IO) {
                 imageRendererView.draw(canvas)
                 saveImageToMediaStore(context, bitmap)
                 binding.buttonSaveImage.text = "Image saved!"
-            }
         }
     }
 
@@ -471,17 +469,13 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
             val height = (width / aspectRatio).toInt()
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            CoroutineScope(Dispatchers.Default).launch {
-                withContext(Dispatchers.IO) {
-                    imageRendererView.draw(canvas)
-                    val dialog = ZoomableImageDialog(bitmap) {
-                        showingZoomableImage = false
-                    }
-                    dialog.show(parentFragmentManager, "zoomableImageDialog")
+            lifecycleScope.launch(Dispatchers.IO) {
+                imageRendererView.draw(canvas)
+                val dialog = ZoomableImageDialog(bitmap) {
+                    showingZoomableImage = false
                 }
+                dialog.show(parentFragmentManager, "zoomableImageDialog")
             }
         }
-
-
     }
 }
