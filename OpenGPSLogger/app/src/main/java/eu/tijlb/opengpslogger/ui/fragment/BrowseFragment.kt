@@ -22,7 +22,13 @@ class BrowseFragment : Fragment(R.layout.fragment_browse) {
 
     override fun onPause() {
         Log.d(TAG, "Browse fragment onPause")
-        layeredMapView.cancelJobs()
+        layeredMapView.stopUpdates()
         super.onPause()
+    }
+
+    override fun onResume() {
+        Log.d(TAG, "Browse fragment onResume")
+        layeredMapView.resumeUpdates()
+        super.onResume()
     }
 }
