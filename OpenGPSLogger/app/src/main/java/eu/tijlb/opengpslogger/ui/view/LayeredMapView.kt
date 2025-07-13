@@ -16,6 +16,7 @@ import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
 import eu.tijlb.opengpslogger.ui.util.LockUtil.tryLockOrSkip
 import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
+import eu.tijlb.opengpslogger.ui.view.bitmap.LastLocationBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +44,8 @@ class LayeredMapView @JvmOverloads constructor(
     private val layers = listOf(
         MapLayer(OsmImageBitmapRenderer(context)),
         MapLayer(DensityMapBitmapRenderer(context)),
-        MapLayer(CopyRightNoticeBitmapRenderer(context))
+        MapLayer(CopyRightNoticeBitmapRenderer(context)),
+        MapLayer(LastLocationBitmapRenderer(context))
     )
 
     private var centerLat = 0.0
@@ -81,14 +83,23 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         Log.d(TAG, "Detaching LayeredMapView from window...")
-        cancelJobs()
+        stopUpdates()
         super.onDetachedFromWindow()
     }
 
-    public fun cancelJobs() {
-        layers.forEach { it.cancelJob() }
+    override fun onAttachedToWindow() {
+        Log.d(TAG, "Attaching LayeredMapView to window...")
+        resumeUpdates()
+        super.onAttachedToWindow()
+    }
+    fun stopUpdates() {
+        layers.forEach { it.stopUpdates() }
         setupJob?.cancel()
         redrawJob?.cancel()
+    }
+
+    fun resumeUpdates() {
+        layers.forEach { it.resumeUpdates() }
     }
 
     private fun setUpCenterAndZoom() {

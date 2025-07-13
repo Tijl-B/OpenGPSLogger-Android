@@ -45,6 +45,17 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         job?.cancel()
     }
 
+    fun stopUpdates() {
+        Log.d(TAG, "Canceling job $job")
+        job?.cancel()
+        bitmapRenderer.onStop()
+    }
+
+    fun resumeUpdates() {
+        bitmapRenderer.onResume()
+    }
+
+
     fun requiresUpdate(visualZoom: Double): Boolean {
         return zoom != visualZoom.toInt()
     }
