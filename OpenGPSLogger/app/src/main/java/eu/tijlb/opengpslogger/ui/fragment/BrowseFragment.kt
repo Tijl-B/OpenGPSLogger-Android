@@ -1,4 +1,4 @@
-package eu.tijlb.opengpslogger.ui.fragment;
+package eu.tijlb.opengpslogger.ui.fragment
 
 import android.os.Bundle
 import android.util.Log
