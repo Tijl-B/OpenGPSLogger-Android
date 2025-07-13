@@ -12,19 +12,24 @@ import android.view.View
 import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
+import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
+import eu.tijlb.opengpslogger.ui.util.LockUtil.tryLockOrSkip
 import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.log2
 import kotlin.math.pow
 
 private const val MIN_ZOOM = 4.0
 private const val MAX_ZOOM = 20.0
+
+private const val TAG = "ogl-layeredmapview"
 
 class LayeredMapView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
@@ -47,8 +52,11 @@ class LayeredMapView @JvmOverloads constructor(
     private var visualZoomLevel = 4.0
 
     private var needsRedraw = true
-    private var isSetUp = false
     private val redrawMutex = Mutex()
+    private val latestRedrawJob = AtomicReference<Job?>(null)
+    private val setupMutex = Mutex()
+    private var setupJob: Job? = null
+    private var redrawJob: Job? = null
 
     init {
         isFocusable = true
@@ -57,19 +65,30 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        Log.d("ogl-layeredmapview", "onDraw")
-        if (!isSetUp) {
-            setUpCenterAndZoom()
-            redrawIfNeeded()
-            isSetUp = true
+        Log.d(TAG, "onDraw")
+        if (setupJob == null) {
+            setupJob = CoroutineScope(Dispatchers.IO).launch {
+                setupMutex.tryLockOrSkip {
+                    setUpCenterAndZoom()
+                    redrawIfNeeded()
+                    invalidate()
+                }
+            }
+        } else {
+            layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
         }
-        layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
     }
 
     override fun onDetachedFromWindow() {
-        Log.d("ogl-layeredmapview", "Detaching LayeredMapView from window...")
-        layers.forEach { it.cancelJob() }
+        Log.d(TAG, "Detaching LayeredMapView from window...")
+        cancelJobs()
         super.onDetachedFromWindow()
+    }
+
+    public fun cancelJobs() {
+        layers.forEach { it.cancelJob() }
+        setupJob?.cancel()
+        redrawJob?.cancel()
     }
 
     private fun setUpCenterAndZoom() {
@@ -80,9 +99,12 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     private fun redrawIfNeeded() {
-        CoroutineScope(Dispatchers.IO).launch {
-            redrawMutex.withLock {
+        val oldJob = redrawJob
+        redrawJob = CoroutineScope(Dispatchers.IO).launch {
+            redrawMutex.runIfLast(latestRedrawJob) {
                 if (needsRedraw) {
+                    Log.d(TAG, "Starting redraw")
+                    oldJob?.cancel()
                     needsRedraw = false
                     layers.forEach { it.cancelJob() }
                     browseSettingsHelper.setCenterCoords(centerLat, centerLon)
@@ -91,16 +113,18 @@ class LayeredMapView @JvmOverloads constructor(
                     commitZoom()
                     invalidate()
                     loadLayers()
+                        .forEach { job -> job.join() }
+                    Log.d(TAG, "Done with redraw")
                 }
             }
         }
     }
 
-    private fun loadLayers() {
-        Log.d("ogl-layeredmapview", "Loading tiles $centerLat, $centerLon, $width, $height")
+    private fun loadLayers(): List<Job> {
+        Log.d(TAG, "Loading tiles $centerLat, $centerLon, $width, $height")
         val newBitmapZoom = visualZoomLevel.toInt()
         val bbox = bboxFromCenter(centerLat, centerLon, newBitmapZoom, width, height)
-        layers.forEach {
+        return layers.map {
             it.startDrawJob(bbox, Pair(width, height)) { invalidate() }
         }
     }
@@ -153,7 +177,7 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun commitZoom() {
         val newZoom = visualZoomLevel.toInt()
-        Log.d("ogl-layeredmapview", "Commit visualZoomScale to $newZoom")
+        Log.d(TAG, "Commit visualZoomScale to $newZoom")
         layers.forEach { it.commitZoom(newZoom) }
     }
 
@@ -167,6 +191,7 @@ class LayeredMapView @JvmOverloads constructor(
     private fun panMap(dx: Float, dy: Float) {
         layers.forEach { it.visualPan(dx, dy) }
         needsRedraw = true
+        //redrawIfNeeded()
         invalidate()
     }
 
@@ -196,10 +221,10 @@ class LayeredMapView @JvmOverloads constructor(
                 newCenterPixelY = newCenterPixelY.coerceIn(minCenterY, maxCenterY)
 
 
-                Log.d("ogl-layeredmapview", "Center before pan: $centerLon, $centerLat")
+                Log.d(TAG, "Center before pan: $centerLon, $centerLat")
                 centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, zoom)
                 centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, zoom)
-                Log.d("ogl-layeredmapview", "Center after pan: $centerLon, $centerLat")
+                Log.d(TAG, "Center after pan: $centerLon, $centerLat")
             }
     }
 
@@ -223,13 +248,13 @@ class LayeredMapView @JvmOverloads constructor(
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        Log.d("ogl-layeredmapview", "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
+        Log.d(TAG, "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
         panMap(distanceX, distanceY)
         return true
     }
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
-        Log.d("ogl-layeredmapview", "scaling with factor ${detector.scaleFactor}")
+        Log.d(TAG, "scaling with factor ${detector.scaleFactor}")
         val scaleFactor = detector.scaleFactor
         scaleMap(scaleFactor)
         return true

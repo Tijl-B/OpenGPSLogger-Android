@@ -7,7 +7,6 @@
 #### Fixes
 - Stability improvements
 
-
 ### 1.3.0
 [apk](release/opengpslogger-1-3-0.apk)
 

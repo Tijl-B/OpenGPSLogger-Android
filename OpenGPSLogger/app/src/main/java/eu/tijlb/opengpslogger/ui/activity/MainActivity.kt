@@ -3,12 +3,15 @@ package eu.tijlb.opengpslogger.ui.activity
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.os.StrictMode
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
+import androidx.navigation.ui.NavigationUI
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityMainBinding
 import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
@@ -32,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d(TAG, "Running MainActivity onCreate")
-        super.onCreate(null)
+        super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         locationDbHelper = LocationDbHelper.getInstance(this)
@@ -41,8 +44,13 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(binding.root)
 
-        if (trackingStatusHelper.isActive()) {
-            startPollingLocation()
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
+            )
         }
 
         binding.root.post {
@@ -50,12 +58,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch(Dispatchers.IO) {
+            if (trackingStatusHelper.isActive()) {
+                startPollingLocation()
+            }
+
             locationBufferUtil.flushBuffer()
             locationDbHelper.updateDistAngleIfNeeded()
         }
 
         locationReceiver = LocationUpdateReceiver().apply {
-            setOnLocationReceivedListener { location ->
+            setOnLocationReceivedListener { _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
                     locationBufferUtil.flushBuffer()
                 }
@@ -93,18 +105,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
+        val navController = findNavController(R.id.nav_host_fragment)
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.item_browse -> navController.navigate(R.id.item_browse)
-                R.id.item_generate_image -> navController.navigate(R.id.item_generate_image)
-                R.id.item_manage_data -> navController.navigate(R.id.item_manage_data)
-                R.id.item_settings -> navController.navigate(R.id.item_settings)
-            }
-            true
-        }
+        NavigationUI.setupWithNavController(bottomNav, navController)
     }
 
     private fun unregisterLocationReceiver() {

@@ -3,7 +3,6 @@ package eu.tijlb.opengpslogger.ui.view
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
-import android.graphics.Rect
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
@@ -14,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.pow
+
+private const val TAG = "ogl-maplayer"
 
 class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
@@ -29,14 +30,18 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         offsetY -= dy
     }
 
-    fun startDrawJob(bbox: BBoxDto, renderDimension: Pair<Int, Int>, invalidate: () -> Unit) {
-        job = CoroutineScope(Dispatchers.IO).launch {
+    fun startDrawJob(bbox: BBoxDto, renderDimension: Pair<Int, Int>, invalidate: () -> Unit): Job {
+        cancelJob()
+        Log.d(TAG, "Starting draw job coroutine")
+        val coroutine = CoroutineScope(Dispatchers.IO).launch {
             drawLayerOverride(bbox, renderDimension, invalidate)
-            invalidate
         }
+        job = coroutine
+        return coroutine
     }
 
     fun cancelJob() {
+        Log.d(TAG, "Canceling job $job")
         job?.cancel()
     }
 
@@ -57,10 +62,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                     scaleAmount,
                     width / 2F,
                     height / 2F
-                )
-                Log.d(
-                    "ogl-maplayer",
-                    "Drawing bitmap with translation x ${offsetX} y ${offsetY} and scale $scaleAmount"
                 )
                 drawBitmap(it, 0f, 0f, null)
             }
@@ -94,7 +95,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         bitmap = newBitmap
         offsetX += amountToPanX
         offsetY += amountToPanY
-        Log.d("ogl-maplayer", "Committing pan by $amountToPanX, $amountToPanY")
+        Log.d(TAG, "Committing pan by $amountToPanX, $amountToPanY")
 
         val deltaX = amountToPanX / calculateScaleAmount(visualZoom)
         val deltaY = amountToPanY / calculateScaleAmount(visualZoom)
@@ -113,7 +114,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         val deltaX = -amountToPanX / calculateScaleAmount(visualZoom)
         val deltaY = -amountToPanY / calculateScaleAmount(visualZoom)
 
-        Log.d("ogl-maplayer", "Panning bitmap with offset x $amountToPanX and y $amountToPanY")
+        Log.d(TAG, "Panning bitmap with offset x $amountToPanX and y $amountToPanY")
         val matrix = Matrix().apply {
             setTranslate(deltaX, deltaY)
         }
@@ -124,10 +125,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     private fun calculateScaleAmount(visualZoom: Double): Float {
         val scaleBetweenLevels = 2.0.pow((visualZoom - zoom))
-        Log.d(
-            "ogl-maplayer",
-            "scaleBetweenLevels $scaleBetweenLevels = 2^($visualZoom - $zoom)"
-        )
         return scaleBetweenLevels.toFloat()
     }
 
@@ -137,6 +134,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         invalidate: () -> Unit
     ) {
         var tmpBitmap: Bitmap? = null
+        Log.d(TAG, "Calling bitmapRenderer.draw")
         bitmapRenderer.draw(
             bbox, zoom,
             renderDimension,
@@ -160,14 +158,14 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         if (oldZoom == newZoom)
             return bitMap
 
-        Log.d("ogl-maplayer", "Zooming bitmap from $oldZoom to $newZoom")
+        Log.d(TAG, "Zooming bitmap from $oldZoom to $newZoom")
 
         val zoomedBitmap = createBitmap(bitMap.width, bitMap.height)
         val canvas = Canvas(zoomedBitmap)
 
         val scale = 2.0F.pow((newZoom - oldZoom))
         Log.d(
-            "ogl-maplayer",
+            TAG,
             "Need to scale by $scale to go from zoom $oldZoom to $newZoom"
         )
 

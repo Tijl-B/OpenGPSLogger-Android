@@ -19,7 +19,11 @@ import eu.tijlb.opengpslogger.model.database.location.util.LocationDbNeighborsUt
 import eu.tijlb.opengpslogger.model.database.location.util.LocationDbRangeUtil
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
 import kotlin.math.cos
+
+private const val TAG = "ogl-locationdbhelper"
 
 class LocationDbHelper(val context: Context) :
     SQLiteOpenHelper(context, LocationDbContract.FILE_NAME, null, DATABASE_VERSION) {
@@ -78,7 +82,7 @@ class LocationDbHelper(val context: Context) :
         val db = writableDatabase
         val newRowId = db.replace(LocationDbContract.TABLE_NAME, null, values)
         if (newRowId % 1000 == 0L) {
-            Log.d("ogl-locationdbhelper", "Saved $newRowId: $values to database")
+            Log.d(TAG, "Saved $newRowId: $values to database")
         }
         return newRowId
     }
@@ -141,7 +145,7 @@ class LocationDbHelper(val context: Context) :
                     } while (cursor.moveToNext())
                 }
             }
-        Log.d("ogl-locationdbhelper", "Datasource sources $list")
+        Log.d(TAG, "Datasource sources $list")
         return list
     }
 
@@ -151,12 +155,16 @@ class LocationDbHelper(val context: Context) :
         val whereArgs = arrayOf(dataSource)
 
         val deletedRows = db.delete(LocationDbContract.TABLE_NAME, whereClause, whereArgs)
-        Log.d("ogl-locationdbhelper", "Deleted $deletedRows rows from datasource $dataSource")
+        Log.d(TAG, "Deleted $deletedRows rows from datasource $dataSource")
     }
 
-    fun updateDistAngleIfNeeded() {
+    suspend fun updateDistAngleIfNeeded() {
         while (LocationDbNeighborsUtil.updateBatch(readableDatabase, writableDatabase) > 0) {
-            Log.d("ogl-locationdbhelper", "Batch updating distance and angle in progress")
+            if (!coroutineContext.isActive) {
+                Log.d(TAG, "Interrupting...")
+                return
+            }
+            Log.d(TAG, "Batch updating distance and angle in progress")
         }
     }
 

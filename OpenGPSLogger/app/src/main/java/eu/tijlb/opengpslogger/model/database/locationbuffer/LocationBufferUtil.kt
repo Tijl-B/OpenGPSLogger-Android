@@ -6,14 +6,18 @@ import android.provider.BaseColumns
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import kotlinx.coroutines.isActive
+import kotlin.coroutines.coroutineContext
+
+private const val TAG = "ogl-locationbufferutil"
 
 class LocationBufferUtil(val context: Context) {
     val densityMapAdapter = DensityMapAdapter.getInstance(context)
     val locationDbHelper = LocationDbHelper.getInstance(context)
     val locationBufferDbHelper = LocationBufferDbHelper.getInstance(context)
 
-    fun flushBuffer() {
-        Log.d("ogl-locationbufferutil", "Writing location buffer to db")
+    suspend fun flushBuffer() {
+        Log.d(TAG, "Writing location buffer to db")
         var pointsWritten = 0
         locationBufferDbHelper.getPointsCursor()
             .use { cursor ->
@@ -34,6 +38,11 @@ class LocationBufferUtil(val context: Context) {
                     val sourceIdx =
                         cursor.getColumnIndex(LocationBufferDbContract.COLUMN_NAME_SOURCE)
                     do {
+                        if (!coroutineContext.isActive) {
+                            Log.d(TAG, "Interrupting...")
+                            return
+                        }
+
                         val index = cursor.getInt(indexIdx)
                         val timeStamp = cursor.getLong(timestampIdx)
                         val latitude = cursor.getDouble(latitudeIdx)
@@ -59,6 +68,6 @@ class LocationBufferUtil(val context: Context) {
                     } while (cursor.moveToNext())
                 }
             }
-        Log.d("ogl-locationbufferutil", "Wrote $pointsWritten locations from buffer to db")
+        Log.d(TAG, "Wrote $pointsWritten locations from buffer to db")
     }
 }

@@ -32,7 +32,7 @@ class ImportActivity : AppCompatActivity() {
     private lateinit var densityMapAdapter: DensityMapAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(null)
+        super.onCreate(savedInstanceState)
 
         locationDbHelper = LocationDbHelper.getInstance(this)
         densityMapAdapter = DensityMapAdapter.getInstance(this)
