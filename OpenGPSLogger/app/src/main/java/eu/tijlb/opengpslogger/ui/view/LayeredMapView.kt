@@ -186,7 +186,7 @@ class LayeredMapView @JvmOverloads constructor(
     private fun panMap(dx: Float, dy: Float) {
         layers.forEach { it.visualPan(dx, dy) }
         needsRedraw = true
-        redrawIfNeeded()
+        //redrawIfNeeded()
         invalidate()
     }
 
