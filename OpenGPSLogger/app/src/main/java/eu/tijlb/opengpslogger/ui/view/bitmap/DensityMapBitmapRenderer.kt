@@ -171,67 +171,12 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
                 val mappedX = ((x - left).toDouble() / srcWidth * dstWidth).toFloat()
                 val mappedY = ((y - top).toDouble() / srcHeight * dstHeight).toFloat()
 
-
                 paint.color = color
-
 
                 val maxHeightWidth = max(cellWidth, cellHeight)
                 canvas.drawCircle(mappedX, mappedY, max(2F, maxHeightWidth * 0.71F), paint)
-                /*
-                TODO make configurable
-                canvas.drawRect(
-                    mappedX - cellWidth / 2F,
-                    mappedY - cellHeight / 2F,
-                    mappedX + cellWidth / 2F,
-                    mappedY + cellHeight / 2F,
-                    paint
-                )*/
             }
         }
-
-        var result = targetBitmap
-        if (blur) {
-            val minCellDimension = min(cellWidth, cellHeight)
-            val passes = 0 //(minCellDimension * 0.5F).toInt().coerceIn(1, 10)
-            result = blurBitmapMultiplePasses(
-                context,
-                targetBitmap,
-                radius = 3F, //minCellDimension * 0.5F,
-                passes = passes
-            )
-        }
-        return result
-    }
-
-    fun blurBitmapMultiplePasses(
-        context: Context,
-        bitmap: Bitmap,
-        radius: Float,
-        passes: Int
-    ): Bitmap {
-        var blurred = bitmap
-        Log.d("ogl-imagerendererview", "Blurring bitmap $passes times with radius $radius")
-        repeat(passes) {
-            blurred = blurBitmap(context, blurred, radius)
-        }
-        return blurred
-    }
-
-    fun blurBitmap(context: Context, bitmap: Bitmap, radius: Float): Bitmap {
-        if (radius < 0.1F) {
-            return bitmap
-        }
-        Log.d("ogl-imagerendererview", "Blurring bitmap with a radius of $radius")
-        val renderScript = RenderScript.create(context)
-        val input = Allocation.createFromBitmap(renderScript, bitmap)
-        val output = Allocation.createTyped(renderScript, input.type)
-        val script = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
-        script.setRadius(radius.coerceIn(0.1f, 25f))
-        script.setInput(input)
-        script.forEach(output)
-        val blurred = Bitmap.createBitmap(bitmap.width, bitmap.height, bitmap.config)
-        output.copyTo(blurred)
-        renderScript.destroy()
-        return blurred
+        return targetBitmap
     }
 }

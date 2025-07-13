@@ -19,6 +19,7 @@ import eu.tijlb.opengpslogger.model.dto.query.DATASOURCE_ALL
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
+import eu.tijlb.opengpslogger.ui.util.LockUtil.withTimeoutLock
 import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
@@ -30,9 +31,9 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.time.Duration.Companion.seconds
 
 class ImageRendererView(
     context: Context,
@@ -159,7 +160,7 @@ class ImageRendererView(
     }
 
     private suspend fun cancelOsmCoroutine() {
-        osmLock.withLock {
+        osmLock.withTimeoutLock(30.seconds) {
             osmJob?.takeIf { it.isActive }?.cancelAndJoin()
             osmJob = null
             osmBitMap = null
@@ -167,7 +168,7 @@ class ImageRendererView(
     }
 
     private suspend fun cancelCoordinateDataCoroutine() {
-        coordinateDataLock.withLock {
+        coordinateDataLock.withTimeoutLock(30.seconds) {
             Log.d("ogl-imagerendererview", "Resetting coordinate drawing drawing...")
             coordinateDataCoroutine?.takeIf { it.isActive }?.cancelAndJoin()
             coordinateDataCoroutine = null
@@ -255,10 +256,10 @@ class ImageRendererView(
     private fun launchDensityMap(bbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
             Log.d("ogl-imagerendererview", "Getting coordinateDataLock")
-            coordinateDataLock.withLock {
+            coordinateDataLock.withTimeoutLock(10.seconds) {
                 if (!isActive) {
                     Log.d("ogl-imagerendererview", "Stop loading density map!")
-                    return@withLock
+                    return@withTimeoutLock
                 }
                 if (densityMapBitMap == null && coordinateDataCoroutine?.isActive != true) {
                     Log.d("ogl-imagerendererview", "Loading density map")
@@ -266,7 +267,7 @@ class ImageRendererView(
 
                     if (!isActive) {
                         Log.d("ogl-imagerendererview", "Stop drawing density map!")
-                        return@withLock
+                        return@withTimeoutLock
                     }
 
                     Log.d("ogl-imagerendererview", "Starting coroutine for drawing density map...")
@@ -302,10 +303,10 @@ class ImageRendererView(
     private fun launchPointsCoroutine(realBbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
             Log.d("ogl-imagerendererview", "Getting coordinateDataLock")
-            coordinateDataLock.withLock {
+            coordinateDataLock.withTimeoutLock(10.seconds) {
                 if (!isActive) {
                     Log.d("ogl-imagerendererview", "Stop loading points!")
-                    return@withLock
+                    return@withTimeoutLock
                 }
                 if (pointsBitMap == null && coordinateDataCoroutine?.isActive != true) {
                     Log.d("ogl-imagerendererview", "Loading points")
@@ -314,7 +315,7 @@ class ImageRendererView(
 
                     if (!isActive) {
                         Log.d("ogl-imagerendererview", "Stop calculating points!")
-                        return@withLock
+                        return@withTimeoutLock
                     }
 
                     Log.d("ogl-imagerendererview", "Starting coroutine for drawing points...")
@@ -327,7 +328,7 @@ class ImageRendererView(
     private fun launchOsmCoroutine(realBbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
             Log.d("ogl-imagerendererview", "Getting osmLock")
-            osmLock.withLock {
+            osmLock.withTimeoutLock(10.seconds) {
                 if (osmBitMap == null && osmJob?.isActive != true) {
                     Log.d("ogl-imagerendererview", "Loading osm")
                     loadOsmBackgroundAsync(realBbox)
