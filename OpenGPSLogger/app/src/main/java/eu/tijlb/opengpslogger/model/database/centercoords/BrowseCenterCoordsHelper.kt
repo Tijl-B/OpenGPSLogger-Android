@@ -1,4 +1,4 @@
-package eu.tijlb.opengpslogger.model.database.settings
+package eu.tijlb.opengpslogger.model.database.centercoords
 
 import android.content.Context
 import android.content.SharedPreferences

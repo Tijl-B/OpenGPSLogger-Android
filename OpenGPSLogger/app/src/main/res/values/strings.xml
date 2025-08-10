@@ -57,9 +57,8 @@
     <string name="advanced_filters_title">Advanced filters</string>
     <string name="advanced_filters_confirm">confirm</string>
     <string name="advanced_filters_cancel">cancel</string>
-    <string name="densityMapSettings">Density map settings</string>
     <string name="recalculate_values">Recalculate values</string>
-    <string name="density_map_settings">Density map settings (experimental)</string>
+    <string name="density_map_settings">Browse settings</string>
     <string name="density_map_settings_confirm">Confirm</string>
     <string name="use_density_map">Use density map:</string>
     <string name="density_map">Density map</string>
@@ -75,4 +74,5 @@
     <string name="notification_permission_missing">Notification permission missing</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_confirm">Ok</string>
+    <string name="show_last_location">Show last location:</string>
 </resources>

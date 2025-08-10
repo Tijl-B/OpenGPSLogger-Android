@@ -62,15 +62,15 @@ class LocationNotificationService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 super.onLocationResult(locationResult)
-                val location = locationResult.lastLocation
-                if (location != null) {
-                    Log.d(TAG, "Location from service: $location")
-                    saveToDb(location)
-                    val intent = Intent("eu.tijlb.LOCATION_UPDATE")
-                    intent.putExtra("location", location)
-                    intent.setPackage(applicationContext.packageName)
-                    Log.d(TAG, "Broadcast location $location")
-                    sendBroadcast(intent)
+                try {
+                    val location = locationResult.lastLocation
+                    if (location != null) {
+                        Log.d(TAG, "Location from service: $location")
+                        saveToDb(location)
+                        broadCastLocationReceived(location)
+                    }
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Error while handling location result:", e)
                 }
             }
         }
@@ -168,6 +168,14 @@ class LocationNotificationService : Service() {
             text,
             Toast.LENGTH_SHORT
         ).show()
+    }
+
+    private fun broadCastLocationReceived(location: Location) {
+        val intent = Intent("eu.tijlb.LOCATION_RECEIVED")
+        intent.putExtra("location", location)
+        intent.setPackage(applicationContext.packageName)
+        Log.d(TAG, "Broadcast location $location")
+        sendBroadcast(intent)
     }
 
     private fun stopLocationUpdates() {

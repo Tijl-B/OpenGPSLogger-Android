@@ -9,13 +9,14 @@ import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
+import eu.tijlb.opengpslogger.model.database.centercoords.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
 import eu.tijlb.opengpslogger.ui.util.LockUtil.tryLockOrSkip
 import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
+import eu.tijlb.opengpslogger.ui.view.bitmap.LastLocationBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +44,8 @@ class LayeredMapView @JvmOverloads constructor(
     private val layers = listOf(
         MapLayer(OsmImageBitmapRenderer(context)),
         MapLayer(DensityMapBitmapRenderer(context)),
-        MapLayer(CopyRightNoticeBitmapRenderer(context))
+        MapLayer(CopyRightNoticeBitmapRenderer(context)),
+        MapLayer(LastLocationBitmapRenderer(context))
     )
 
     private var centerLat = 0.0
@@ -81,14 +83,25 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         Log.d(TAG, "Detaching LayeredMapView from window...")
-        cancelJobs()
+        stopUpdates()
         super.onDetachedFromWindow()
     }
 
-    public fun cancelJobs() {
+    override fun onAttachedToWindow() {
+        Log.d(TAG, "Attaching LayeredMapView to window...")
+        super.onAttachedToWindow()
+        redraw()
+    }
+
+    fun stopUpdates() {
         layers.forEach { it.cancelJob() }
         setupJob?.cancel()
         redrawJob?.cancel()
+    }
+
+    fun redraw() {
+        needsRedraw = true
+        redrawIfNeeded()
     }
 
     private fun setUpCenterAndZoom() {
@@ -100,6 +113,10 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun redrawIfNeeded() {
         val oldJob = redrawJob
+        if (setupJob == null) {
+            Log.d(TAG, "Not yet set up, skipping redraw")
+            return
+        }
         redrawJob = CoroutineScope(Dispatchers.IO).launch {
             redrawMutex.runIfLast(latestRedrawJob) {
                 if (needsRedraw) {
@@ -169,8 +186,7 @@ class LayeredMapView @JvmOverloads constructor(
         val anyZoomOutOfSync = layers.map { it.requiresUpdate(visualZoomLevel) }
             .contains(true)
         if (anyZoomOutOfSync) {
-            needsRedraw = true
-            redrawIfNeeded()
+            redraw()
         }
         invalidate()
     }

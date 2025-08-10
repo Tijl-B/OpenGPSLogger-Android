@@ -5,7 +5,9 @@ import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
+import eu.tijlb.opengpslogger.model.database.lastlocation.LastLocationHelper
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
@@ -15,10 +17,13 @@ class LocationBufferUtil(val context: Context) {
     val densityMapAdapter = DensityMapAdapter.getInstance(context)
     val locationDbHelper = LocationDbHelper.getInstance(context)
     val locationBufferDbHelper = LocationBufferDbHelper.getInstance(context)
+    val lastLocationHelper = LastLocationHelper(context)
+    val densityMapUtil = DensityMapUtil(context)
 
     suspend fun flushBuffer() {
         Log.d(TAG, "Writing location buffer to db")
         var pointsWritten = 0
+        var lastLocation: Location? = null
         locationBufferDbHelper.getPointsCursor()
             .use { cursor ->
                 if (cursor.moveToFirst()) {
@@ -64,10 +69,22 @@ class LocationBufferUtil(val context: Context) {
                         densityMapAdapter.addLocation(location)
 
                         locationBufferDbHelper.remove(index)
-                        pointsWritten++
+                        if ((pointsWritten++) % 2000 == 0) {
+                            Log.d(TAG, "Wrote $pointsWritten points")
+                            broadCastLocationUpdated(location)
+                        }
+                        lastLocation = location
                     } while (cursor.moveToNext())
                 }
             }
+        lastLocation?.let {
+            lastLocationHelper.setLastLocation(it)
+            broadCastLocationUpdated(it)
+        }
         Log.d(TAG, "Wrote $pointsWritten locations from buffer to db")
+    }
+
+    private fun broadCastLocationUpdated(location: Location) {
+        densityMapUtil.broadcastDensityMapUpdated(location)
     }
 }
