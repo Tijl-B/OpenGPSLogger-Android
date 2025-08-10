@@ -3,8 +3,8 @@ package eu.tijlb.opengpslogger.model.database.settings
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import androidx.core.content.edit
+import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 
 private const val VISUALISATION_SETTINGS = "VISUALISATION_SETTINGS"
 

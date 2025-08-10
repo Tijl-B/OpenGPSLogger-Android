@@ -57,7 +57,7 @@ class BrowseFragment : Fragment(R.layout.fragment_browse) {
     }
 
     private fun registerLocationReceiver() {
-        val filter = IntentFilter("eu.tijlb.LOCATION_DB_UPDATE")
+        val filter = IntentFilter("eu.tijlb.LOCATION_DM_UPDATE")
         context?.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
         Log.d(TAG, "Registered location receiver in LastLocationBitmapRenderer")
     }

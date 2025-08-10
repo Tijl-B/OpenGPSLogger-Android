@@ -15,12 +15,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Spinner
-import android.widget.Switch
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
@@ -136,7 +134,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         recalculateButton.setOnClickListener {
             Log.d(TAG, "Recalculating density map")
-            DensityMapUtil.recreateDatabaseAsync(densityMapAdapter, locationDbHelper)
+            DensityMapUtil(context).recreateDatabaseAsync(densityMapAdapter, locationDbHelper)
             recalculateButton.setBackgroundColor(Color.GRAY)
         }
 

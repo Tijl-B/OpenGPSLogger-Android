@@ -1,13 +1,13 @@
 package eu.tijlb.opengpslogger.model.database.locationbuffer
 
 import android.content.Context
-import android.content.Intent
 import android.location.Location
 import android.provider.BaseColumns
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.lastlocation.LastLocationHelper
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
@@ -18,6 +18,7 @@ class LocationBufferUtil(val context: Context) {
     val locationDbHelper = LocationDbHelper.getInstance(context)
     val locationBufferDbHelper = LocationBufferDbHelper.getInstance(context)
     val lastLocationHelper = LastLocationHelper(context)
+    val densityMapUtil = DensityMapUtil(context)
 
     suspend fun flushBuffer() {
         Log.d(TAG, "Writing location buffer to db")
@@ -68,9 +69,11 @@ class LocationBufferUtil(val context: Context) {
                         densityMapAdapter.addLocation(location)
 
                         locationBufferDbHelper.remove(index)
-                        broadCastLocationUpdated(location)
+                        if ((pointsWritten++) % 2000 == 0) {
+                            Log.d(TAG, "Wrote $pointsWritten points")
+                            broadCastLocationUpdated(location)
+                        }
                         lastLocation = location
-                        pointsWritten++
                     } while (cursor.moveToNext())
                 }
             }
@@ -82,10 +85,6 @@ class LocationBufferUtil(val context: Context) {
     }
 
     private fun broadCastLocationUpdated(location: Location) {
-        val intent = Intent("eu.tijlb.LOCATION_DB_UPDATE")
-        intent.putExtra("location", location)
-        intent.setPackage(context.packageName)
-        Log.d(TAG, "Broadcast location $location")
-        context.sendBroadcast(intent)
+        densityMapUtil.broadcastDensityMapUpdated(location)
     }
 }

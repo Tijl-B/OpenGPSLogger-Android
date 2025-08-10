@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.4.0
+
+#### Features
+- Show last known location on browse map
+- Automatically update UI while new points are being added to the density map
+
 ### 1.3.1
 
 #### Fixes
