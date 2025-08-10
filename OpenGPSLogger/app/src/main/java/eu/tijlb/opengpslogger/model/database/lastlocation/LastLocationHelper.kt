@@ -15,7 +15,7 @@ private const val DEFAULT_CENTER_LAT = 0F
 private const val DEFAULT_CENTER_LON = 0F
 private const val DEFAULT_TIMESTAMP = -1L
 
-private const val TAG = "ogl-browsesettingshelper"
+private const val TAG = "ogl-lastlocationhelper"
 
 class LastLocationHelper(val context: Context) {
 

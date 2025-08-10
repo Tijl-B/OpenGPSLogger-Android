@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.database.lastlocation.LastLocationHelper
+import eu.tijlb.opengpslogger.model.database.settings.VisualisationSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil.lat2num
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil.lon2num
@@ -21,6 +22,7 @@ private const val TAG = "ogl-lastlocationbitmaprenderer"
 class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
     private var lastLocationHelper = LastLocationHelper(context)
+    private var visualisationSettingsHelper = VisualisationSettingsHelper(context)
 
     override suspend fun draw(
         bbox: BBoxDto,
@@ -39,6 +41,11 @@ class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer(
         }
 
         val bitmap = createBitmap(renderDimension.first, renderDimension.second)
+
+        if (!visualisationSettingsHelper.getShowLastLocation()) {
+            return bitmap
+        }
+
         val canvas = Canvas(bitmap)
 
         lastLocationHelper.getLastLocation()?.let {

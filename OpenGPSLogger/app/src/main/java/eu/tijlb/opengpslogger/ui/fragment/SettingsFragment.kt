@@ -15,10 +15,12 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Spinner
+import android.widget.Switch
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.switchmaterial.SwitchMaterial
 import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
@@ -39,6 +41,8 @@ import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.service.LocationNotificationService
 import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import eu.tijlb.opengpslogger.ui.singleton.ImageRendererViewSingleton
+
+private const val TAG = "ogl-settingsfragment"
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -61,7 +65,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("ogl-settingsfragment", "Start creating settings fragment")
+        Log.d(TAG, "Start creating settings fragment")
         context = requireContext()
         locationRequestSettingsHelper = LocationRequestSettingsHelper(context)
         advancedFiltersHelper = AdvancedFiltersHelper(context)
@@ -70,11 +74,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         tileServerDbHelper = TileServerDbHelper.getInstance(context)
         locationDbHelper = LocationDbHelper.getInstance(context)
         trackingStatusHelper = TrackingStatusHelper(context)
-        Log.d("ogl-settingsfragment", "Done creating settings fragment")
+        Log.d(TAG, "Done creating settings fragment")
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        Log.d("ogl-settingsfragment", "Start creating settings fragment view")
+        Log.d(TAG, "Start creating settings fragment view")
         requestLocationButton = view.findViewById<Button>(R.id.button_request_location)
         requestLocationButton.setOnClickListener { toggleLocationTracking() }
 
@@ -97,11 +101,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         trackingActiveChangedListener = trackingStatusHelper.registerActiveChangedListener {
             requestingLocation = it
         }
-        Log.d("ogl-settingsfragment", "Done creating settings fragment view")
+        Log.d(TAG, "Done creating settings fragment view")
     }
 
     override fun onDestroyView() {
-        Log.d("ogl-settingsfragment", "Destroying SettingsFragment")
+        Log.d(TAG, "Destroying SettingsFragment")
         trackingStatusHelper.deregisterActiveChangedListener(trackingActiveChangedListener)
         super.onDestroyView()
     }
@@ -127,18 +131,22 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun openDensityMapSettingsDialog(): Boolean {
         val dialogView = layoutInflater.inflate(R.layout.dialog_density_map_settings, null)
-        val button = dialogView.findViewById<Button>(R.id.btn_recalculate_density_map)
+        val showLastLocationSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_show_last_location)
+        val recalculateButton = dialogView.findViewById<Button>(R.id.btn_recalculate_density_map)
 
-        button.setOnClickListener {
-            Log.d("ogl-settingsfragment", "Recalculating density map")
+        recalculateButton.setOnClickListener {
+            Log.d(TAG, "Recalculating density map")
             DensityMapUtil.recreateDatabaseAsync(densityMapAdapter, locationDbHelper)
-            button.setBackgroundColor(Color.GRAY)
+            recalculateButton.setBackgroundColor(Color.GRAY)
         }
+
+        showLastLocationSwitch.isChecked = visualisationSettingsHelper.getShowLastLocation()
         AlertDialog.Builder(context)
             .setTitle(getString(R.string.density_map_settings))
             .setView(dialogView)
             .setPositiveButton(getString(R.string.density_map_settings_confirm)) { dialog, _ ->
-                Log.d("ogl-settingsfragment", "Confirmed density map settings dialog")
+                visualisationSettingsHelper.setShowLastLocation(showLastLocationSwitch.isChecked)
+                Log.d(TAG, "Confirmed density map settings dialog")
             }
             .create()
             .show()
@@ -164,7 +172,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 val urlValue = urlEditText.text.toString()
                 val copyrightValue = copyrightEditText.text.toString()
                 Log.d(
-                    "ogl-mainactivity",
+                    TAG,
                     "Got tile server selection $selection, name $nameValue and url $urlValue"
                 )
                 if (nameValue.isNotEmpty() && urlValue.startsWith("https://")) {
@@ -401,7 +409,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun startPollingLocation() {
-        Log.d("ogl-settingsfragment", "Start polling location")
+        Log.d(TAG, "Start polling location")
         val intent = Intent(requireContext(), LocationNotificationService::class.java)
         ContextCompat.startForegroundService(requireContext(), intent)
 
@@ -409,7 +417,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun stopPollingLocation() {
-        Log.d("ogl-settingsfragment", "Stop polling location")
+        Log.d(TAG, "Stop polling location")
         val stopIntent = Intent(requireContext(), LocationNotificationService::class.java)
         requireContext().stopService(stopIntent)
 

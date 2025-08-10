@@ -9,7 +9,7 @@ import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import eu.tijlb.opengpslogger.model.database.settings.BrowseSettingsHelper
+import eu.tijlb.opengpslogger.model.database.centercoords.BrowseSettingsHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil
 import eu.tijlb.opengpslogger.ui.util.LockUtil.runIfLast
