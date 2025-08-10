@@ -15,7 +15,4 @@ abstract class AbstractBitmapRenderer {
 
     open fun redrawOnTranslation() = true
 
-    open fun onStop() {}
-
-    open fun onResume() {}
 }

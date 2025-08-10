@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun registerLocationReceiver() {
-        val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
+        val filter = IntentFilter("eu.tijlb.LOCATION_RECEIVED")
         this.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
         Log.d(TAG, "Registered location receiver in MainActivity")
     }

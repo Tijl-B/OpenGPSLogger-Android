@@ -89,17 +89,19 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onAttachedToWindow() {
         Log.d(TAG, "Attaching LayeredMapView to window...")
-        resumeUpdates()
         super.onAttachedToWindow()
+        redraw()
     }
+
     fun stopUpdates() {
-        layers.forEach { it.stopUpdates() }
+        layers.forEach { it.cancelJob() }
         setupJob?.cancel()
         redrawJob?.cancel()
     }
 
-    fun resumeUpdates() {
-        layers.forEach { it.resumeUpdates() }
+    fun redraw() {
+        needsRedraw = true
+        redrawIfNeeded()
     }
 
     private fun setUpCenterAndZoom() {
@@ -111,6 +113,10 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun redrawIfNeeded() {
         val oldJob = redrawJob
+        if (setupJob == null) {
+            Log.d(TAG, "Not yet set up, skipping redraw")
+            return
+        }
         redrawJob = CoroutineScope(Dispatchers.IO).launch {
             redrawMutex.runIfLast(latestRedrawJob) {
                 if (needsRedraw) {
@@ -180,8 +186,7 @@ class LayeredMapView @JvmOverloads constructor(
         val anyZoomOutOfSync = layers.map { it.requiresUpdate(visualZoomLevel) }
             .contains(true)
         if (anyZoomOutOfSync) {
-            needsRedraw = true
-            redrawIfNeeded()
+            redraw()
         }
         invalidate()
     }
