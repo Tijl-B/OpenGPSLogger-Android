@@ -49,6 +49,20 @@ class PointsBitmapRenderer(
         get() = TimeUnit.MINUTES.toMillis(visualisationSettings.connectLinesMaxMinutesDelta)
 
     private var pointRadius = 5F
+        set(value) {
+            field = value
+            dotPaint.apply {
+                val shadowRadius = (value + 1F) * 1.1F
+                val shadowOffset = value * 0.5F
+                val shadowOpacityPercentage = visualisationSettings.shadowOpacity
+                if (shadowOpacityPercentage == 0) {
+                    clearShadowLayer()
+                } else {
+                    val color = Color.valueOf(0F, 0F, 0F, (shadowOpacityPercentage / 100F))
+                    setShadowLayer(shadowRadius, shadowOffset, shadowOffset, color.pack())
+                }
+            }
+        }
 
     @SuppressLint("Range")
     suspend fun draw(

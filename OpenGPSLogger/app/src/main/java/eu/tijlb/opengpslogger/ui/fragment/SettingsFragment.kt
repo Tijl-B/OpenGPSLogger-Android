@@ -219,6 +219,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             dialogView.findViewById<EditText>(R.id.editText_connectLinesMaxTimeDelta)
         val colorSeedEditText = dialogView.findViewById<EditText>(R.id.editText_colorSeed)
         val opacityEditText = dialogView.findViewById<EditText>(R.id.editText_opacity)
+        val shadowOpacityEditText = dialogView.findViewById<EditText>(R.id.editText_shadowOpacity)
         val lineSwitch = dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_lines)
         val densityMapSwitch =
             dialogView.findViewById<SwitchMaterial>(R.id.switch_enable_density_map)
@@ -249,6 +250,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         lineSizeEditText.setText(settings.lineSize?.toString() ?: getString(R.string.auto))
         colorSeedEditText.setText(settings.colorSeed.toString())
         opacityEditText.setText(settings.opacityPercentage.toString())
+        shadowOpacityEditText.setText(settings.shadowOpacity.toString())
         lineMaxMinsDeltaEditText.setText(settings.connectLinesMaxMinutesDelta.toString())
         lineSwitch.isChecked = settings.drawLines
         densityMapSwitch.isChecked = settings.drawDensityMap
@@ -261,6 +263,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 val lineSize = lineSizeEditText.text.toString().toFloatOrNull()
                 val colorSeed = colorSeedEditText.text.toString().toIntOrNull() ?: 0
                 val opacity = opacityEditText.text.toString().toIntOrNull()?.coerceIn(1, 100) ?: 100
+                val shadowOpacity = shadowOpacityEditText.text.toString().toIntOrNull()?.coerceIn(0, 100) ?: 100
                 val lineMaxMinsDelta = lineMaxMinsDeltaEditText.text.toString().toLongOrNull()
                     ?: settings.connectLinesMaxMinutesDelta
                 val drawLines = lineSwitch.isChecked
@@ -273,7 +276,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     lineMaxMinsDelta,
                     colorModeValues[colorSpinner.selectedItemPosition],
                     colorSeed,
-                    opacity
+                    opacity,
+                    shadowOpacity
                 )
                 visualisationSettingsHelper.setVisualisationSettings(settingsDto)
                 dialog.dismiss()

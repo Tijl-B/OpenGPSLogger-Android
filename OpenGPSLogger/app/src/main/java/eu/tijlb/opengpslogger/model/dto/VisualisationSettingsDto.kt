@@ -11,5 +11,6 @@ data class VisualisationSettingsDto(
     val connectLinesMaxMinutesDelta: Long,
     val colorMode: ColorMode,
     val colorSeed: Int,
-    val opacityPercentage: Int
+    val opacityPercentage: Int,
+    val shadowOpacity: Int
 )

@@ -157,18 +157,30 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
         val canvas = Canvas(targetBitmap)
         canvas.drawColor(Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
 
-        val paint = Paint()
+        val maxHeightWidth = max(cellWidth, cellHeight)
+        val radius = max(2F, maxHeightWidth * 0.71F)
+        val shadowRadius = (radius + 1F) * 1.1F
+        val shadowOffset = radius * 0.5F
+        val paint = Paint().apply {
+            setShadowLayer(shadowRadius, shadowOffset, shadowOffset, Color.BLACK)
+        }
+
+        val widthRatio = dstWidth.toFloat() / srcWidth
+        val heightRatio = dstHeight.toFloat() / srcHeight
+
+        val leftFl = left.toFloat()
+        val rightFl = right.toFloat()
+        val topFl = top.toFloat()
+        val bottomFl = bottom.toFloat()
 
         for ((pos, color) in sourceBitMap.data) {
             val (x, y) = pos
-            if (x in left.toFloat()..right.toFloat() && y in top.toFloat()..bottom.toFloat()) {
-                val mappedX = ((x - left).toDouble() / srcWidth * dstWidth).toFloat()
-                val mappedY = ((y - top).toDouble() / srcHeight * dstHeight).toFloat()
+            if (x in leftFl..rightFl && y in topFl..bottomFl) {
+                val mappedX = (x - left) * widthRatio
+                val mappedY = (y - top) * heightRatio
 
                 paint.color = color
-
-                val maxHeightWidth = max(cellWidth, cellHeight)
-                canvas.drawCircle(mappedX, mappedY, max(2F, maxHeightWidth * 0.71F), paint)
+                canvas.drawCircle(mappedX, mappedY, radius, paint)
             }
         }
         return targetBitmap

@@ -63,19 +63,28 @@ class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer(
             val mappedX = ((osmX - minX) / xRange * bitmap.width).roundToInt()
             val mappedY = ((maxY - osmY) / yRange * bitmap.height).roundToInt()
 
+            val outerRadius = 20F
+            var shadowRadius = (outerRadius + 1F) * 1.1F
+            var shadowOffset = outerRadius * 0.5F
             val paint = Paint().apply {
                 isAntiAlias = true
                 color = Color.WHITE
+                setShadowLayer(shadowRadius, shadowOffset, shadowOffset, Color.BLACK)
             }
 
-            canvas.drawCircle(mappedX.toFloat(), mappedY.toFloat(), 20F, paint)
+            canvas.drawCircle(mappedX.toFloat(), mappedY.toFloat(), outerRadius, paint)
+
             val pointAge = System.currentTimeMillis() - it.time
-            paint.color =
-                if (pointAge < 5.minutes.inWholeMilliseconds)
+
+            val innerRadius = 14F
+            paint.apply {
+                clearShadowLayer()
+                color = if (pointAge < 5.minutes.inWholeMilliseconds)
                     Color.BLUE
                 else Color.GRAY
 
-            canvas.drawCircle(mappedX.toFloat(), mappedY.toFloat(), 14F, paint)
+            }
+            canvas.drawCircle(mappedX.toFloat(), mappedY.toFloat(), innerRadius, paint)
             Log.d(TAG, "Drawing last known location to x $mappedX, y $mappedY...")
         } ?: run { Log.d(TAG, "Not drawing last known location as it is null") }
 

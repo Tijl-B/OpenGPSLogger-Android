@@ -16,6 +16,7 @@ private const val CONNECT_LINE_MAX_MINS_DELTA = "CONNECT_LINE_MAX_MINS_DELTA"
 private const val COLOR_MODE = "COLOR_MODE"
 private const val COLOR_SEED = "COLOR_SEED"
 private const val COLOR_OPACITY_PERCENTAGE = "COLOR_OPACITY_PERCENTAGE"
+private const val SHADOW_OPACITY_PERCENTAGE = "SHADOW_OPACITY_PERCENTAGE"
 private const val SHOW_LAST_LOCATION = "SHOW_LAST_LOCATION"
 
 private const val DEFAULT_DRAW_LINES = false
@@ -24,6 +25,7 @@ private const val DEFAULT_CONNECT_LINE_MAX_MINS_DELTA = 15L
 private val DEFAULT_COLOR_MODE = ColorMode.MULTI_COLOR_MONTH.name
 private const val DEFAULT_COLOR_SEED = 0
 private const val DEFAULT_COLOR_OPACITY_PERCENTAGE = 100
+private const val DEFAULT_SHADOW_OPACITY_PERCENTAGE = 100
 private const val DEFAULT_SHOW_LAST_LOCATION = false
 
 private const val AUTO_DOT_SIZE = -1F
@@ -50,6 +52,10 @@ class VisualisationSettingsHelper(val context: Context) {
             COLOR_OPACITY_PERCENTAGE,
             DEFAULT_COLOR_OPACITY_PERCENTAGE
         )
+        val shadowOpacity = locationRequestPreferences.getInt(
+            SHADOW_OPACITY_PERCENTAGE,
+            DEFAULT_SHADOW_OPACITY_PERCENTAGE
+        )
         val colorModeStr = locationRequestPreferences.getString(COLOR_MODE, DEFAULT_COLOR_MODE)
             ?.takeIf { colorModePref ->
                 ColorMode.entries.map { it.name }
@@ -65,7 +71,8 @@ class VisualisationSettingsHelper(val context: Context) {
             connectLineMaxMinsDelta,
             colorMode,
             colorSeed,
-            colorOpacity
+            colorOpacity,
+            shadowOpacity
         )
     }
 
@@ -80,6 +87,7 @@ class VisualisationSettingsHelper(val context: Context) {
             putLong(CONNECT_LINE_MAX_MINS_DELTA, settingsDto.connectLinesMaxMinutesDelta)
             putInt(COLOR_SEED, settingsDto.colorSeed)
             putInt(COLOR_OPACITY_PERCENTAGE, settingsDto.opacityPercentage)
+            putInt(SHADOW_OPACITY_PERCENTAGE, settingsDto.shadowOpacity)
             putString(COLOR_MODE, settingsDto.colorMode.toString())
         }
     }
