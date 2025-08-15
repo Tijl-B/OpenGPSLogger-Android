@@ -75,4 +75,5 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_confirm">Ok</string>
     <string name="show_last_location">Show last location:</string>
+    <string name="shadow_opacity">Shadow opacity (%):</string>
 </resources>

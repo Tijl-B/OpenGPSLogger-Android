@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.5.0
+[apk](release/opengpslogger-1-5-0.apk)
+
+#### Features
+- Add drop shadow to points
+
 ### 1.4.0
 
 #### Features
@@ -14,7 +20,6 @@
 - Stability improvements
 
 ### 1.3.0
-[apk](release/opengpslogger-1-3-0.apk)
 
 #### Features
 - Add privacy policy
@@ -23,7 +28,6 @@
 - Stability improvements
 
 ### 1.2.4
-[apk](release/opengpslogger-1-2-4.apk)
 
 #### Fixes
 - Set max wait time to 5 seconds on database connections to prevent deadlocks
