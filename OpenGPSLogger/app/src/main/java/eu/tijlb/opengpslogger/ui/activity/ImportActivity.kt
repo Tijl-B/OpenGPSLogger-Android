@@ -1,7 +1,6 @@
 package eu.tijlb.opengpslogger.ui.activity
 
 import android.content.Intent
-import android.location.Location
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -14,13 +13,6 @@ import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.ActivityImportBinding
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
-import eu.tijlb.opengpslogger.model.parser.gpx.GpxParser
-import eu.tijlb.opengpslogger.model.parser.json.JsonParser
-
-private const val GPX_EXTENSION = ".gpx"
-
-private const val GPX_MIMETYPE = "application/gpx+xml"
-private const val JSON_MIMETYPE = "application/json"
 
 private const val TAG = "ogl-importactivity"
 
@@ -32,11 +24,11 @@ class ImportActivity : AppCompatActivity() {
     private lateinit var densityMapAdapter: DensityMapAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d(TAG, "ImportActivity.onCreate")
         super.onCreate(savedInstanceState)
 
         locationDbHelper = LocationDbHelper.getInstance(this)
         densityMapAdapter = DensityMapAdapter.getInstance(this)
-        handleIncomingIntent(intent)
 
         binding = ActivityImportBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -46,6 +38,8 @@ class ImportActivity : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_import)
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
+
+        handleIncomingIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -54,89 +48,27 @@ class ImportActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingIntent(intent: Intent?) {
-        Log.d(TAG, "Got intent $intent.")
-        when(intent?.action) {
+        val uris: List<Uri> = when (intent?.action) {
             Intent.ACTION_SEND -> {
-                val uri = intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                uri?.let { handleUri(it) }
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)?.let { listOf(it) } ?: emptyList()
             }
             Intent.ACTION_SEND_MULTIPLE -> {
-                val uriList = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
-                uriList?.let {
-                    for (uri in it) {
-                        handleUri(uri)
-                    }
-                }
+                intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java) ?: emptyList()
             }
             Intent.ACTION_VIEW -> {
-                val uri = intent.data
-                uri?.let { handleUri(it) }
+                intent.data?.let { listOf(it) } ?: emptyList()
             }
-            else -> Log.w(TAG, "Ignoring intent $intent.")
+            else -> emptyList()
         }
 
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
-        startActivity(intent)
-    }
-
-    private fun handleUri(it: Uri): Any {
-        val fileType = contentResolver.getType(it)
-        return if (fileType == GPX_MIMETYPE || isGpxFile(it)) {
-            Log.d(TAG, "Processing GPX file: $it")
-            parseAndStoreGpxFile(it)
-        } else if (fileType == JSON_MIMETYPE) {
-            Log.d(TAG, "Processing JSON file: $it")
-            parserAndStoreJsonFile(it)
-        } else {
-            Log.d(TAG, "Skipping unsupported file type: $it")
-        }
-    }
-
-    private fun parseAndStoreGpxFile(uri: Uri) {
-        contentResolver.openInputStream(uri)
-            ?.let {
-                locationDbHelper.writableDatabase.beginTransaction()
-                GpxParser.parse(it) { point, time, source ->
-                    storePointInDatabase(point, time, source)
-                }
-                locationDbHelper.writableDatabase.setTransactionSuccessful()
-                locationDbHelper.writableDatabase.endTransaction()
+        if (uris.isNotEmpty()) {
+            val bundle = Bundle().apply {
+                putParcelableArrayList("importUris", ArrayList(uris))
             }
-    }
 
-    private fun parserAndStoreJsonFile(uri: Uri) {
-        contentResolver.openInputStream(uri)
-            ?.let {
-                locationDbHelper.writableDatabase.beginTransaction()
-                JsonParser.parse(it) { point, time, source ->
-                    storePointInDatabase(point, time, source)
-                }
-                locationDbHelper.writableDatabase.setTransactionSuccessful()
-                locationDbHelper.writableDatabase.endTransaction()
-            }
-    }
-
-    private fun isGpxFile(uri: Uri): Boolean {
-        return uri.toString().endsWith(GPX_EXTENSION, ignoreCase = true)
-    }
-
-    private fun storePointInDatabase(
-        point: Point,
-        importStart: Long,
-        source: String,
-    ) {
-        Log.d(TAG, "Storing point $point")
-        var location = Location(source).apply {
-            latitude = point.lat
-            longitude = point.lon
-            point.unixTime?.let { time = it }
-            point.gpsSpeed?.let { speed = it }
-            point.accuracy?.let { accuracy = it }
+            val navController = findNavController(R.id.nav_host_fragment_content_import)
+            navController.navigate(R.id.fragment_import, bundle)
         }
-        locationDbHelper.save(location, "$source::$importStart")
-        densityMapAdapter.addLocation(location)
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -145,11 +77,5 @@ class ImportActivity : AppCompatActivity() {
                 || super.onSupportNavigateUp()
     }
 
-    data class Point(
-        val lat: Double,
-        val lon: Double,
-        val unixTime: Long?,
-        val gpsSpeed: Float? = null,
-        val accuracy: Float? = null
-    )
+
 }

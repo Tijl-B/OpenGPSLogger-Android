@@ -2,8 +2,13 @@
 
 ## Releases
 
+### 1.6.0
+[apk](release/opengpslogger-1-6-0.apk)
+
+#### Features
+- Add import button and improve import view with feedback about the status.
+
 ### 1.5.0
-[apk](release/opengpslogger-1-5-0.apk)
 
 #### Features
 - Add drop shadow to points

@@ -2,7 +2,7 @@ package eu.tijlb.opengpslogger.model.parser.gpx
 
 import android.util.Log
 import eu.tijlb.opengpslogger.model.util.TimeUtil
-import eu.tijlb.opengpslogger.ui.activity.ImportActivity
+import eu.tijlb.opengpslogger.ui.fragment.ImportFragment
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
@@ -17,7 +17,7 @@ object GpxParser {
 
     fun parse(
         inputStream: InputStream,
-        save: (ImportActivity.Point, importStart: Long, source: String) -> Unit
+        save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {
         try {
             val importStart = System.currentTimeMillis()
@@ -51,7 +51,7 @@ object GpxParser {
 
                     XmlPullParser.END_TAG -> {
                         if (tagName == GPX_FIELD_TRACKPOINT && latitude != null && longitude != null) {
-                            val point = ImportActivity.Point(
+                            val point = ImportFragment.Point(
                                 lat = latitude.toDouble(),
                                 lon = longitude.toDouble(),
                                 unixTime = time,

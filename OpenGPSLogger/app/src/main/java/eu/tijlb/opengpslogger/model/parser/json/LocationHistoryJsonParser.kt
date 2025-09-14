@@ -3,7 +3,7 @@ package eu.tijlb.opengpslogger.model.parser.json
 import android.util.JsonReader
 import android.util.Log
 import eu.tijlb.opengpslogger.model.util.TimeUtil
-import eu.tijlb.opengpslogger.ui.activity.ImportActivity
+import eu.tijlb.opengpslogger.ui.fragment.ImportFragment
 
 object LocationHistoryJsonParser {
 
@@ -24,7 +24,7 @@ object LocationHistoryJsonParser {
 
     fun parse(
         reader: JsonReader,
-        save: (ImportActivity.Point, importStart: Long, source: String) -> Unit
+        save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {
         val importStart = System.currentTimeMillis()
 
@@ -149,13 +149,13 @@ object LocationHistoryJsonParser {
 
     private fun storeGeoCoords(
         geoCoords: String, time: String, importStart: Long,
-        save: (ImportActivity.Point, importStart: Long, source: String) -> Unit
+        save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {
         val timestampMillis = time.toLongOrNull() ?: TimeUtil.iso8601ToUnixMillis(time)
 
         parseGeoCoords(geoCoords)
             ?.let { (lat, lon) ->
-                val point = ImportActivity.Point(
+                val point = ImportFragment.Point(
                     lat = lat,
                     lon = lon,
                     unixTime = timestampMillis

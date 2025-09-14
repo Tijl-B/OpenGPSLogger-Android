@@ -99,9 +99,9 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
 
     private var showingZoomableImage = false
 
-    private var _binding: FragmentImageGeneratorBinding? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
+    private var _binding: FragmentImageGeneratorBinding? = null
     private val binding get() = _binding!!
 
     override fun onCreateView(

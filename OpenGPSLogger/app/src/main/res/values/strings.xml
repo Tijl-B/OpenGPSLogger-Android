@@ -76,4 +76,7 @@
     <string name="privacy_policy_confirm">Ok</string>
     <string name="show_last_location">Show last location:</string>
     <string name="shadow_opacity">Shadow opacity (%):</string>
+    <string name="backup">backup</string>
+    <string name="import_">import</string>
+    <string name="continue_">Continue</string>
 </resources>
