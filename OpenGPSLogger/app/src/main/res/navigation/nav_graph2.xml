@@ -3,12 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph2"
-    app:startDestination="@id/First2Fragment">
+    app:startDestination="@id/fragment_import">
 
     <fragment
-        android:id="@+id/First2Fragment"
+        android:id="@+id/fragment_import"
         android:name="eu.tijlb.opengpslogger.ui.fragment.ImportFragment"
-        android:label="@string/image_generator_fragment_label"
-        tools:layout="@layout/fragment_import">
-    </fragment>
+        android:label="Import"
+        tools:layout="@layout/fragment_import" />
 </navigation>

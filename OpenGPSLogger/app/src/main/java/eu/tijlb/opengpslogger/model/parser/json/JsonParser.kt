@@ -3,7 +3,7 @@ package eu.tijlb.opengpslogger.model.parser.json
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.Log
-import eu.tijlb.opengpslogger.ui.activity.ImportActivity
+import eu.tijlb.opengpslogger.ui.fragment.ImportFragment
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
@@ -16,7 +16,7 @@ object JsonParser {
 
     fun parse(
         inputStream: InputStream,
-        save: (ImportActivity.Point, importStart: Long, source: String) -> Unit
+        save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {
         try {
             val reader = JsonReader(InputStreamReader(inputStream, StandardCharsets.UTF_8))
@@ -38,7 +38,7 @@ object JsonParser {
 
     private fun parseJsonObject(
         reader: JsonReader,
-        save: (ImportActivity.Point, importStart: Long, source: String) -> Unit
+        save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {
 
         reader.beginObject()

@@ -17,7 +17,7 @@
 
     <fragment
         android:id="@+id/item_manage_data"
-        android:name="eu.tijlb.opengpslogger.ui.fragment.LocationTableFragment"
+        android:name="eu.tijlb.opengpslogger.ui.fragment.DatabaseFragment"
         tools:layout="@layout/fragment_database" />
 
     <fragment
