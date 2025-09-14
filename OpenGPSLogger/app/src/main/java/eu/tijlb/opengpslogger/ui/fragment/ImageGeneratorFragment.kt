@@ -72,7 +72,7 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
     private var startTime = LocalDate.MIN
         set(value) {
             field = value
-            imageRendererView.beginTime = value
+            imageRendererView.beginTime = value.atStartOfDay(ZoneId.systemDefault())
             binding.pickDateFrom.text = "from ${value.format(DateTimeFormatter.ISO_DATE)}"
             resetProgressBars()
             imageRendererView.redrawPointsAndOsm()
@@ -80,7 +80,8 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
     private var endTime = LocalDate.MAX
         set(value) {
             field = value
-            imageRendererView.endTime = value
+            imageRendererView.endTime = value.atTime(23, 59, 59)
+                .atZone(ZoneId.systemDefault())
             binding.pickDateTo.text = "to ${value.format(DateTimeFormatter.ISO_DATE)}"
             resetProgressBars()
             imageRendererView.redrawPointsAndOsm()
@@ -290,9 +291,9 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
         val canvas = Canvas(bitmap)
 
         GlobalScope.launch(Dispatchers.IO) {
-                imageRendererView.draw(canvas)
-                saveImageToMediaStore(context, bitmap)
-                binding.buttonSaveImage.text = "Image saved!"
+            imageRendererView.draw(canvas)
+            saveImageToMediaStore(context, bitmap)
+            binding.buttonSaveImage.text = "Image saved!"
         }
     }
 

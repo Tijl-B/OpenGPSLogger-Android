@@ -2,8 +2,13 @@
 
 ## Releases
 
+### 1.7.0
+[apk](release/opengpslogger-1-7-0.apk)
+
+#### Features
+- Add button to delete points with a time filter.
+
 ### 1.6.0
-[apk](release/opengpslogger-1-6-0.apk)
 
 #### Features
 - Add import button and improve import view with feedback about the status.
