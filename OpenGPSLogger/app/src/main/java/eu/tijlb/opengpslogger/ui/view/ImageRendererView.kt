@@ -31,9 +31,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZonedDateTime
 import kotlin.time.Duration.Companion.seconds
+
+private const val TAG = "ogl-imagerendererview"
 
 class ImageRendererView(
     context: Context,
@@ -62,7 +63,7 @@ class ImageRendererView(
     var aspectRatio = 1.0
         set(value) {
             if (field != value) {
-                Log.d("ogl-imagerendererview", "Aspect ratio changed from $field to $value")
+                Log.d(TAG, "Aspect ratio changed from $field to $value")
                 field = value
                 pointsRenderHeight = (pointsRenderWidth / aspectRatio).toInt()
                 launch {
@@ -81,8 +82,8 @@ class ImageRendererView(
     var dataSource = DATASOURCE_ALL
     var inputBbox: BBoxDto? = null
 
-    var beginTime: LocalDate? = null
-    var endTime: LocalDate? = null
+    var beginTime: ZonedDateTime? = null
+    var endTime: ZonedDateTime? = null
 
     var minAccuracy: Float? = null
     var minAngle = 0F
@@ -138,7 +139,7 @@ class ImageRendererView(
         visualisationSettingsChangedListener =
             visualisationSettingsHelper.registerVisualisationSettingsChangedListener {
                 Log.d(
-                    "ogl-imagerendererview",
+                    TAG,
                     "Executing callback on visualisation settings changed."
                 )
                 visualisationSettings = it
@@ -153,7 +154,6 @@ class ImageRendererView(
     fun redrawPointsAndOsm() {
         redrawOsm = true
         redrawCoordinateData = true
-        invalidate()
     }
 
     private suspend fun cancelOsmCoroutine() {
@@ -166,7 +166,7 @@ class ImageRendererView(
 
     private suspend fun cancelCoordinateDataCoroutine() {
         coordinateDataLock.lockWithTimeout(30.seconds) {
-            Log.d("ogl-imagerendererview", "Resetting coordinate drawing drawing...")
+            Log.d(TAG, "Resetting coordinate drawing drawing...")
             coordinateDataCoroutine?.takeIf { it.isActive }?.cancelAndJoin()
             coordinateDataCoroutine = null
             pointsBitMap = null
@@ -177,15 +177,15 @@ class ImageRendererView(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (layoutParams == null) {
-            Log.d("ogl-imagerendererview", "Not drawing since layoutParams is null")
+            Log.d(TAG, "Not drawing since layoutParams is null")
             return
         }
         drawMap(canvas)
-        Log.d("ogl-imagerendererview", "Finished onDraw")
+        Log.d(TAG, "Finished onDraw")
     }
 
     override fun onDetachedFromWindow() {
-        Log.d("ogl-imagerendererview", "Detaching ImageRendererView from window...")
+        Log.d(TAG, "Detaching ImageRendererView from window...")
         super.onDetachedFromWindow()
         visualisationSettingsHelper.deregisterAdvancedFiltersChangedListener(
             visualisationSettingsChangedListener
@@ -198,15 +198,15 @@ class ImageRendererView(
     }
 
     private fun drawMap(canvas: Canvas) {
-        Log.d("ogl-imagerendererview", "Rendering source $dataSource from $beginTime till $endTime")
+        Log.d(TAG, "Rendering source $dataSource from $beginTime till $endTime")
 
         if (beginTime == null || endTime == null) {
-            Log.d("ogl-imagerendererview", "No begin or end time, not drawing...")
+            Log.d(TAG, "No begin or end time, not drawing...")
             return
         }
 
         Log.d(
-            "ogl-imagerendererview",
+            TAG,
             "redrawOsm $redrawOsm, redrawCoordinateData $redrawCoordinateData"
         )
 
@@ -223,7 +223,7 @@ class ImageRendererView(
                     calculateXYValues(realBbox)
 
                     if (shouldRedrawCoordinateData) {
-                        Log.d("ogl-imagerendererview", "Redrawing coordinate data...")
+                        Log.i(TAG, "Redrawing coordinate data...")
                         cancelCoordinateDataCoroutine()
                         if (visualisationSettings.drawDensityMap) {
                             launchDensityMap(realBbox)
@@ -232,7 +232,7 @@ class ImageRendererView(
                         }
                     }
                     if (shouldRedrawOsm) {
-                        Log.d("ogl-imagerendererview", "Redrawing osm...")
+                        Log.i(TAG, "Redrawing osm...")
                         cancelOsmCoroutine()
                         launchOsmCoroutine(realBbox)
                     }
@@ -240,7 +240,7 @@ class ImageRendererView(
         }
 
         Log.d(
-            "ogl-imagerendererview",
+            TAG,
             "Drawing osmBitmap and pointsBitmap to canvas with w ${canvas.width} h ${canvas.height}"
         )
 
@@ -252,22 +252,22 @@ class ImageRendererView(
 
     private fun launchDensityMap(bbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d("ogl-imagerendererview", "Getting coordinateDataLock")
+            Log.d(TAG, "Getting coordinateDataLock")
             coordinateDataLock.lockWithTimeout(10.seconds) {
                 if (!isActive) {
-                    Log.d("ogl-imagerendererview", "Stop loading density map!")
+                    Log.d(TAG, "Stop loading density map!")
                     return@lockWithTimeout
                 }
                 if (densityMapBitMap == null && coordinateDataCoroutine?.isActive != true) {
-                    Log.d("ogl-imagerendererview", "Loading density map")
+                    Log.d(TAG, "Loading density map")
                     updateVisualisationSettings()
 
                     if (!isActive) {
-                        Log.d("ogl-imagerendererview", "Stop drawing density map!")
+                        Log.d(TAG, "Stop drawing density map!")
                         return@lockWithTimeout
                     }
 
-                    Log.d("ogl-imagerendererview", "Starting coroutine for drawing density map...")
+                    Log.d(TAG, "Starting coroutine for drawing density map...")
                     coordinateDataCoroutine = createDensityMapCoroutine(bbox)
                 }
             }
@@ -299,23 +299,23 @@ class ImageRendererView(
 
     private fun launchPointsCoroutine(realBbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d("ogl-imagerendererview", "Getting coordinateDataLock")
+            Log.d(TAG, "Getting coordinateDataLock")
             coordinateDataLock.lockWithTimeout(10.seconds) {
                 if (!isActive) {
-                    Log.d("ogl-imagerendererview", "Stop loading points!")
+                    Log.d(TAG, "Stop loading points!")
                     return@lockWithTimeout
                 }
                 if (pointsBitMap == null && coordinateDataCoroutine?.isActive != true) {
-                    Log.d("ogl-imagerendererview", "Loading points")
+                    Log.d(TAG, "Loading points")
                     updateVisualisationSettings()
                     val pointsQuery = pointsQuery(realBbox)
 
                     if (!isActive) {
-                        Log.d("ogl-imagerendererview", "Stop calculating points!")
+                        Log.d(TAG, "Stop calculating points!")
                         return@lockWithTimeout
                     }
 
-                    Log.d("ogl-imagerendererview", "Starting coroutine for drawing points...")
+                    Log.d(TAG, "Starting coroutine for drawing points...")
                     coordinateDataCoroutine = createPointsCoroutine(pointsQuery)
                 }
             }
@@ -324,10 +324,10 @@ class ImageRendererView(
 
     private fun launchOsmCoroutine(realBbox: BBoxDto) {
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d("ogl-imagerendererview", "Getting osmLock")
+            Log.d(TAG, "Getting osmLock")
             osmLock.lockWithTimeout(10.seconds) {
                 if (osmBitMap == null && osmJob?.isActive != true) {
-                    Log.d("ogl-imagerendererview", "Loading osm")
+                    Log.d(TAG, "Loading osm")
                     loadOsmBackgroundAsync(realBbox)
                 }
             }
@@ -392,15 +392,12 @@ class ImageRendererView(
         aspectRatio = xRange / yRange
     }
 
-    private fun getStartDateMillis() = (beginTime?.atStartOfDay(ZoneId.systemDefault())
-        ?.toInstant()
+    private fun getStartDateMillis() = (beginTime?.toInstant()
         ?.toEpochMilli()
         ?: 0L)
 
     private fun getEndDateMillis(): Long {
-        val endDateMillis = endTime?.atTime(23, 59, 59)
-            ?.atZone(ZoneId.systemDefault())
-            ?.toInstant()
+        val endDateMillis = endTime?.toInstant()
             ?.toEpochMilli()
             ?: Long.MAX_VALUE
         return endDateMillis

@@ -22,6 +22,8 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
+private const val TAG = "ogl-pointsbitmaprenderer"
+
 class PointsBitmapRenderer(
     val context: Context,
     var visualisationSettings: VisualisationSettingsDto
@@ -74,14 +76,18 @@ class PointsBitmapRenderer(
         refreshView: () -> Any
     ) {
         Log.d(
-            "ogl-pointsbitmaprenderer",
+            TAG,
             "Drawing coordinates with query: $query, renderDimension: $renderDimension"
         )
         if (!coroutineContext.isActive) {
-            Log.d("ogl-pointsbitmaprenderer", "Stop drawing points!")
+            Log.d(TAG, "Stop drawing points!")
             return
         }
 
+        if(renderDimension.first <= 0 || renderDimension.second <= 0) {
+            Log.e(TAG, "Invalid render dimension, cannot render points bitmap: $renderDimension.")
+            return
+        }
         val clusterBitmap = createBitmap(renderDimension.first, renderDimension.second)
         val canvas = Canvas(clusterBitmap)
         assignBitmap(clusterBitmap)
@@ -97,10 +103,10 @@ class PointsBitmapRenderer(
             .use { cursor ->
                 run {
                     if (!coroutineContext.isActive) {
-                        Log.d("ogl-pointsbitmaprenderer", "Stop drawing points!")
+                        Log.d(TAG, "Stop drawing points!")
                         return
                     }
-                    Log.d("ogl-pointsbitmaprenderer", "Start iterating over points cursor")
+                    Log.d(TAG, "Start iterating over points cursor")
                     if (cursor.moveToFirst()) {
                         Log.d("00000", "Starting count")
                         val amountOfPointsToLoad = cursor.count
@@ -122,10 +128,10 @@ class PointsBitmapRenderer(
                             cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
                         val timeColumnIndex =
                             cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
-                        Log.d("ogl-pointsbitmaprenderer", "Got first point from cursor")
+                        Log.d(TAG, "Got first point from cursor")
                         do {
                             if (!coroutineContext.isActive) {
-                                Log.d("ogl-pointsbitmaprenderer", "Stop drawing points!")
+                                Log.d(TAG, "Stop drawing points!")
                                 return@run
                             }
 
@@ -150,7 +156,7 @@ class PointsBitmapRenderer(
                             prevLon = longitude
                             prevTime = time
                             if ((++i) % 10000 == 0) {
-                                Log.d("ogl-pointsbitmaprenderer", "refreshing points bitmap $i")
+                                Log.d(TAG, "refreshing points bitmap $i")
                                 onPointProgressUpdateListener?.onPointProgressUpdate(i)
                                 refreshView()
                             }
@@ -160,7 +166,7 @@ class PointsBitmapRenderer(
                 }
             }
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
-        Log.d("ogl-pointsbitmaprenderer", "Done drawing points...")
+        Log.d(TAG, "Done drawing points...")
         refreshView()
     }
 
@@ -193,7 +199,7 @@ class PointsBitmapRenderer(
             dotPaint.color = newColor
             linePaint.color = newColor
             Log.d(
-                "ogl-pointsbitmaprenderer",
+                TAG,
                 "Changed color to $newColor in time bucket $newTimeBucket (${visualisationSettings.colorMode}) (timestamp $time)"
             )
 

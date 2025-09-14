@@ -1,7 +1,10 @@
 package eu.tijlb.opengpslogger.ui.fragment
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.location.Location
 import android.os.Bundle
 import android.provider.BaseColumns
@@ -9,31 +12,46 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
+import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
 import eu.tijlb.opengpslogger.model.database.location.LocationDatabaseFileProvider
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import eu.tijlb.opengpslogger.ui.activity.ImportActivity
+import eu.tijlb.opengpslogger.ui.util.DateTimeUtil
+import eu.tijlb.opengpslogger.ui.view.ImageRendererView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
 import java.time.Instant
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+import java.util.Calendar
+import java.util.concurrent.atomic.AtomicReference
+
+private const val TAG = "ogl-databasefragment"
 
 class DatabaseFragment : Fragment(R.layout.fragment_database) {
 
     lateinit var tableLayout: TableLayout
 
     private var _binding: FragmentDatabaseBinding? = null
+    private lateinit var locationDbHelper: LocationDbHelper
     private lateinit var locationDatabaseFileProvider: LocationDatabaseFileProvider
-    // private lateinit var locationReceiver: LocationUpdateReceiver
+    private lateinit var locationReceiver: LocationUpdateReceiver
 
     private val binding get() = _binding!!
 
@@ -74,30 +92,137 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
 
         tableLayout = view.findViewById(R.id.table_recent_locations)
         locationDatabaseFileProvider = LocationDatabaseFileProvider()
+        locationDbHelper = LocationDbHelper.getInstance(requireContext())
 
         binding.buttonShare.setOnClickListener {
             locationDatabaseFileProvider.share(requireContext())
         }
 
-        /*        locationReceiver = LocationUpdateReceiver().apply {
-                    setOnLocationReceivedListener { location ->
-                        addNewLocation(location)
-                    }
-                }
+        binding.buttonDeleteByTime.setOnClickListener {
+            openDeletePointsByTimeDialog()
+        }
+        locationReceiver = LocationUpdateReceiver().apply {
+            setOnLocationReceivedListener { location ->
+                location?.let { addNewLocation(it) }
+            }
+        }
 
-                val filter = IntentFilter("eu.tijlb.LOCATION_UPDATE")
-                requireContext().registerReceiver(locationReceiver, filter, Context.RECEIVER_EXPORTED)
-        */
+        val filter = IntentFilter("eu.tijlb.LOCATION_RECEIVED")
+        requireContext().registerReceiver(locationReceiver, filter, Context.RECEIVER_EXPORTED)
+
         viewLifecycleOwner.lifecycleScope.launch {
             val tableRows = withContext(Dispatchers.IO) {
                 val entities = getLastEntities()
-                Log.d("ogl-locationtablefragment", "Got ${entities.size} entities")
+                Log.d(TAG, "Got ${entities.size} entities")
                 toTableRows(entities)
             }
             populateTable(tableRows)
         }
     }
 
+    private fun openDeletePointsByTimeDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_delete_points_by_time, null)
+        val fromButton = dialogView.findViewById<Button>(R.id.button_from)
+        val toButton = dialogView.findViewById<Button>(R.id.button_to)
+        val imageRendererView = dialogView.findViewById<ImageRendererView>(R.id.imageRendererView)
+        val selectedPointsTextView =
+            dialogView.findViewById<TextView>(R.id.textview_selected_points_value)
+        val from: AtomicReference<ZonedDateTime?> = AtomicReference(null)
+        val to: AtomicReference<ZonedDateTime?> = AtomicReference(null)
+        fromButton.setOnClickListener {
+            DateTimeUtil.pickDateTime(requireContext()) {
+                from.set(it)
+                fromButton.text = "From: ${it.format(ISO_LOCAL_DATE_TIME)}"
+                to.get()?.let { toTime ->
+                    updateCountAndRenderer(imageRendererView, selectedPointsTextView, it, toTime)
+                }
+            }
+        }
+        toButton.setOnClickListener {
+            DateTimeUtil.pickDateTime(requireContext()) {
+                to.set(it)
+                toButton.text = "To: ${it.format(ISO_LOCAL_DATE_TIME)}"
+                from.get()?.let { fromTime ->
+                    updateCountAndRenderer(imageRendererView, selectedPointsTextView, fromTime, it)
+                }
+            }
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle(getString(R.string.density_map_settings))
+            .setView(dialogView)
+            .setPositiveButton("Delete selected points") { dialog, _ ->
+                if (to.get() == null || from.get()?.isAfter(to.get()) ?: true) {
+                    Log.d(TAG, "From $from or to $to is invalid, not deleting any points")
+                } else {
+                    Log.d(TAG, "Deleting points from $from to $to")
+                    deletePoints(from.get()!!, to.get()!!)
+                }
+            }
+            .setNegativeButton("Discard") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
+    }
+
+    private fun updateCountAndRenderer(
+        renderer: ImageRendererView,
+        countField: TextView,
+        from: ZonedDateTime,
+        to: ZonedDateTime
+    ) {
+        renderer.beginTime = from
+        renderer.endTime = to
+        renderer.pointsRenderWidth = 4000
+        renderer.redrawPointsAndOsm()
+        countField.text = "calculating..."
+        calculatePointsCount(from, to) {
+            countField.text = it.toString()
+        }
+    }
+
+    private fun calculatePointsCount(
+        from: ZonedDateTime,
+        to: ZonedDateTime,
+        callback: (Int) -> Unit
+    ) {
+        val query = PointsQuery(
+            startDateMillis = from.toInstant().toEpochMilli(),
+            endDateMillis = to.toInstant().toEpochMilli()
+        )
+
+        lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                locationDbHelper.getPointsCursor(query).use {
+                    it.count
+                }
+            }
+            callback(count)
+        }
+    }
+
+    private fun deletePoints(
+        from: ZonedDateTime,
+        to: ZonedDateTime
+    ) {
+        val query = PointsQuery(
+            startDateMillis = from.toInstant().toEpochMilli(),
+            endDateMillis = to.toInstant().toEpochMilli()
+        )
+
+        lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                locationDbHelper.delete(query)
+            }
+            Toast.makeText(
+                context,
+                "Deleted $count points",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     private fun addNewLocation(location: Location) {
         context?.let { _ ->
@@ -157,7 +282,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
     }
 
     override fun onDestroyView() {
-        //requireContext().unregisterReceiver(locationReceiver)
+        requireContext().unregisterReceiver(locationReceiver)
         _binding = null
         super.onDestroyView()
     }

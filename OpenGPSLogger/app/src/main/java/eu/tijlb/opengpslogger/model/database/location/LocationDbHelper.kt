@@ -168,6 +168,17 @@ class LocationDbHelper(val context: Context) :
         }
     }
 
+    fun delete(query: PointsQuery): Int {
+        val db = writableDatabase
+        val count = db.delete(
+            LocationDbContract.TABLE_NAME,
+            getFilter(query),
+            null
+        )
+        Log.w(TAG, "Deleted $count points by filter $query")
+        return count
+    }
+
     companion object {
         private const val DATABASE_VERSION = 10 // Increment on schema change
         private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000
