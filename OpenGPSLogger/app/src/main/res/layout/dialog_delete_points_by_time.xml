@@ -92,15 +92,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="5dp"
-                    android:text="Note: after deleting points, you can recalculate the density map in the browse settings." />
-
-                <!--
-                        <Button
-                            android:id="@+id/button_delete"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="@string/delete_selected_points"/>-->
+                    android:text="Note: updating the density map will be an approximation, to get the real values after deleting points, you can recalculate the density map in the browse settings." />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

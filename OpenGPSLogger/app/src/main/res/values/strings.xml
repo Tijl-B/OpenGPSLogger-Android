@@ -84,4 +84,5 @@
     <string name="selected_points">Selected points:</string>
     <string name="default_selected_points">0</string>
     <string name="delete_selected_points">Delete selected points</string>
+    <string name="confirm">confirm</string>
 </resources>
