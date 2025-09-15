@@ -23,23 +23,22 @@ import androidx.lifecycle.lifecycleScope
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
 import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
+import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDatabaseFileProvider
 import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
-import eu.tijlb.opengpslogger.model.util.DensityMapUtil
 import eu.tijlb.opengpslogger.ui.activity.ImportActivity
 import eu.tijlb.opengpslogger.ui.util.DateTimeUtil
 import eu.tijlb.opengpslogger.ui.view.ImageRendererView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.DateFormat
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
-import java.util.Calendar
 import java.util.concurrent.atomic.AtomicReference
 
 private const val TAG = "ogl-databasefragment"
@@ -50,6 +49,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
 
     private var _binding: FragmentDatabaseBinding? = null
     private lateinit var locationDbHelper: LocationDbHelper
+    private lateinit var densityMapAdapter: DensityMapAdapter
     private lateinit var locationDatabaseFileProvider: LocationDatabaseFileProvider
     private lateinit var locationReceiver: LocationUpdateReceiver
 
@@ -93,6 +93,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         tableLayout = view.findViewById(R.id.table_recent_locations)
         locationDatabaseFileProvider = LocationDatabaseFileProvider()
         locationDbHelper = LocationDbHelper.getInstance(requireContext())
+        densityMapAdapter = DensityMapAdapter.getInstance(requireContext())
 
         binding.buttonShare.setOnClickListener {
             locationDatabaseFileProvider.share(requireContext())
@@ -101,6 +102,10 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         binding.buttonDeleteByTime.setOnClickListener {
             openDeletePointsByTimeDialog()
         }
+        binding.buttonDeleteByBox.setOnClickListener {
+            openDeletePointsByBoxDialog()
+        }
+
         locationReceiver = LocationUpdateReceiver().apply {
             setOnLocationReceivedListener { location ->
                 location?.let { addNewLocation(it) }
@@ -117,6 +122,46 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
                 toTableRows(entities)
             }
             populateTable(tableRows)
+        }
+    }
+
+    private fun openDeletePointsByBoxDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_delete_points_by_box, null)
+        val selectorFragment = childFragmentManager
+            .findFragmentById(R.id.boundingBoxFragmentContainer) as BoundingBoxSelectorFragment
+        val selectedPointsTextView =
+            dialogView.findViewById<TextView>(R.id.textview_selected_points_value)
+        val selectedBbox = AtomicReference<BBoxDto?>(null)
+        selectorFragment.callback = {
+            selectedBbox.set(it)
+            updateCount(selectedPointsTextView, it)
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle("Delete points by box")
+            .setView(dialogView)
+            .setPositiveButton("Delete selected points") { dialog, _ ->
+                selectedBbox.get()?.let {
+                    val query = PointsQuery(bbox = it)
+                    deletePoints(query)
+                }
+            }
+            .setNegativeButton("Discard") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
+    }
+
+    private fun updateCount(
+        countField: TextView,
+        bbox: BBoxDto
+    ) {
+        countField.text = "calculating..."
+        val query = PointsQuery(bbox = bbox)
+        calculatePointsCount(query) {
+            countField.text = it.toString()
         }
     }
 
@@ -149,7 +194,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         }
 
         AlertDialog.Builder(context)
-            .setTitle(getString(R.string.density_map_settings))
+            .setTitle("Delete points by time")
             .setView(dialogView)
             .setPositiveButton("Delete selected points") { dialog, _ ->
                 if (to.get() == null || from.get()?.isAfter(to.get()) ?: true) {
@@ -178,21 +223,19 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         renderer.pointsRenderWidth = 4000
         renderer.redrawPointsAndOsm()
         countField.text = "calculating..."
-        calculatePointsCount(from, to) {
+        val query = PointsQuery(
+            startDateMillis = from.toInstant().toEpochMilli(),
+            endDateMillis = to.toInstant().toEpochMilli()
+        )
+        calculatePointsCount(query) {
             countField.text = it.toString()
         }
     }
 
     private fun calculatePointsCount(
-        from: ZonedDateTime,
-        to: ZonedDateTime,
+        query: PointsQuery,
         callback: (Int) -> Unit
     ) {
-        val query = PointsQuery(
-            startDateMillis = from.toInstant().toEpochMilli(),
-            endDateMillis = to.toInstant().toEpochMilli()
-        )
-
         lifecycleScope.launch {
             val count = withContext(Dispatchers.IO) {
                 locationDbHelper.getPointsCursor(query).use {
@@ -212,8 +255,13 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
             endDateMillis = to.toInstant().toEpochMilli()
         )
 
+        deletePoints(query)
+    }
+
+    private fun deletePoints(query: PointsQuery) {
         lifecycleScope.launch {
             val count = withContext(Dispatchers.IO) {
+                deletePointsFromDensityMap(query)
                 locationDbHelper.delete(query)
             }
             Toast.makeText(
@@ -221,6 +269,23 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
                 "Deleted $count points",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+
+    private fun deletePointsFromDensityMap(query: PointsQuery) {
+        locationDbHelper.getPointsCursor(query).use { cursor ->
+            if (cursor.moveToFirst()) {
+                val latColumnIndex =
+                    cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
+                val longColumnIndex =
+                    cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
+                Log.d(TAG, "Got first point from cursor")
+                do {
+                    val longitude = cursor.getDouble(longColumnIndex)
+                    val latitude = cursor.getDouble(latColumnIndex)
+                    densityMapAdapter.deletePoint(latitude, longitude)
+                } while (cursor.moveToNext())
+            }
         }
     }
 
@@ -308,8 +373,10 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
                 val speedIndex = cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_SPEED)
                 val speedAccuracyIndex =
                     cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_SPEED_ACCURACY)
-                val accuracyIndex = cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_ACCURACY)
-                val timestampIndex = cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
+                val accuracyIndex =
+                    cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_ACCURACY)
+                val timestampIndex =
+                    cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
                 val sourceIndex = cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_SOURCE)
                 val createdOnIndex = LocationDbContract.COLUMN_NAME_CREATED_ON
 

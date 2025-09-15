@@ -104,6 +104,10 @@ class LayeredMapView @JvmOverloads constructor(
         redrawIfNeeded()
     }
 
+    fun boundingBox(): BBoxDto {
+        return bboxFromCenter(centerLat, centerLon, visualZoomLevel.toInt(), width, height)
+    }
+
     private fun setUpCenterAndZoom() {
         val centerCoords = browseSettingsHelper.getCenterCoords()
         centerLat = centerCoords.first

@@ -2,6 +2,16 @@
 
 ## Releases
 
+### 1.8.0
+
+#### Features
+- Add button to delete points by bounding box.
+- When deleting points, also update the density map
+
+#### Known issues
+- When deleting points by bounding box, the bounding box may be slightly wider than what the screen shows.
+- When pressing the delete by box multiple times in a row, the interactive map disappears.
+
 ### 1.7.0
 [apk](release/opengpslogger-1-7-0.apk)
 

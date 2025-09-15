@@ -44,6 +44,10 @@ class DensityMapAdapter(context: Context) {
         getAllDbHelpers().forEach { dbHelper -> dbHelper.addPoint(latitude, longitude, time) }
     }
 
+    fun deletePoint(latitude: Double, longitude: Double) {
+        getAllDbHelpers().forEach { dbHelper -> dbHelper.deletePoint(latitude, longitude) }
+    }
+
     fun addLocation(location: Location) {
         Log.d("ogl-densitymapadapter", "Adding location $location to all density map dbs")
         getAllDbHelpers().forEach { dbHelper -> dbHelper.addLocation(location) }

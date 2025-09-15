@@ -87,7 +87,9 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
                             val amount = cursor.getLong(countColumnIndex)
 
                             val color = ColorUtil.toDensityColor(amount, 10_000L)
-                            if (xIndex >= 0 && xIndex <= sparseDensityMap.width && yIndex >= 0 && yIndex <= sparseDensityMap.height) {
+                            if (xIndex >= 0 && xIndex <= sparseDensityMap.width
+                                && yIndex >= 0 && yIndex <= sparseDensityMap.height
+                                && amount > 0) {
                                 sparseDensityMap.put(xIndex, yIndex, color)
                             }
 

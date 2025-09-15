@@ -69,6 +69,19 @@ abstract class AbstractDensityMapDbHelper(
         addOrUpdateDensityPoint(db, xIndex, yIndex, time)
     }
 
+    fun deletePoint(lat: Double, long: Double) {
+        val (xIndex, yIndex) = toIndex(lat, long)
+        val db = this.writableDatabase
+
+        val updateSql = """
+            UPDATE ${DensityMapDbContract.TABLE_NAME}
+            SET ${DensityMapDbContract.COLUMN_NAME_AMOUNT} = MAX(${DensityMapDbContract.COLUMN_NAME_AMOUNT} - 1, 0)
+            WHERE ${DensityMapDbContract.COLUMN_NAME_X_INDEX} = ?
+              AND ${DensityMapDbContract.COLUMN_NAME_Y_INDEX} = ?
+        """.trimIndent()
+        db.execSQL(updateSql, arrayOf(xIndex, yIndex))
+    }
+
 
     private fun addOrUpdateDensityPoint(
         db: SQLiteDatabase,
