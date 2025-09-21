@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.8.1
+
+#### Minor improvements
+- Restructure data management tab UI
+- Add button to go to data import guides
+
 ### 1.8.0
 
 #### Features

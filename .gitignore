@@ -37,4 +37,4 @@ OpenGPSLogger/app/src/main/res/drawable/ic_launcher_foreground.xml
 OpenGPSLogger/app/src/main/res/drawable/ic_notification.xml
 
 OpenGPSLogger/app/src/main/assets/*.override.*
-OpenGPSLogger/app/src/main/res/int_*
+OpenGPSLogger/app/src/main/res/**/int_*
