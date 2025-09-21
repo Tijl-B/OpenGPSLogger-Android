@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.9.0
+[apk](release/opengpslogger-1-9-0.apk)
+
+#### Features
+- Allow importing zip files that contain gpx files
+
 ### 1.8.1
 
 #### Minor improvements
@@ -19,7 +25,6 @@
 - When pressing the delete by box multiple times in a row, the interactive map disappears.
 
 ### 1.7.0
-[apk](release/opengpslogger-1-7-0.apk)
 
 #### Features
 - Add button to delete points with a time filter.

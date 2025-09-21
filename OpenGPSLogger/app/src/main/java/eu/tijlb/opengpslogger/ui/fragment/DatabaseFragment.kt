@@ -87,6 +87,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
             filePicker.launch(
                 arrayOf(
                     "application/gpx+xml",
+                    "application/zip",
                     "text/xml",
                     "application/octet-stream",
                     "application/json"

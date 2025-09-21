@@ -3,18 +3,19 @@ package eu.tijlb.opengpslogger.model.parser.json
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.Log
+import eu.tijlb.opengpslogger.model.parser.ParserInterface
 import eu.tijlb.opengpslogger.ui.fragment.ImportFragment
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
-object JsonParser {
+object JsonParser: ParserInterface{
 
     private const val REC_JSON_FIELD_LOCATIONS = "locations"
     private const val TL_JSON_FIELD_RAW_SIGNALS = "rawSignals"
     private const val TL_JSON_FIELD_SEGMENTS = "semanticSegments"
 
-    fun parse(
+    override fun parse(
         inputStream: InputStream,
         save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {

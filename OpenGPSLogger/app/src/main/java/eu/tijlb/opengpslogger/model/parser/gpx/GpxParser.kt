@@ -1,13 +1,14 @@
 package eu.tijlb.opengpslogger.model.parser.gpx
 
 import android.util.Log
+import eu.tijlb.opengpslogger.model.parser.ParserInterface
 import eu.tijlb.opengpslogger.model.util.TimeUtil
 import eu.tijlb.opengpslogger.ui.fragment.ImportFragment
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.InputStream
 
-object GpxParser {
+object GpxParser: ParserInterface {
 
     private const val GPX_FIELD_TRACKPOINT = "trkpt"
     private const val GPX_FIELD_TIME = "time"
@@ -15,7 +16,7 @@ object GpxParser {
     private const val GPX_ATTR_LON = "lon"
     private const val GPX_FIELD_SPEED = "speed"
 
-    fun parse(
+    override fun parse(
         inputStream: InputStream,
         save: (ImportFragment.Point, importStart: Long, source: String) -> Unit
     ) {
