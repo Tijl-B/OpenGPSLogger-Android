@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
 import android.provider.BaseColumns
 import android.util.Log
@@ -18,8 +19,10 @@ import android.widget.TableRow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import eu.tijlb.opengpslogger.BuildConfig
 import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentDatabaseBinding
 import eu.tijlb.opengpslogger.model.broadcast.LocationUpdateReceiver
@@ -40,6 +43,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
 import java.util.concurrent.atomic.AtomicReference
+import androidx.core.net.toUri
 
 private const val TAG = "ogl-databasefragment"
 
@@ -88,6 +92,12 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
                     "application/json"
                 )
             )
+        }
+
+        binding.buttonImportGuide.setOnClickListener {
+            val url = BuildConfig.IMPORT_GUIDE_URL
+            val intent = CustomTabsIntent.Builder().build()
+            intent.launchUrl(requireContext(), url.toUri())
         }
 
         tableLayout = view.findViewById(R.id.table_recent_locations)

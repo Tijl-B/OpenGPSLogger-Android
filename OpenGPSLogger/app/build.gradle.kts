@@ -45,6 +45,11 @@ android {
             "PRIVACY_POLICY_WEBSITE",
             "\"${localProps["privacyPolicyWebsite"]}\""
         )
+        buildConfigField(
+            "String",
+            "IMPORT_GUIDE_URL",
+            "\"${localProps["importGuideUrl"]}\""
+        )
     }
 
     buildTypes {
@@ -104,6 +109,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.glide)
     implementation(libs.core.ktx)
+    implementation(libs.androidx.browser)
 
     annotationProcessor(libs.compiler)
 

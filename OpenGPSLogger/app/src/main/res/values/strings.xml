@@ -76,8 +76,8 @@
     <string name="privacy_policy_confirm">Ok</string>
     <string name="show_last_location">Show last location:</string>
     <string name="shadow_opacity">Shadow opacity (%):</string>
-    <string name="backup">backup</string>
-    <string name="import_">import</string>
+    <string name="backup">Backup raw data</string>
+    <string name="import_">Import data</string>
     <string name="continue_">Continue</string>
     <string name="from">From</string>
     <string name="to">To</string>
@@ -85,4 +85,9 @@
     <string name="default_selected_points">0</string>
     <string name="delete_selected_points">Delete selected points</string>
     <string name="confirm">confirm</string>
+    <string name="database_tail">Database tail</string>
+    <string name="delete_points_by_box">Delete points by box</string>
+    <string name="delete_points_by_time">Delete points by time</string>
+    <string name="delete_data">Delete data</string>
+    <string name="export">Export</string>
 </resources>
