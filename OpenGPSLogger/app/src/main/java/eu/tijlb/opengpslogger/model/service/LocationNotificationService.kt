@@ -212,13 +212,13 @@ class LocationNotificationService : Service() {
         val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getNotificationContent())
-            .setSmallIcon(R.drawable.int_ic_notification_2)
+            .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(openAppPendingIntent)
             .setAutoCancel(false)
             .setOngoing(true)
             .addAction(
-                R.drawable.int_ic_notification_2,
+                R.drawable.ic_notification,
                 "Stop Tracking",
                 stopPendingIntent
             )

@@ -16,4 +16,3 @@ local.properties
 OpenGPSLogger/app/release
 
 OpenGPSLogger/app/src/main/assets/*.override.*
-OpenGPSLogger/app/src/main/res/**/int_*
