@@ -13,7 +13,9 @@ import eu.tijlb.opengpslogger.R
 import eu.tijlb.opengpslogger.databinding.FragmentImportBinding
 import eu.tijlb.opengpslogger.model.database.densitymap.DensityMapAdapter
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
+import eu.tijlb.opengpslogger.model.parser.ParserInterface
 import eu.tijlb.opengpslogger.model.parser.gpx.GpxParser
+import eu.tijlb.opengpslogger.model.parser.gpx.ZippedGpxParser
 import eu.tijlb.opengpslogger.model.parser.json.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,9 +24,11 @@ import kotlinx.coroutines.withContext
 private const val TAG = "ogl-importfragment"
 
 private const val MIME_TYPE_GPX = "application/gpx+xml"
+private const val MIME_TYPE_ZIP = "application/zip"
 private const val MIME_TYPE_JSON = "application/json"
 
 private const val EXTENSION_GPX = ".gpx"
+private const val EXTENSION_ZIP = ".zip"
 
 class ImportFragment : Fragment(R.layout.fragment_import) {
 
@@ -73,6 +77,10 @@ class ImportFragment : Fragment(R.layout.fragment_import) {
                 .endsWith(EXTENSION_GPX, ignoreCase = true)
         ) {
             parseAndStoreGpxFile(uri)
+        } else if (fileType == MIME_TYPE_ZIP || uri.toString()
+                .endsWith(EXTENSION_ZIP, ignoreCase = true)
+        ) {
+            parseAndStoreZipFile(uri)
         } else if (fileType == MIME_TYPE_JSON) {
             parseAndStoreJsonFile(uri)
         } else {
@@ -80,25 +88,27 @@ class ImportFragment : Fragment(R.layout.fragment_import) {
         }
     }
 
+    private fun parseAndStoreZipFile(uri: Uri) {
+        Log.d(TAG, "Processing ZIP file: $uri")
+        parse(uri, ZippedGpxParser)
+    }
+
     private fun parseAndStoreGpxFile(uri: Uri) {
         Log.d(TAG, "Processing GPX file: $uri")
-        requireContext().contentResolver.openInputStream(uri)
-            ?.let {
-                locationDbHelper.writableDatabase.beginTransaction()
-                GpxParser.parse(it) { point, time, source ->
-                    storePointInDatabase(point, time, source)
-                }
-                locationDbHelper.writableDatabase.setTransactionSuccessful()
-                locationDbHelper.writableDatabase.endTransaction()
-            }
+        parse(uri, GpxParser)
     }
 
     private fun parseAndStoreJsonFile(uri: Uri) {
         Log.d(TAG, "Processing JSON file: $uri")
+        parse(uri, JsonParser)
+    }
+
+    private fun parse(uri: Uri, parser: ParserInterface) {
         requireContext().contentResolver.openInputStream(uri)
             ?.let {
+
                 locationDbHelper.writableDatabase.beginTransaction()
-                JsonParser.parse(it) { point, time, source ->
+                parser.parse(it) { point, time, source ->
                     storePointInDatabase(point, time, source)
                 }
                 locationDbHelper.writableDatabase.setTransactionSuccessful()
