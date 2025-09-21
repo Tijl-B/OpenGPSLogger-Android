@@ -13,72 +13,83 @@
         android:padding="16dp">
 
         <LinearLayout
-            android:id="@+id/button_row_0"
+            android:id="@+id/button_column"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="15dp"
+            android:orientation="vertical"
             app:layout_constraintTop_toTopOf="parent">
 
+            <TextView
+                style="@style/SubtitleText"
+                android:text="Import" />
+
             <Button
-                android:id="@+id/button_share"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:layout_marginEnd="15dp"
+                android:id="@+id/button_import_guide"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:text="@string/backup" />
+                android:text="Import instructions" />
 
             <Button
                 android:id="@+id/button_import"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:layout_marginEnd="15dp"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
                 android:text="@string/import_" />
-        </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/button_row_1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="15dp"
-            app:layout_constraintTop_toBottomOf="@id/button_row_0">
+
+            <TextView
+                style="@style/SubtitleText"
+                android:text="@string/export" />
+
+            <Button
+                android:id="@+id/button_share"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:text="@string/backup" />
+
+            <TextView
+                style="@style/SubtitleText"
+                android:text="@string/delete_data" />
 
             <Button
                 android:id="@+id/button_delete_by_time"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:layout_marginEnd="15dp"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:text="Delete points by time" />
+                android:text="@string/delete_points_by_time" />
 
             <Button
                 android:id="@+id/button_delete_by_box"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="15dp"
-                android:layout_marginEnd="15dp"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:text="Delete points by box" />
+                android:text="@string/delete_points_by_box" />
+
+            <TextView
+                style="@style/SubtitleText"
+                android:text="@string/database_tail" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/button_column">
+
+                <TableLayout
+                    android:id="@+id/table_recent_locations"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp" />
+            </HorizontalScrollView>
         </LinearLayout>
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/button_row_1">
-
-            <TableLayout
-                android:id="@+id/table_recent_locations"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp" />
-        </HorizontalScrollView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

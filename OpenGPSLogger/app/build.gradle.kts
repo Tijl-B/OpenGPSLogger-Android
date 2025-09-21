@@ -16,8 +16,8 @@ android {
         applicationId = "eu.tijlb.opengpslogger"
         minSdk = 34
         targetSdk = 35
-        versionCode = 54
-        versionName = "1.8.0"
+        versionCode = 55
+        versionName = "1.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -44,6 +44,11 @@ android {
             "String",
             "PRIVACY_POLICY_WEBSITE",
             "\"${localProps["privacyPolicyWebsite"]}\""
+        )
+        buildConfigField(
+            "String",
+            "IMPORT_GUIDE_URL",
+            "\"${localProps["importGuideUrl"]}\""
         )
     }
 
@@ -104,6 +109,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.glide)
     implementation(libs.core.ktx)
+    implementation(libs.androidx.browser)
 
     annotationProcessor(libs.compiler)
 
