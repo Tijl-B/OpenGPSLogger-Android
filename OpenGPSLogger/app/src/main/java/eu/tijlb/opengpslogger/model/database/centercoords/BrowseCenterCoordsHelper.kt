@@ -16,7 +16,7 @@ private const val DEFAULT_ZOOM = 4f
 
 private const val TAG = "ogl-browsesettingshelper"
 
-private const val MIN_ZOOM = 0f
+private const val MIN_ZOOM = 4f
 private const val MAX_ZOOM = 20f
 
 class BrowseSettingsHelper(val context: Context) {
@@ -39,7 +39,7 @@ class BrowseSettingsHelper(val context: Context) {
         var zoom = sharedPreferences().getFloat(ZOOM, DEFAULT_ZOOM)
         zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
         if (!zoom.isFinite()) {
-            zoom = MAX_ZOOM
+            zoom = MIN_ZOOM
         }
         Log.d(TAG, "Got zoom $zoom")
         return zoom
