@@ -3,6 +3,7 @@
 ## Releases
 
 ### 1.9.2
+[apk](release/opengpslogger-1-9-2.apk)
 
 #### Improvements
 - Natural zooming
@@ -14,7 +15,6 @@
 - Add checks for some cases that could crash the app before
 
 ### 1.9.0
-[apk](release/opengpslogger-1-9-0.apk)
 
 #### Features
 - Allow importing zip files that contain gpx files

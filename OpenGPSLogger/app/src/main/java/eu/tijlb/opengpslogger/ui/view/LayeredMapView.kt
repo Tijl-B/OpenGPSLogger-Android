@@ -159,20 +159,17 @@ class LayeredMapView @JvmOverloads constructor(
     ): BBoxDto {
         val tileSize = 256.0
 
-        // Center in pixel coordinates at this zoom
         val centerX = OsmGeometryUtil.lon2num(lon, zoom) * tileSize
         val centerY = OsmGeometryUtil.lat2num(lat, zoom) * tileSize
 
         val halfWidth = viewWidth / 2.0
         val halfHeight = viewHeight / 2.0
 
-        // Pixel coordinates of screen bounds
         val minPxX = centerX - halfWidth
         val maxPxX = centerX + halfWidth
         val minPxY = centerY - halfHeight
         val maxPxY = centerY + halfHeight
 
-        // Convert back to lon/lat (without rounding to tiles)
         val minLon = OsmGeometryUtil.numToLon(minPxX / tileSize, zoom)
         val maxLon = OsmGeometryUtil.numToLon(maxPxX / tileSize, zoom)
         val minLat = OsmGeometryUtil.numToLat(maxPxY / tileSize, zoom)
