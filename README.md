@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.9.1
+
+#### Minor improvements
+- Refactor MapLayer in preparation for smoother scrolling
+- Add checks for some cases that could crash the app before
+
 ### 1.9.0
 [apk](release/opengpslogger-1-9-0.apk)
 

@@ -42,10 +42,10 @@ class LayeredMapView @JvmOverloads constructor(
     private val browseSettingsHelper = BrowseSettingsHelper(context)
 
     private val layers = listOf(
-        MapLayer(OsmImageBitmapRenderer(context)),
-        MapLayer(DensityMapBitmapRenderer(context)),
-        MapLayer(CopyRightNoticeBitmapRenderer(context)),
-        MapLayer(LastLocationBitmapRenderer(context))
+        MapLayer(OsmImageBitmapRenderer(context), width, height),
+        MapLayer(DensityMapBitmapRenderer(context), width, height),
+        MapLayer(CopyRightNoticeBitmapRenderer(context), width, height),
+        MapLayer(LastLocationBitmapRenderer(context), width, height)
     )
 
     private var centerLat = 0.0
@@ -113,6 +113,7 @@ class LayeredMapView @JvmOverloads constructor(
         centerLat = centerCoords.first
         centerLon = centerCoords.second
         visualZoomLevel = browseSettingsHelper.getZoom().toDouble()
+        Log.i(TAG, "Set up center $centerLat, $centerLon and zoom $visualZoomLevel")
     }
 
     private fun redrawIfNeeded() {
@@ -130,8 +131,7 @@ class LayeredMapView @JvmOverloads constructor(
                     layers.forEach { it.cancelJob() }
                     browseSettingsHelper.setCenterCoords(centerLat, centerLon)
                     browseSettingsHelper.setZoom(visualZoomLevel.toFloat())
-                    commitPan()
-                    commitZoom()
+                    commitPanAndZoom()
                     invalidate()
                     loadLayers()
                         .forEach { job -> job.join() }
@@ -180,7 +180,7 @@ class LayeredMapView @JvmOverloads constructor(
         val minLat = OsmGeometryUtil.numToLat(maxTileY, zoom)
         val maxLat = OsmGeometryUtil.numToLat(minTileY, zoom)
 
-        return BBoxDto(minLat, maxLat, minLon, maxLon)
+        return BBoxDto(minLat, maxLat, minLon, maxLon).coerce()
     }
 
     private fun scaleMap(scaleFactor: Float) {
@@ -195,12 +195,6 @@ class LayeredMapView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun commitZoom() {
-        val newZoom = visualZoomLevel.toInt()
-        Log.d(TAG, "Commit visualZoomScale to $newZoom")
-        layers.forEach { it.commitZoom(newZoom) }
-    }
-
     private fun calculateNewZoom(scale: Float): Double {
         val oldMapScale = 2.0.pow(visualZoomLevel)
         val newMapScale = (oldMapScale * scale)
@@ -208,15 +202,12 @@ class LayeredMapView @JvmOverloads constructor(
         return newZoom
     }
 
-    private fun panMap(dx: Float, dy: Float) {
-        layers.forEach { it.visualPan(dx, dy) }
-        needsRedraw = true
-        //redrawIfNeeded()
-        invalidate()
-    }
-
-    private fun commitPan() {
-        layers.map { it.commitPan(visualZoomLevel) }
+    private fun commitPanAndZoom() {
+        val newZoom = visualZoomLevel.toInt()
+        Log.d(TAG, "Commit visualZoomScale to $newZoom")
+        layers.map {
+            it.commitPanAndZoom(visualZoomLevel)
+        }
             .first()
             ?.let { (deltaX, deltaY, zoom) ->
                 val tileSize = 256.0
@@ -236,6 +227,14 @@ class LayeredMapView @JvmOverloads constructor(
                 val maxCenterX = mapSize - halfWidth
                 val minCenterY = halfHeight
                 val maxCenterY = mapSize - halfHeight
+
+                if (minCenterX >= maxCenterX || minCenterY >= maxCenterY) {
+                    Log.e(
+                        TAG,
+                        "Invalid center coord ranges: x[$minCenterX, $maxCenterX], y[$minCenterY, $maxCenterY]"
+                    )
+                    return
+                }
 
                 newCenterPixelX = newCenterPixelX.coerceIn(minCenterX, maxCenterX)
                 newCenterPixelY = newCenterPixelY.coerceIn(minCenterY, maxCenterY)
@@ -269,7 +268,9 @@ class LayeredMapView @JvmOverloads constructor(
         distanceY: Float
     ): Boolean {
         Log.d(TAG, "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
-        panMap(distanceX, distanceY)
+        layers.forEach { it.onScroll(distanceX, distanceY) }
+        needsRedraw = true
+        invalidate()
         return true
     }
 
@@ -277,6 +278,7 @@ class LayeredMapView @JvmOverloads constructor(
         Log.d(TAG, "scaling with factor ${detector.scaleFactor}")
         val scaleFactor = detector.scaleFactor
         scaleMap(scaleFactor)
+        layers.forEach { it.onScale(detector) }
         return true
     }
 

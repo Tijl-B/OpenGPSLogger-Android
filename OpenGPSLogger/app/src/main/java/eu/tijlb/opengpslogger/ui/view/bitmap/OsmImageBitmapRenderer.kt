@@ -106,6 +106,10 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
             return
         }
 
+        if (width * height > 100000000) {
+            Log.e(TAG, "Tried creating bitmap with width $width and height $height which is too big!")
+            return
+        }
         val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         assignBitmap(clusterBitmap)
         val canvas = Canvas(clusterBitmap)
@@ -173,7 +177,7 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
                 }
                 if (!coroutineContext.isActive) {
-                    Log.d(TAG, "Interrupting...")
+                    Log.i(TAG, "Interrupting...")
                     return
                 }
             }

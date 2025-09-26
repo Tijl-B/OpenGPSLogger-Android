@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.util.Log
+import android.view.ScaleGestureDetector
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withTranslation
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
@@ -16,7 +17,7 @@ import kotlin.math.pow
 
 private const val TAG = "ogl-maplayer"
 
-class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
+class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val height: Int) {
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null
@@ -25,9 +26,22 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     private var offsetX = 0f
     private var offsetY = 0f
 
-    fun visualPan(dx: Float, dy: Float) {
+    private val matrix = Matrix()
+
+    fun onScroll(dx: Float, dy: Float) {
         offsetX -= dx
         offsetY -= dy
+        matrix.postTranslate(-dx, -dy)
+    }
+
+    fun onScale(detector: ScaleGestureDetector) {
+        matrix.postScale(
+            detector.scaleFactor,
+            detector.scaleFactor,
+            detector.focusX,
+            detector.focusY
+        )
+
     }
 
     fun startDrawJob(bbox: BBoxDto, renderDimension: Pair<Int, Int>, invalidate: () -> Unit): Job {
@@ -51,76 +65,89 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     fun drawBitmapOnCanvas(canvas: Canvas, visualZoom: Double) {
         bitmap?.let {
-            if(!bitmapRenderer.redrawOnTranslation()) {
+            if (!bitmapRenderer.redrawOnTranslation()) {
                 canvas.drawBitmap(it, 0f, 0f, null)
                 return
             }
-            canvas.withTranslation(offsetX, offsetY) {
-                val scaleAmount = calculateScaleAmount(visualZoom)
-                scale(
-                    scaleAmount,
-                    scaleAmount,
-                    width / 2F,
-                    height / 2F
-                )
-                drawBitmap(it, 0f, 0f, null)
-            }
+            //canvas.drawBitmap(it, matrix, null)
+            oldDrawBitmapOnCanvas(canvas, visualZoom, it)
         }
     }
 
-    fun commitZoom(newZoom: Int) {
-        if(!bitmapRenderer.redrawOnTranslation()) {
-            return
+    private fun oldDrawBitmapOnCanvas(
+        canvas: Canvas,
+        visualZoom: Double,
+        bitmap: Bitmap
+    ) {
+        canvas.withTranslation(offsetX, offsetY) {
+            val scaleAmount = calculateScaleAmount(visualZoom)
+            scale(
+                scaleAmount,
+                scaleAmount,
+                width / 2F,
+                height / 2F
+            )
+            drawBitmap(bitmap, 0f, 0f, null)
         }
+    }
+
+
+    private fun commitZoom(visualZoom: Double, matrix: Matrix): Int {
+        val newZoom = visualZoom.toInt()
         val oldZoom = zoom
-        bitmap = bitmap?.let {
-            zoomBitmap(it, oldZoom, newZoom)
+        if (oldZoom == newZoom)
+            return oldZoom
+        Log.d(TAG, "Committing zoom from $oldZoom to $newZoom")
+
+        bitmap?.let {
+            val scale = 2.0F.pow((newZoom - oldZoom))
+            Log.d(
+                TAG,
+                "Need to scale by $scale to go from zoom $oldZoom to $newZoom"
+            )
+            matrix.postScale(scale, scale, it.width / 2f, it.height / 2f)
         }
-        zoom = newZoom
+        return newZoom
     }
 
-    fun commitPan(visualZoom: Double): Triple<Float, Float, Int>? {
-        if(!bitmapRenderer.redrawOnTranslation()) {
+    fun commitPanAndZoom(visualZoom: Double): Triple<Float, Float, Int>? {
+        if (!bitmapRenderer.redrawOnTranslation()) {
             return null
         }
 
+        val matrix = Matrix()
         val amountToPanX = -offsetX
         val amountToPanY = -offsetY
-        if (amountToPanX == 0F && amountToPanY == 0F) {
-            return null
+        val v = commitPan(amountToPanX, amountToPanY, visualZoom, matrix)
+        val newZoom = commitZoom(visualZoom, matrix)
+        bitmap?.let {
+            val newBitmap = createBitmap(it.width, it.height)
+            val canvas = Canvas(newBitmap)
+            canvas.drawBitmap(it, matrix, null)
+            bitmap = newBitmap
         }
-        val newBitmap = bitmap?.let {
-            panBitmap(it, amountToPanX, amountToPanY, visualZoom)
-        }
-        bitmap = newBitmap
+        zoom = newZoom
         offsetX += amountToPanX
         offsetY += amountToPanY
-        Log.d(TAG, "Committing pan by $amountToPanX, $amountToPanY")
+        return v
+    }
+
+    private fun commitPan(
+        amountToPanX: Float,
+        amountToPanY: Float,
+        visualZoom: Double, matrix: Matrix
+    ): Triple<Float, Float, Int>? {
+        Log.d(TAG, "Committing pan with x $amountToPanX y $amountToPanY")
 
         val deltaX = amountToPanX / calculateScaleAmount(visualZoom)
         val deltaY = amountToPanY / calculateScaleAmount(visualZoom)
+        Log.d(TAG, "Panning bitmap with offset x $deltaX and y $deltaY")
+        matrix.postTranslate(-deltaX, -deltaY)
+
+        Log.d(TAG, "Committing pan by $amountToPanX, $amountToPanY")
+
+        this.matrix.postTranslate(deltaX, deltaY)
         return Triple(deltaX, deltaY, zoom)
-    }
-
-    private fun panBitmap(
-        bitmap: Bitmap,
-        amountToPanX: Float,
-        amountToPanY: Float,
-        visualZoom: Double
-    ): Bitmap {
-        val pannedBitMap = createBitmap(bitmap.width, bitmap.height)
-        val canvas = Canvas(pannedBitMap)
-
-        val deltaX = -amountToPanX / calculateScaleAmount(visualZoom)
-        val deltaY = -amountToPanY / calculateScaleAmount(visualZoom)
-
-        Log.d(TAG, "Panning bitmap with offset x $amountToPanX and y $amountToPanY")
-        val matrix = Matrix().apply {
-            setTranslate(deltaX, deltaY)
-        }
-
-        canvas.drawBitmap(bitmap, matrix, null)
-        return pannedBitMap
     }
 
     private fun calculateScaleAmount(visualZoom: Double): Float {
@@ -144,8 +171,12 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                     val canvas = Canvas(it)
                     tmpBitmap?.let { bm ->
                         canvas.drawBitmap(bm, 0F, 0F, null)
+                        invalidate
                     }
-                } ?: run { bitmap = tmpBitmap }
+                } ?: run {
+                    bitmap = tmpBitmap
+                    invalidate
+                }
                 invalidate()
             }
         )?.let {
@@ -153,28 +184,4 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
             invalidate()
         }
     }
-
-    private fun zoomBitmap(bitMap: Bitmap, oldZoom: Int, newZoom: Int): Bitmap {
-        if (oldZoom == newZoom)
-            return bitMap
-
-        Log.d(TAG, "Zooming bitmap from $oldZoom to $newZoom")
-
-        val zoomedBitmap = createBitmap(bitMap.width, bitMap.height)
-        val canvas = Canvas(zoomedBitmap)
-
-        val scale = 2.0F.pow((newZoom - oldZoom))
-        Log.d(
-            TAG,
-            "Need to scale by $scale to go from zoom $oldZoom to $newZoom"
-        )
-
-        val matrix = Matrix().apply {
-            setScale(scale, scale, bitMap.width / 2f, bitMap.height / 2f)
-        }
-
-        canvas.drawBitmap(bitMap, matrix, null)
-        return zoomedBitmap
-    }
-
 }
