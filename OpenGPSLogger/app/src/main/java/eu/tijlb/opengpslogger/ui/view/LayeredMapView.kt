@@ -2,6 +2,7 @@ package eu.tijlb.opengpslogger.ui.view
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Matrix
 import android.util.AttributeSet
 import android.util.Log
 import android.view.GestureDetector
@@ -146,7 +147,7 @@ class LayeredMapView @JvmOverloads constructor(
         val newBitmapZoom = visualZoomLevel.toInt()
         val bbox = bboxFromCenter(centerLat, centerLon, newBitmapZoom, width, height)
         return layers.map {
-            it.startDrawJob(bbox, Pair(width, height)) { invalidate() }
+            it.startDrawJob(bbox, visualZoomLevel.toInt(), Pair(width, height)) { invalidate() }
         }
     }
 
@@ -203,48 +204,61 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     private fun commitPanAndZoom() {
+        val oldZoom = layers.first().zoom
         val newZoom = visualZoomLevel.toInt()
         Log.d(TAG, "Commit visualZoomScale to $newZoom")
         layers.map {
-            it.commitPanAndZoom(visualZoomLevel)
+            it.commitPanAndZoom()
         }
             .first()
-            ?.let { (deltaX, deltaY, zoom) ->
-                val tileSize = 256.0
-                val scale = 2.0.pow(zoom)
-                val mapSize = tileSize * scale
-
-                val centerPixelX = OsmGeometryUtil.lon2num(centerLon, zoom) * tileSize
-                val centerPixelY = OsmGeometryUtil.lat2num(centerLat, zoom) * tileSize
-
-                var newCenterPixelX = centerPixelX + deltaX
-                var newCenterPixelY = centerPixelY + deltaY
-
-                val halfWidth = width / 2.0
-                val halfHeight = height / 2.0
-
-                val minCenterX = halfWidth
-                val maxCenterX = mapSize - halfWidth
-                val minCenterY = halfHeight
-                val maxCenterY = mapSize - halfHeight
-
-                if (minCenterX >= maxCenterX || minCenterY >= maxCenterY) {
-                    Log.e(
-                        TAG,
-                        "Invalid center coord ranges: x[$minCenterX, $maxCenterX], y[$minCenterY, $maxCenterY]"
-                    )
-                    return
-                }
-
-                newCenterPixelX = newCenterPixelX.coerceIn(minCenterX, maxCenterX)
-                newCenterPixelY = newCenterPixelY.coerceIn(minCenterY, maxCenterY)
-
-
-                Log.d(TAG, "Center before pan: $centerLon, $centerLat")
-                centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, zoom)
-                centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, zoom)
-                Log.d(TAG, "Center after pan: $centerLon, $centerLat")
+            ?.let { matrix ->
+                updateCenterCoordsFromMatrix(oldZoom, newZoom, matrix)
+                return
             }
+    }
+
+    private fun updateCenterCoordsFromMatrix(oldZoom: Int, newZoom: Int, matrix: Matrix) {
+        val tileSize = 256.0
+        val oldScale = 2.0.pow(oldZoom)
+        val newScale = 2.0.pow(newZoom)
+        val ratio = newScale / oldScale
+        val mapSize = tileSize * newScale
+
+        val centerPixelX = OsmGeometryUtil.lon2num(centerLon, oldZoom) * tileSize
+        val centerPixelY = OsmGeometryUtil.lat2num(centerLat, oldZoom) * tileSize
+
+        val halfWidth = width / 2.0
+        val halfHeight = height / 2.0
+
+        val src = floatArrayOf(halfWidth.toFloat(), halfHeight.toFloat())
+        val dst = FloatArray(2)
+        matrix.mapPoints(dst, src)
+        val newScreenX = dst[0].toDouble()
+        val newScreenY = dst[1].toDouble()
+
+        var newCenterPixelX = centerPixelX * ratio - (newScreenX - halfWidth)
+        var newCenterPixelY = centerPixelY * ratio - (newScreenY - halfHeight)
+
+        val minCenterX = halfWidth
+        val maxCenterX = mapSize - halfWidth
+        val minCenterY = halfHeight
+        val maxCenterY = mapSize - halfHeight
+
+        if (minCenterX >= maxCenterX || minCenterY >= maxCenterY) {
+            Log.e(
+                TAG,
+                "Invalid center coord ranges: x[$minCenterX, $maxCenterX], y[$minCenterY, $maxCenterY]"
+            )
+            return
+        }
+
+        newCenterPixelX = newCenterPixelX.coerceIn(minCenterX, maxCenterX)
+        newCenterPixelY = newCenterPixelY.coerceIn(minCenterY, maxCenterY)
+
+        Log.d(TAG, "Center before pan: $centerLon, $centerLat; zoom: $oldZoom")
+        centerLon = OsmGeometryUtil.numToLon(newCenterPixelX / tileSize, newZoom)
+        centerLat = OsmGeometryUtil.numToLat(newCenterPixelY / tileSize, newZoom)
+        Log.d(TAG, "Center after pan: $centerLon, $centerLat; zoom: $newZoom")
     }
 
     // -- Gesture Handling --
