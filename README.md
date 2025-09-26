@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.9.2
+
+#### Improvements
+- Natural zooming
+
 ### 1.9.1
 
 #### Minor improvements

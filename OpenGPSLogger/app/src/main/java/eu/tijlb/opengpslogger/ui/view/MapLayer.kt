@@ -20,7 +20,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
     private var bitmap: Bitmap? = null
     private var job: Job? = null
 
-    var zoom = 4
+    var zoom = 4.0
 
     private val matrix = Matrix()
 
@@ -38,7 +38,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
 
     }
 
-    fun startDrawJob(bbox: BBoxDto, zoom: Int, renderDimension: Pair<Int, Int>, invalidate: () -> Unit): Job {
+    fun startDrawJob(bbox: BBoxDto, zoom: Double, renderDimension: Pair<Int, Int>, invalidate: () -> Unit): Job {
         cancelJob()
         Log.d(TAG, "Starting draw job coroutine")
         val coroutine = CoroutineScope(Dispatchers.IO).launch {
@@ -54,7 +54,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
     }
 
     fun requiresUpdate(visualZoom: Double): Boolean {
-        return zoom != visualZoom.toInt()
+        return zoom.toInt() != visualZoom.toInt()
     }
 
     fun drawBitmapOnCanvas(canvas: Canvas, visualZoom: Double) {
@@ -88,7 +88,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
 
     private suspend fun drawLayerOverride(
         bbox: BBoxDto,
-        zoom: Int,
+        zoom: Double,
         renderDimension: Pair<Int, Int>,
         invalidate: () -> Unit
     ) {

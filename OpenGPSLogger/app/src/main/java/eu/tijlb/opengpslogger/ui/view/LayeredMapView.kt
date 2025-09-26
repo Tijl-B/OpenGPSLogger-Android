@@ -106,7 +106,7 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     fun boundingBox(): BBoxDto {
-        return bboxFromCenter(centerLat, centerLon, visualZoomLevel.toInt(), width, height)
+        return bboxFromCenter(centerLat, centerLon, visualZoomLevel, width, height)
     }
 
     private fun setUpCenterAndZoom() {
@@ -144,45 +144,43 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun loadLayers(): List<Job> {
         Log.d(TAG, "Loading tiles $centerLat, $centerLon, $width, $height")
-        val newBitmapZoom = visualZoomLevel.toInt()
-        val bbox = bboxFromCenter(centerLat, centerLon, newBitmapZoom, width, height)
+        val bbox = bboxFromCenter(centerLat, centerLon, visualZoomLevel, width, height)
         return layers.map {
-            it.startDrawJob(bbox, visualZoomLevel.toInt(), Pair(width, height)) { invalidate() }
+            it.startDrawJob(bbox, visualZoomLevel, Pair(width, height)) { invalidate() }
         }
     }
 
     private fun bboxFromCenter(
         lat: Double,
         lon: Double,
-        zoom: Int,
+        zoom: Double,
         viewWidth: Int,
         viewHeight: Int
     ): BBoxDto {
-        val tileSize = 256
+        val tileSize = 256.0
 
+        // Center in pixel coordinates at this zoom
         val centerX = OsmGeometryUtil.lon2num(lon, zoom) * tileSize
         val centerY = OsmGeometryUtil.lat2num(lat, zoom) * tileSize
 
         val halfWidth = viewWidth / 2.0
         val halfHeight = viewHeight / 2.0
 
+        // Pixel coordinates of screen bounds
         val minPxX = centerX - halfWidth
         val maxPxX = centerX + halfWidth
         val minPxY = centerY - halfHeight
         val maxPxY = centerY + halfHeight
 
-        val minTileX = minPxX / tileSize
-        val maxTileX = maxPxX / tileSize
-        val minTileY = minPxY / tileSize
-        val maxTileY = maxPxY / tileSize
-
-        val minLon = OsmGeometryUtil.numToLon(minTileX, zoom)
-        val maxLon = OsmGeometryUtil.numToLon(maxTileX, zoom)
-        val minLat = OsmGeometryUtil.numToLat(maxTileY, zoom)
-        val maxLat = OsmGeometryUtil.numToLat(minTileY, zoom)
+        // Convert back to lon/lat (without rounding to tiles)
+        val minLon = OsmGeometryUtil.numToLon(minPxX / tileSize, zoom)
+        val maxLon = OsmGeometryUtil.numToLon(maxPxX / tileSize, zoom)
+        val minLat = OsmGeometryUtil.numToLat(maxPxY / tileSize, zoom)
+        val maxLat = OsmGeometryUtil.numToLat(minPxY / tileSize, zoom)
 
         return BBoxDto(minLat, maxLat, minLon, maxLon).coerce()
     }
+
 
     private fun scaleMap(scaleFactor: Float) {
         visualZoomLevel = calculateNewZoom(scaleFactor)
@@ -205,7 +203,7 @@ class LayeredMapView @JvmOverloads constructor(
 
     private fun commitPanAndZoom() {
         val oldZoom = layers.first().zoom
-        val newZoom = visualZoomLevel.toInt()
+        val newZoom = visualZoomLevel
         Log.d(TAG, "Commit visualZoomScale to $newZoom")
         layers.map {
             it.commitPanAndZoom()
@@ -217,7 +215,7 @@ class LayeredMapView @JvmOverloads constructor(
             }
     }
 
-    private fun updateCenterCoordsFromMatrix(oldZoom: Int, newZoom: Int, matrix: Matrix) {
+    private fun updateCenterCoordsFromMatrix(oldZoom: Double, newZoom: Double, matrix: Matrix) {
         val tileSize = 256.0
         val oldScale = 2.0.pow(oldZoom)
         val newScale = 2.0.pow(newZoom)

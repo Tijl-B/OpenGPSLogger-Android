@@ -7,7 +7,7 @@ abstract class AbstractBitmapRenderer {
 
     abstract suspend fun draw(
         bbox: BBoxDto,
-        zoom: Int,
+        zoom: Double,
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any

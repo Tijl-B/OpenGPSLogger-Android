@@ -277,7 +277,7 @@ class ImageRendererView(
     private fun createDensityMapCoroutine(bbox: BBoxDto) = CoroutineScope(Dispatchers.IO).launch {
         densityMapBitmapRenderer.draw(
             bbox,
-            zoom,
+            zoom.toDouble(),
             Pair(width, height),
             { bitmap -> densityMapBitMap = bitmap }
         ) { invalidate() }
@@ -362,7 +362,7 @@ class ImageRendererView(
             osmBitMap = clusterBitmap
             osmImageBitmapRenderer.draw(
                 bbox,
-                zoom,
+                zoom.toDouble(),
                 Pair(width, height),
                 { bitmap -> osmBitMap = bitmap }
             )
@@ -375,7 +375,7 @@ class ImageRendererView(
     private suspend fun updateCopyrightNotice(bbox: BBoxDto) {
         copyRightNoticeBitmapRenderer.draw(
             bbox,
-            zoom,
+            zoom.toDouble(),
             Pair(width, height),
             { bitmap -> copyrightBitMap = bitmap })
         { invalidate() }

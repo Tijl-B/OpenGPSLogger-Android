@@ -12,28 +12,42 @@ import kotlin.math.tan
 object OsmGeometryUtil {
 
     fun lat2num(lat: Double, zoom: Int): Double {
+        return lat2num(lat, zoom.toDouble())
+    }
+
+    fun lon2num(lon: Double, zoom: Int): Double {
+        return lon2num(lon, zoom.toDouble())
+    }
+
+    fun deg2num(lat: Double, lon: Double, zoom: Int): Pair<Double, Double> {
+        val xtile = lon2num(lon, zoom)
+        val ytile = lat2num(lat, zoom)
+        return Pair(xtile, ytile)
+    }
+
+    fun lat2num(lat: Double, zoom: Double): Double {
         val n = 2.0.pow(zoom)
         val latRad = Math.toRadians(lat)
         return n * (1.0 - (ln(tan(latRad) + 1 / cos(latRad)) / Math.PI)) / 2.0
     }
 
-    fun lon2num(lon: Double, zoom: Int): Double {
+    fun lon2num(lon: Double, zoom: Double): Double {
         val n = 2.0.pow(zoom)
         return n * (lon + 180.0) / 360.0
     }
 
-    fun numToLon(x: Double, zoom: Int): Double {
+    fun numToLon(x: Double, zoom: Double): Double {
         val n = 2.0.pow(zoom)
         return x / n * 360.0 - 180.0
     }
 
-    fun numToLat(y: Double, zoom: Int): Double {
+    fun numToLat(y: Double, zoom: Double): Double {
         val n = 2.0.pow(zoom)
         val latRad = atan(sinh(Math.PI * (1 - 2 * y / n)))
         return Math.toDegrees(latRad)
     }
 
-    fun deg2num(lat: Double, lon: Double, zoom: Int): Pair<Double, Double> {
+    fun deg2num(lat: Double, lon: Double, zoom: Double): Pair<Double, Double> {
         val xtile = lon2num(lon, zoom)
         val ytile = lat2num(lat, zoom)
         return Pair(xtile, ytile)
