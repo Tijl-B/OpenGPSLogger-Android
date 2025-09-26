@@ -31,7 +31,7 @@ class CopyRightNoticeBitmapRenderer(val context: Context): AbstractBitmapRendere
 
     override suspend fun draw(
         bbox: BBoxDto,
-        zoom: Int,
+        zoom: Double,
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any

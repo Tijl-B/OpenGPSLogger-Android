@@ -27,7 +27,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
 
     override suspend fun draw(
         bbox: BBoxDto,
-        zoom: Int,
+        zoom: Double,
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
@@ -42,14 +42,14 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
             return null
         }
 
-        val subdivisions = densityMapAdapter.getSubdivisions(zoom)
+        val subdivisions = densityMapAdapter.getSubdivisions(zoom.toInt())
         val sparseDensityMap = SparseDensityMap(subdivisions, subdivisions)
         var adaptedClusterBitmap = createBitmap(renderDimension.first, renderDimension.second)
 
         assignBitmap(adaptedClusterBitmap)
 
         var i = 0
-        densityMapAdapter.getPoints(bbox, zoom)
+        densityMapAdapter.getPoints(bbox, zoom.toInt())
             .use { cursor ->
                 run {
                     if (!coroutineContext.isActive) {

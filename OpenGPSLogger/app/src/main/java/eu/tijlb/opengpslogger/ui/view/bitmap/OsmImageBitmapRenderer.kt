@@ -19,10 +19,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
-import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration.Companion.seconds
+import androidx.core.graphics.createBitmap
 
 private const val TAG = "ogl-osmimagebitmaprenderer"
 
@@ -39,7 +39,7 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
     override suspend fun draw(
         bbox: BBoxDto,
-        zoom: Int,
+        zoom: Double,
         renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
@@ -58,7 +58,7 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
                 return@lockWithTimeout null
             }
             Log.d(TAG, "Start drawing osm bitmap")
-            draww(bbox, zoom, assignBitmap, refreshView)
+            draww(bbox, zoom.toInt(), renderDimension, assignBitmap, refreshView)
             currentJob.complete()
         }
         return null
@@ -67,6 +67,7 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
     private suspend fun draww(
         bbox: BBoxDto,
         zoom: Int,
+        renderDimension: Pair<Int, Int>,
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
     ) {
@@ -95,22 +96,10 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
         val realXRange = xmax - xmin
         val realYRange = ymax - ymin
 
-        val width = ceil(realXRange * imgSizePx).toInt()
-        val height = ceil(realYRange * imgSizePx).toInt()
+        val width = renderDimension.first
+        val height = renderDimension.second
 
-        if (width == 0 || height == 0) {
-            Log.e(
-                TAG,
-                "Cannot get image cluster, width $width ($xmax - $xmin) and / or height $height ($ymax - $ymin) is 0"
-            )
-            return
-        }
-
-        if (width * height > 100000000) {
-            Log.e(TAG, "Tried creating bitmap with width $width and height $height which is too big!")
-            return
-        }
-        val clusterBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val clusterBitmap = createBitmap(width, height)
         assignBitmap(clusterBitmap)
         val canvas = Canvas(clusterBitmap)
 
