@@ -37,6 +37,17 @@ data class BBoxDto(
             maxLon = min(maxLon + lonExpansion, MAX_LON)
         )
     }
+
+    fun coerce(): BBoxDto {
+        return BBoxDto(
+            minLat = max(minLat, MIN_LAT),
+            maxLat = min(maxLat, MAX_LAT),
+            minLon = max(minLon, MIN_LON),
+            maxLon = min(maxLon, MAX_LON)
+        )
+
+    }
+
     companion object {
         fun defaultBbox(): BBoxDto {
             return BBoxDto(MIN_LAT, MAX_LAT, MIN_LON, MAX_LON)

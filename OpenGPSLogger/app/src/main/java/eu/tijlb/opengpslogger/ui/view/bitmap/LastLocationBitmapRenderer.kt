@@ -60,6 +60,11 @@ class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer(
             val xRange = (maxX - minX)
             val yRange = (maxY - minY)
 
+            if (xRange == 0.0 || !xRange.isFinite() || yRange == 0.0 || !yRange.isFinite()) {
+                Log.w(TAG, "xRange $xRange or yRange $yRange is invalid")
+                return null
+            }
+
             val mappedX = ((osmX - minX) / xRange * bitmap.width).roundToInt()
             val mappedY = ((maxY - osmY) / yRange * bitmap.height).roundToInt()
 

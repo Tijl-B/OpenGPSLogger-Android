@@ -16,18 +16,31 @@ private const val DEFAULT_ZOOM = 4f
 
 private const val TAG = "ogl-browsesettingshelper"
 
+private const val MIN_ZOOM = 0f
+private const val MAX_ZOOM = 20f
+
 class BrowseSettingsHelper(val context: Context) {
 
     fun getCenterCoords(): Pair<Double, Double> {
         val preferences = sharedPreferences()
-        val centerLat = preferences.getFloat(CENTER_LAT, DEFAULT_CENTER_LAT).toDouble()
-        val centerLon = preferences.getFloat(CENTER_LON, DEFAULT_CENTER_LON).toDouble()
+        var centerLat = preferences.getFloat(CENTER_LAT, DEFAULT_CENTER_LAT).toDouble()
+        var centerLon = preferences.getFloat(CENTER_LON, DEFAULT_CENTER_LON).toDouble()
+        if (!centerLat.isFinite()) {
+            centerLat = 0.0
+        }
+        if (!centerLon.isFinite()) {
+            centerLon = 0.0
+        }
         Log.d(TAG, "Got center coords $centerLat, $centerLon")
         return Pair(centerLat, centerLon)
     }
 
     fun getZoom(): Float {
-        val zoom = sharedPreferences().getFloat(ZOOM, DEFAULT_ZOOM)
+        var zoom = sharedPreferences().getFloat(ZOOM, DEFAULT_ZOOM)
+        zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
+        if (!zoom.isFinite()) {
+            zoom = MAX_ZOOM
+        }
         Log.d(TAG, "Got zoom $zoom")
         return zoom
     }
