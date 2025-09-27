@@ -8,7 +8,11 @@ import android.view.ScaleGestureDetector
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancelAndJoin
 
 private const val TAG = "ogl-maplayer"
 
@@ -53,7 +57,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     }
 
     suspend fun cancelAndJoin() {
-        Log.d(TAG, "Canceling and joining job $job")
+        Log.d(TAG, "Canceling job $job")
         job?.cancelAndJoin()
     }
 
@@ -110,8 +114,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         var tmpBitmap: Bitmap? = null
         Log.d(TAG, "Calling bitmapRenderer.draw")
         bitmapRenderer.draw(
-            bbox, zoom,
-            renderDimension,
+            bbox, zoom, renderDimension,
             { bmp -> tmpBitmap = bmp },
             {
                 try {
