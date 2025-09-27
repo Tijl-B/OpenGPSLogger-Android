@@ -4,7 +4,7 @@
 
 ### 1.9.3
 
-#### Improvements
+#### Fixes
 - Points no longer jump around when scrolling
 
 ### 1.9.2
