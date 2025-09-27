@@ -53,12 +53,11 @@ class CopyRightNoticeBitmapRenderer(val context: Context): AbstractBitmapRendere
         if (width == 0 || height == 0) return null
 
         val bitmap = createBitmap(width, height)
+        assignBitmap(bitmap)
         if (copyrightNotice.isEmpty()) {
-            assignBitmap(bitmap)
             return bitmap
         }
         val canvas = Canvas(bitmap)
-        assignBitmap(bitmap)
 
         val textBounds = Rect()
         textPaint.getTextBounds(copyrightNotice, 0, copyrightNotice.length, textBounds)

@@ -22,8 +22,11 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.log2
 import kotlin.math.pow
@@ -43,10 +46,10 @@ class LayeredMapView @JvmOverloads constructor(
     private val browseSettingsHelper = BrowseSettingsHelper(context)
 
     private val layers = listOf(
-        MapLayer(OsmImageBitmapRenderer(context)),
-        MapLayer(DensityMapBitmapRenderer(context)),
-        MapLayer(CopyRightNoticeBitmapRenderer(context)),
-        MapLayer(LastLocationBitmapRenderer(context))
+        MapLayer(OsmImageBitmapRenderer(context), width, height),
+        MapLayer(DensityMapBitmapRenderer(context), width, height),
+        MapLayer(CopyRightNoticeBitmapRenderer(context), width, height),
+        MapLayer(LastLocationBitmapRenderer(context), width, height)
     )
 
     private var centerLat = 0.0
@@ -54,7 +57,7 @@ class LayeredMapView @JvmOverloads constructor(
 
     private var visualZoomLevel = 4.0
 
-    private var needsRedraw = true
+    private var needsRedraw = AtomicBoolean(true)
     private val redrawMutex = Mutex()
     private val latestRedrawJob = AtomicReference<Job?>(null)
     private val setupMutex = Mutex()
@@ -79,6 +82,7 @@ class LayeredMapView @JvmOverloads constructor(
             }
         } else {
             layers.forEach { it.drawBitmapOnCanvas(canvas, visualZoomLevel) }
+            redrawIfNeeded()
         }
     }
 
@@ -101,7 +105,7 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     fun redraw() {
-        needsRedraw = true
+        needsRedraw.set(true)
         redrawIfNeeded()
     }
 
@@ -118,31 +122,39 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     private fun redrawIfNeeded() {
+        if (!needsRedraw.get()) {
+            return
+        }
         val oldJob = redrawJob
-        if (setupJob == null) {
+        if (!(setupJob?.isCompleted ?: false)) {
             Log.d(TAG, "Not yet set up, skipping redraw")
             return
         }
         redrawJob = CoroutineScope(Dispatchers.IO).launch {
+            val uuid = UUID.randomUUID()
+            Log.d(TAG, "Canceling old redraw job $uuid")
+            oldJob?.cancelAndJoin()
+            Log.d(TAG, "Getting redraw mutex $uuid")
             redrawMutex.runIfLast(latestRedrawJob) {
-                if (needsRedraw) {
-                    Log.d(TAG, "Starting redraw")
-                    oldJob?.cancel()
-                    needsRedraw = false
-                    layers.forEach { it.cancelJob() }
+                Log.d(TAG, "Got redraw mutex $uuid")
+                if (needsRedraw.getAndSet(false)) {
+                    Log.d(TAG, "Starting redraw $uuid")
+                    layers.forEach { it.cancelAndJoin() }
                     browseSettingsHelper.setCenterCoords(centerLat, centerLon)
                     browseSettingsHelper.setZoom(visualZoomLevel.toFloat())
                     commitPanAndZoom()
                     invalidate()
                     loadLayers()
                         .forEach { job -> job.join() }
-                    Log.d(TAG, "Done with redraw")
+                    Log.d(TAG, "Done with redraw $uuid")
+                    invalidate()
                 }
             }
+            Log.d(TAG, "End of redraw job $uuid")
         }
     }
 
-    private fun loadLayers(): List<Job> {
+    private suspend fun loadLayers(): List<Job> {
         Log.d(TAG, "Loading tiles $centerLat, $centerLon, $width, $height")
         val bbox = bboxFromCenter(centerLat, centerLon, visualZoomLevel, width, height)
         return layers.map {
@@ -183,12 +195,12 @@ class LayeredMapView @JvmOverloads constructor(
         visualZoomLevel = calculateNewZoom(scaleFactor)
             .coerceIn(MIN_ZOOM, MAX_ZOOM)
 
-        val anyZoomOutOfSync = layers.map { it.requiresUpdate(visualZoomLevel) }
+        /*val anyZoomOutOfSync = layers.map { it.requiresUpdate(visualZoomLevel) }
             .contains(true)
-        if (anyZoomOutOfSync) {
-            redraw()
-        }
-        invalidate()
+        if (anyZoomOutOfSync) {*/
+        needsRedraw.set(true)
+        /*}
+        invalidate()*/
     }
 
     private fun calculateNewZoom(scale: Float): Double {
@@ -273,7 +285,7 @@ class LayeredMapView @JvmOverloads constructor(
     ): Boolean {
         Log.d(TAG, "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
         layers.forEach { it.onScroll(distanceX, distanceY) }
-        needsRedraw = true
+        needsRedraw.set(true)
         invalidate()
         return true
     }

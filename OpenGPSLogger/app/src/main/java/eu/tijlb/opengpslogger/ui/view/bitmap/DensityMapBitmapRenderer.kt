@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.PorterDuff
 import android.util.Log
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.bitmap.SparseDensityMap
@@ -103,7 +104,6 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
                                     adaptedClusterBitmap,
                                     bbox
                                 )
-                                assignBitmap(adaptedClusterBitmap)
                                 onPointProgressUpdateListener?.onPointProgressUpdate(i)
                                 refreshView()
                             }
@@ -115,7 +115,6 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
 
         adaptedClusterBitmap =
             extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
-        assignBitmap(adaptedClusterBitmap)
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
         Log.d("ogl-imagerendererview-point", "Done drawing density map...")
         refreshView()
@@ -157,7 +156,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
         val cellHeight = dstHeight.toFloat() / srcHeight
 
         val canvas = Canvas(targetBitmap)
-        canvas.drawColor(Color.TRANSPARENT, android.graphics.PorterDuff.Mode.CLEAR)
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
         val maxHeightWidth = max(cellWidth, cellHeight)
         val radius = max(2F, maxHeightWidth * 0.71F)

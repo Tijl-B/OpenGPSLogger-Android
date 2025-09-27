@@ -11,17 +11,23 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 
 private const val TAG = "ogl-maplayer"
 
-class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
+class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val height: Int) {
+
+    init {
+        if (width <= 0 || height <= 0) {
+            Log.e(TAG, "invalid width $width or height $height")
+        }
+    }
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null
 
     var zoom = 4.0
-
     private val matrix = Matrix()
 
     fun onScroll(dx: Float, dy: Float) {
@@ -38,19 +44,24 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     }
 
-    fun startDrawJob(
+    suspend fun startDrawJob(
         bbox: BBoxDto,
         zoom: Double,
         renderDimension: Pair<Int, Int>,
         invalidate: () -> Unit
     ): Job {
-        cancelJob()
+        cancelAndJoin()
         Log.d(TAG, "Starting draw job coroutine")
         val coroutine = CoroutineScope(Dispatchers.IO).launch {
             drawLayerOverride(bbox, zoom, renderDimension, invalidate)
         }
         job = coroutine
         return coroutine
+    }
+
+    suspend fun cancelAndJoin() {
+        Log.d(TAG, "Canceling job $job")
+        job?.cancelAndJoin()
     }
 
     fun cancelJob() {
@@ -88,11 +99,15 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
             }
         }
 
+        applyInverseMatrix(matrixToApply)
+        return matrixToApply
+    }
+
+    private fun applyInverseMatrix(matrixToApply: Matrix) {
         val appliedMatrixInverse = Matrix()
         if (matrixToApply.invert(appliedMatrixInverse)) {
             matrix.postConcat(appliedMatrixInverse)
         }
-        return matrixToApply
     }
 
     private suspend fun drawLayerOverride(
@@ -107,19 +122,21 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         bitmapRenderer.draw(
             bbox, zoom,
             renderDimension,
-            { bmp -> tmpBitmap = bmp },
+            { bmp ->
+                tmpBitmap = bmp
+            },
             {
+                Log.d(TAG, "RefreshView called with $bitmap")
                 bitmap?.let {
                     val canvas = Canvas(it)
                     tmpBitmap?.let { bm ->
                         canvas.drawBitmap(bm, 0F, 0F, null)
-                        invalidate
+                        invalidate()
                     }
                 } ?: run {
                     bitmap = tmpBitmap
-                    invalidate
+                    invalidate()
                 }
-                invalidate()
             }
         )?.let {
             bitmap = it
