@@ -11,8 +11,8 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancelAndJoin
 
 private const val TAG = "ogl-maplayer"
 
@@ -20,7 +20,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null
-
     var zoom = 4.0
     private val matrix = Matrix()
 
@@ -35,22 +34,26 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
             detector.focusX,
             detector.focusY
         )
-
     }
 
     suspend fun startDrawJob(
+        scope: CoroutineScope,
         bbox: BBoxDto,
         zoom: Double,
         renderDimension: Pair<Int, Int>,
-        invalidate: () -> Unit
+        postInvalidate: () -> Unit
     ): Job {
         cancelAndJoin()
         Log.d(TAG, "Starting draw job coroutine")
-        val coroutine = CoroutineScope(Dispatchers.IO).launch {
-            drawLayerOverride(bbox, zoom, renderDimension, invalidate)
+        val newJob = scope.launch(Dispatchers.IO) {
+            try {
+                drawLayerOverride(bbox, zoom, renderDimension, postInvalidate)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error while drawing bitmap", e)
+            }
         }
-        job = coroutine
-        return coroutine
+        job = newJob
+        return newJob
     }
 
     suspend fun cancelAndJoin() {
@@ -63,24 +66,22 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         job?.cancel()
     }
 
-    fun requiresUpdate(visualZoom: Double): Boolean {
-        return zoom.toInt() != visualZoom.toInt()
-    }
-
     fun drawBitmapOnCanvas(canvas: Canvas, visualZoom: Double) {
-        bitmap?.let {
-            if (!bitmapRenderer.redrawOnTranslation()) {
-                canvas.drawBitmap(it, 0f, 0f, null)
-                return
+        try {
+            bitmap?.let {
+                if (!bitmapRenderer.redrawOnTranslation()) {
+                    canvas.drawBitmap(it, 0f, 0f, null)
+                } else {
+                    canvas.drawBitmap(it, matrix, null)
+                }
             }
-            canvas.drawBitmap(it, matrix, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unknown exception while drawing bitmap", e)
         }
     }
 
     fun commitPanAndZoom(): Matrix? {
-        if (!bitmapRenderer.redrawOnTranslation()) {
-            return null
-        }
+        if (!bitmapRenderer.redrawOnTranslation()) return null
 
         val matrixToApply = Matrix(matrix)
         if (!matrixToApply.isIdentity) {
@@ -92,7 +93,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                 it.recycle()
             }
         }
-
         applyInverseMatrix(matrixToApply)
         return matrixToApply
     }
@@ -108,33 +108,34 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         bbox: BBoxDto,
         zoom: Double,
         renderDimension: Pair<Int, Int>,
-        invalidate: () -> Unit
+        postInvalidate: () -> Unit
     ) {
         this.zoom = zoom
         var tmpBitmap: Bitmap? = null
         Log.d(TAG, "Calling bitmapRenderer.draw")
         bitmapRenderer.draw(
-            bbox, zoom,
-            renderDimension,
-            { bmp ->
-                tmpBitmap = bmp
-            },
+            bbox, zoom, renderDimension,
+            { bmp -> tmpBitmap = bmp },
             {
-                Log.d(TAG, "RefreshView called with $bitmap")
-                bitmap?.let {
-                    val canvas = Canvas(it)
-                    tmpBitmap?.let { bm ->
-                        canvas.drawBitmap(bm, 0F, 0F, null)
-                        invalidate()
+                try {
+                    Log.d(TAG, "RefreshView called with $bitmap")
+                    bitmap?.let {
+                        val canvas = Canvas(it)
+                        tmpBitmap?.let { bm ->
+                            canvas.drawBitmap(bm, 0F, 0F, null)
+                            postInvalidate()
+                        }
+                    } ?: run {
+                        bitmap = tmpBitmap
+                        postInvalidate()
                     }
-                } ?: run {
-                    bitmap = tmpBitmap
-                    invalidate()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Unexpected exception during refresh", e)
                 }
             }
         )?.let {
             bitmap = it
-            invalidate()
+            postInvalidate()
         }
     }
 }

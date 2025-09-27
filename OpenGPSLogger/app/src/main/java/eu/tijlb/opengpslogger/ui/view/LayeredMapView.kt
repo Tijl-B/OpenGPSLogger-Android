@@ -6,7 +6,6 @@ import android.graphics.Matrix
 import android.util.AttributeSet
 import android.util.Log
 import android.view.GestureDetector
-import android.view.GestureDetector.OnGestureListener
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
@@ -19,11 +18,7 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.LastLocationBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -33,17 +28,16 @@ import kotlin.math.pow
 
 private const val MIN_ZOOM = 4.0
 private const val MAX_ZOOM = 20.0
-
 private const val TAG = "ogl-layeredmapview"
 
 class LayeredMapView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
-) : View(context, attrs), OnGestureListener,
+) : View(context, attrs), GestureDetector.OnGestureListener,
     ScaleGestureDetector.OnScaleGestureListener {
 
     private val gestureDetector = GestureDetector(context, this)
     private val scaleGestureDetector = ScaleGestureDetector(context, this)
-    private val browseSettingsHelper = BrowseSettingsHelper(context)
+    private val browseSettingsHelper = BrowseSettingsHelper(context.applicationContext)
 
     private val layers = listOf(
         MapLayer(OsmImageBitmapRenderer(context)),
@@ -54,15 +48,16 @@ class LayeredMapView @JvmOverloads constructor(
 
     private var centerLat = 0.0
     private var centerLon = 0.0
-
     private var visualZoomLevel = 4.0
 
-    private var needsRedraw = AtomicBoolean(true)
+    private val needsRedraw = AtomicBoolean(true)
     private val redrawMutex = Mutex()
     private val latestRedrawJob = AtomicReference<Job?>(null)
     private val setupMutex = Mutex()
     private var setupJob: Job? = null
     private var redrawJob: Job? = null
+
+    private val scope = MainScope()
 
     init {
         isFocusable = true
@@ -72,12 +67,13 @@ class LayeredMapView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         Log.d(TAG, "onDraw")
+
         if (setupJob == null) {
-            setupJob = CoroutineScope(Dispatchers.IO).launch {
+            setupJob = scope.launch(Dispatchers.IO) {
                 setupMutex.tryLockOrSkip {
                     setUpCenterAndZoom()
                     redrawIfNeeded()
-                    invalidate()
+                    postInvalidate()
                 }
             }
         } else {
@@ -89,6 +85,7 @@ class LayeredMapView @JvmOverloads constructor(
     override fun onDetachedFromWindow() {
         Log.d(TAG, "Detaching LayeredMapView from window...")
         stopUpdates()
+        scope.cancel()
         super.onDetachedFromWindow()
     }
 
@@ -122,15 +119,14 @@ class LayeredMapView @JvmOverloads constructor(
     }
 
     private fun redrawIfNeeded() {
-        if (!needsRedraw.get()) {
-            return
-        }
-        val oldJob = redrawJob
+        if (!needsRedraw.get()) return
         if (!(setupJob?.isCompleted ?: false)) {
             Log.d(TAG, "Not yet set up, skipping redraw")
             return
         }
-        redrawJob = CoroutineScope(Dispatchers.IO).launch {
+
+        val oldJob = redrawJob
+        redrawJob = scope.launch(Dispatchers.IO) {
             val uuid = UUID.randomUUID()
             Log.d(TAG, "Canceling old redraw job $uuid")
             oldJob?.cancelAndJoin()
@@ -143,11 +139,9 @@ class LayeredMapView @JvmOverloads constructor(
                     browseSettingsHelper.setCenterCoords(centerLat, centerLon)
                     browseSettingsHelper.setZoom(visualZoomLevel.toFloat())
                     commitPanAndZoom()
-                    invalidate()
-                    loadLayers()
-                        .forEach { job -> job.join() }
+                    loadLayers().forEach { it.join() }
                     Log.d(TAG, "Done with redraw $uuid")
-                    invalidate()
+                    postInvalidate()
                 }
             }
             Log.d(TAG, "End of redraw job $uuid")
@@ -158,43 +152,35 @@ class LayeredMapView @JvmOverloads constructor(
         Log.d(TAG, "Loading tiles $centerLat, $centerLon, $width, $height")
         val bbox = bboxFromCenter(centerLat, centerLon, visualZoomLevel, width, height)
         return layers.map {
-            it.startDrawJob(bbox, visualZoomLevel - 1, Pair(width, height)) { invalidate() }
+            it.startDrawJob(scope, bbox, visualZoomLevel - 1, width to height) {
+                postInvalidate()
+            }
         }
     }
 
     private fun bboxFromCenter(
-        lat: Double,
-        lon: Double,
-        zoom: Double,
-        viewWidth: Int,
-        viewHeight: Int
+        lat: Double, lon: Double, zoom: Double, viewWidth: Int, viewHeight: Int
     ): BBoxDto {
         val tileSize = 256.0
-
         val centerX = OsmGeometryUtil.lon2num(lon, zoom) * tileSize
         val centerY = OsmGeometryUtil.lat2num(lat, zoom) * tileSize
-
         val halfWidth = viewWidth / 2.0
         val halfHeight = viewHeight / 2.0
-
         val minPxX = centerX - halfWidth
         val maxPxX = centerX + halfWidth
         val minPxY = centerY - halfHeight
         val maxPxY = centerY + halfHeight
-
         val minLon = OsmGeometryUtil.numToLon(minPxX / tileSize, zoom)
         val maxLon = OsmGeometryUtil.numToLon(maxPxX / tileSize, zoom)
         val minLat = OsmGeometryUtil.numToLat(maxPxY / tileSize, zoom)
         val maxLat = OsmGeometryUtil.numToLat(minPxY / tileSize, zoom)
-
         return BBoxDto(minLat, maxLat, minLon, maxLon).coerce()
     }
 
     private fun calculateNewZoom(scale: Float): Double {
         val oldMapScale = 2.0.pow(visualZoomLevel)
-        val newMapScale = (oldMapScale * scale)
-        val newZoom = log2(newMapScale)
-        return newZoom
+        val newMapScale = oldMapScale * scale
+        return log2(newMapScale)
     }
 
     private fun commitPanAndZoom() {
@@ -215,18 +201,14 @@ class LayeredMapView @JvmOverloads constructor(
 
         val centerPixelX = OsmGeometryUtil.lon2num(centerLon, oldZoom) * tileSize
         val centerPixelY = OsmGeometryUtil.lat2num(centerLat, oldZoom) * tileSize
-
         val halfWidth = width / 2.0
         val halfHeight = height / 2.0
 
         val src = floatArrayOf(halfWidth.toFloat(), halfHeight.toFloat())
         val dst = FloatArray(2)
         matrix.mapPoints(dst, src)
-        val newScreenX = dst[0].toDouble()
-        val newScreenY = dst[1].toDouble()
-
-        var newCenterPixelX = centerPixelX * ratio - (newScreenX - halfWidth)
-        var newCenterPixelY = centerPixelY * ratio - (newScreenY - halfHeight)
+        var newCenterPixelX = centerPixelX * ratio - (dst[0] - halfWidth)
+        var newCenterPixelY = centerPixelY * ratio - (dst[1] - halfHeight)
 
         val minCenterX = halfWidth
         val maxCenterX = mapSize - halfWidth
@@ -257,18 +239,13 @@ class LayeredMapView @JvmOverloads constructor(
     override fun onTouchEvent(event: MotionEvent): Boolean {
         gestureDetector.onTouchEvent(event)
         scaleGestureDetector.onTouchEvent(event)
-
-        if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-            redrawIfNeeded()
-        }
+        needsRedraw.set(true)
+        invalidate()
         return true
     }
 
     override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent,
-        distanceX: Float,
-        distanceY: Float
+        e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float
     ): Boolean {
         Log.d(TAG, "scrolling x $distanceX y $distanceY (${e1?.action}, ${e2.action})")
         layers.forEach { it.onScroll(distanceX, distanceY) }
@@ -279,25 +256,19 @@ class LayeredMapView @JvmOverloads constructor(
 
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         Log.d(TAG, "scaling with factor ${detector.scaleFactor}")
-        val scaleFactor = detector.scaleFactor
-        visualZoomLevel = calculateNewZoom(scaleFactor)
+        visualZoomLevel = calculateNewZoom(detector.scaleFactor)
             .coerceIn(MIN_ZOOM, MAX_ZOOM)
         layers.forEach { it.onScale(detector) }
         needsRedraw.set(true)
+        invalidate()
         return true
     }
 
-    // Unused but required GestureDetector methods
     override fun onShowPress(e: MotionEvent) {}
     override fun onSingleTapUp(e: MotionEvent) = false
-
     override fun onLongPress(e: MotionEvent) {}
-    override fun onFling(
-        e1: MotionEvent?,
-        e2: MotionEvent,
-        velocityX: Float,
-        velocityY: Float
-    ) = false
+    override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float) =
+        false
 
     override fun onScaleBegin(detector: ScaleGestureDetector) = true
     override fun onScaleEnd(detector: ScaleGestureDetector) {}
