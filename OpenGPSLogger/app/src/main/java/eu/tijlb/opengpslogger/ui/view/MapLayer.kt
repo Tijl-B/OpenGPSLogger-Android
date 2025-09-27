@@ -16,13 +16,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "ogl-maplayer"
 
-class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val height: Int) {
-
-    init {
-        if (width <= 0 || height <= 0) {
-            Log.e(TAG, "invalid width $width or height $height")
-        }
-    }
+class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null

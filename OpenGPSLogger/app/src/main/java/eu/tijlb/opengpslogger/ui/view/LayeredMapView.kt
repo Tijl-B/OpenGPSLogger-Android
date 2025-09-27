@@ -46,10 +46,10 @@ class LayeredMapView @JvmOverloads constructor(
     private val browseSettingsHelper = BrowseSettingsHelper(context)
 
     private val layers = listOf(
-        MapLayer(OsmImageBitmapRenderer(context), width, height),
-        MapLayer(DensityMapBitmapRenderer(context), width, height),
-        MapLayer(CopyRightNoticeBitmapRenderer(context), width, height),
-        MapLayer(LastLocationBitmapRenderer(context), width, height)
+        MapLayer(OsmImageBitmapRenderer(context)),
+        MapLayer(DensityMapBitmapRenderer(context)),
+        MapLayer(CopyRightNoticeBitmapRenderer(context)),
+        MapLayer(LastLocationBitmapRenderer(context))
     )
 
     private var centerLat = 0.0
@@ -190,19 +190,6 @@ class LayeredMapView @JvmOverloads constructor(
         return BBoxDto(minLat, maxLat, minLon, maxLon).coerce()
     }
 
-
-    private fun scaleMap(scaleFactor: Float) {
-        visualZoomLevel = calculateNewZoom(scaleFactor)
-            .coerceIn(MIN_ZOOM, MAX_ZOOM)
-
-        /*val anyZoomOutOfSync = layers.map { it.requiresUpdate(visualZoomLevel) }
-            .contains(true)
-        if (anyZoomOutOfSync) {*/
-        needsRedraw.set(true)
-        /*}
-        invalidate()*/
-    }
-
     private fun calculateNewZoom(scale: Float): Double {
         val oldMapScale = 2.0.pow(visualZoomLevel)
         val newMapScale = (oldMapScale * scale)
@@ -293,8 +280,10 @@ class LayeredMapView @JvmOverloads constructor(
     override fun onScale(detector: ScaleGestureDetector): Boolean {
         Log.d(TAG, "scaling with factor ${detector.scaleFactor}")
         val scaleFactor = detector.scaleFactor
-        scaleMap(scaleFactor)
+        visualZoomLevel = calculateNewZoom(scaleFactor)
+            .coerceIn(MIN_ZOOM, MAX_ZOOM)
         layers.forEach { it.onScale(detector) }
+        needsRedraw.set(true)
         return true
     }
 
