@@ -43,10 +43,10 @@ class LayeredMapView @JvmOverloads constructor(
     private val browseSettingsHelper = BrowseSettingsHelper(context)
 
     private val layers = listOf(
-        MapLayer(OsmImageBitmapRenderer(context), width, height),
-        MapLayer(DensityMapBitmapRenderer(context), width, height),
-        MapLayer(CopyRightNoticeBitmapRenderer(context), width, height),
-        MapLayer(LastLocationBitmapRenderer(context), width, height)
+        MapLayer(OsmImageBitmapRenderer(context)),
+        MapLayer(DensityMapBitmapRenderer(context)),
+        MapLayer(CopyRightNoticeBitmapRenderer(context)),
+        MapLayer(LastLocationBitmapRenderer(context))
     )
 
     private var centerLat = 0.0
@@ -146,7 +146,7 @@ class LayeredMapView @JvmOverloads constructor(
         Log.d(TAG, "Loading tiles $centerLat, $centerLon, $width, $height")
         val bbox = bboxFromCenter(centerLat, centerLon, visualZoomLevel, width, height)
         return layers.map {
-            it.startDrawJob(bbox, visualZoomLevel, Pair(width, height)) { invalidate() }
+            it.startDrawJob(bbox, visualZoomLevel - 1, Pair(width, height)) { invalidate() }
         }
     }
 
@@ -202,14 +202,9 @@ class LayeredMapView @JvmOverloads constructor(
         val oldZoom = layers.first().zoom
         val newZoom = visualZoomLevel
         Log.d(TAG, "Commit visualZoomScale to $newZoom")
-        layers.map {
-            it.commitPanAndZoom()
-        }
+        layers.map { it.commitPanAndZoom() }
             .first()
-            ?.let { matrix ->
-                updateCenterCoordsFromMatrix(oldZoom, newZoom, matrix)
-                return
-            }
+            ?.let { updateCenterCoordsFromMatrix(oldZoom, newZoom, it) }
     }
 
     private fun updateCenterCoordsFromMatrix(oldZoom: Double, newZoom: Double, matrix: Matrix) {

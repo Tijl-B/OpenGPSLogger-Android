@@ -60,7 +60,7 @@ class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer(
             val xRange = (maxX - minX)
             val yRange = (maxY - minY)
 
-            if (xRange == 0.0 || !xRange.isFinite() || yRange == 0.0 || !yRange.isFinite()) {
+            if (xRange == 0.0 || yRange == 0.0) {
                 Log.w(TAG, "xRange $xRange or yRange $yRange is invalid")
                 return null
             }
@@ -69,8 +69,8 @@ class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer(
             val mappedY = ((maxY - osmY) / yRange * bitmap.height).roundToInt()
 
             val outerRadius = 20F
-            var shadowRadius = (outerRadius + 1F) * 1.1F
-            var shadowOffset = outerRadius * 0.5F
+            val shadowRadius = (outerRadius + 1F) * 1.1F
+            val shadowOffset = outerRadius * 0.5F
             val paint = Paint().apply {
                 isAntiAlias = true
                 color = Color.WHITE

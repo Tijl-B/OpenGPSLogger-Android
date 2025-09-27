@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "ogl-maplayer"
 
-class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val height: Int) {
+class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null
@@ -38,7 +38,12 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
 
     }
 
-    fun startDrawJob(bbox: BBoxDto, zoom: Double, renderDimension: Pair<Int, Int>, invalidate: () -> Unit): Job {
+    fun startDrawJob(
+        bbox: BBoxDto,
+        zoom: Double,
+        renderDimension: Pair<Int, Int>,
+        invalidate: () -> Unit
+    ): Job {
         cancelJob()
         Log.d(TAG, "Starting draw job coroutine")
         val coroutine = CoroutineScope(Dispatchers.IO).launch {
@@ -72,18 +77,22 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
             return null
         }
 
-        val matrix = Matrix(matrix)
-        if(!matrix.isIdentity) {
+        val matrixToApply = Matrix(matrix)
+        if (!matrixToApply.isIdentity) {
             bitmap?.let {
                 val newBitmap = createBitmap(it.width, it.height)
                 val canvas = Canvas(newBitmap)
-                canvas.drawBitmap(it, matrix, null)
+                canvas.drawBitmap(it, matrixToApply, null)
                 bitmap = newBitmap
                 it.recycle()
             }
         }
-        this.matrix.reset()
-        return matrix
+
+        val appliedMatrixInverse = Matrix()
+        if (matrixToApply.invert(appliedMatrixInverse)) {
+            matrix.postConcat(appliedMatrixInverse)
+        }
+        return matrixToApply
     }
 
     private suspend fun drawLayerOverride(
