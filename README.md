@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.10.0
+
+#### Features
+- Show file progress and points processed on the import page
+
 ### 1.9.3
 
 #### Fixes

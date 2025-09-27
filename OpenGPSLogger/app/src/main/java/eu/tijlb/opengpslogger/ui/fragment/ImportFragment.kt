@@ -59,56 +59,78 @@ class ImportFragment : Fragment(R.layout.fragment_import) {
 
         val uris = arguments?.getParcelableArrayList<Uri>("importUris") ?: return
 
+        val totalFiles = uris.size
+        var currentFile = 1
+        var totalPointsImported = 0
+
+
+        updateFileProgress(0, totalFiles)
+        updatePointsProgress(0)
+
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             for (uri in uris) {
-                handleUri(uri)
+                withContext(Dispatchers.Main) {
+                    updateFileProgress(currentFile, totalFiles)
+                    currentFile += 1
+                }
+                handleUri(uri) { points ->
+                    totalPointsImported += points
+                    if (totalPointsImported % 1000 == 0) {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            updatePointsProgress(totalPointsImported)
+                        }
+                    }
+
+                }
             }
 
             withContext(Dispatchers.Main) {
+                updatePointsProgress(totalPointsImported)
                 binding.textviewFirst.text = "Import finished!"
                 binding.buttonContinue.visibility = View.VISIBLE
             }
         }
     }
 
-    private fun handleUri(uri: Uri) {
+    private fun updateFileProgress(currentFile: Int, totalFiles: Int) {
+        binding.textviewFileProgress.text =
+            getString(R.string.file_import_progress, currentFile, totalFiles)
+    }
+
+    private fun updatePointsProgress(totalPointsImported: Int) {
+        binding.textviewPointsProgress.text =
+            getString(R.string.processed_points_progress, totalPointsImported)
+    }
+
+    private fun handleUri(uri: Uri, pointsCallback: (Int) -> Unit) {
         val fileType = requireContext().contentResolver.getType(uri)
+        var parser: ParserInterface? = null
         if (fileType == MIME_TYPE_GPX || uri.toString()
                 .endsWith(EXTENSION_GPX, ignoreCase = true)
         ) {
-            parseAndStoreGpxFile(uri)
+            parser = GpxParser
         } else if (fileType == MIME_TYPE_ZIP || uri.toString()
                 .endsWith(EXTENSION_ZIP, ignoreCase = true)
         ) {
-            parseAndStoreZipFile(uri)
+            parser = ZippedGpxParser
         } else if (fileType == MIME_TYPE_JSON) {
-            parseAndStoreJsonFile(uri)
+            parser = JsonParser
         } else {
             Log.d(TAG, "Skipping unsupported file type: $uri")
         }
+        parser?.let {
+            Log.d(TAG, "Processing file with parser ${parser.javaClass.simpleName}: $uri")
+            parse(uri, parser, pointsCallback)
+        }
     }
 
-    private fun parseAndStoreZipFile(uri: Uri) {
-        Log.d(TAG, "Processing ZIP file: $uri")
-        parse(uri, ZippedGpxParser)
-    }
-
-    private fun parseAndStoreGpxFile(uri: Uri) {
-        Log.d(TAG, "Processing GPX file: $uri")
-        parse(uri, GpxParser)
-    }
-
-    private fun parseAndStoreJsonFile(uri: Uri) {
-        Log.d(TAG, "Processing JSON file: $uri")
-        parse(uri, JsonParser)
-    }
-
-    private fun parse(uri: Uri, parser: ParserInterface) {
+    private fun parse(uri: Uri, parser: ParserInterface, pointsCallback: (Int) -> Unit) {
         requireContext().contentResolver.openInputStream(uri)
             ?.let {
 
                 locationDbHelper.writableDatabase.beginTransaction()
                 parser.parse(it) { point, time, source ->
+                    pointsCallback(1)
                     storePointInDatabase(point, time, source)
                 }
                 locationDbHelper.writableDatabase.setTransactionSuccessful()
