@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.9.3
+
+#### Fixes
+- Points no longer jump around when scrolling
+
 ### 1.9.2
 [apk](release/opengpslogger-1-9-2.apk)
 

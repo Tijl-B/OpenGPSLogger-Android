@@ -123,7 +123,7 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
                     Log.d(TAG, "Requesting osm url $imgUrl")
                     val cancellationLambda = getOrDownloadImage(imgUrl) { tileBitMap ->
                         if (!job.isActive) {
-                            Log.d(TAG, "Interrupting...")
+                            Log.d(TAG, "Interrupting request to $imgUrl...")
                             return@getOrDownloadImage
                         }
 
@@ -149,6 +149,8 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
                             val destRect = Rect(destLeft, destTop, destRight, destBottom)
 
                             canvas.drawBitmap(tileBitMap, srcRect, destRect, paint)
+                            Log.d(TAG, "Drew tile $imgUrl")
+                            refreshView()
                         } else {
                             Log.w(
                                 TAG,
@@ -156,7 +158,6 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
                                         + "xtile $xtile xmin $xmin ytile $ytile "
                             )
                         }
-                        refreshView()
                         onTileProgressUpdateListener?.onTileProgressUpdate(++i)
                     }
                     job.invokeOnCompletion { cancellationLambda() }
@@ -181,11 +182,12 @@ class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
             .load(url)
             .into(object : CustomTarget<Bitmap>() {
                 override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                    Log.d(TAG, "Resource $url ready")
                     callback(resource)
                 }
 
                 override fun onLoadCleared(placeholder: Drawable?) {
-                    Log.d("ogl-osmhelper", "Load cleared for url $url")
+                    Log.d(TAG, "Load cleared for url $url")
                 }
             })
 

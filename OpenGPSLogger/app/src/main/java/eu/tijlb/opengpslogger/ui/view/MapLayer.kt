@@ -11,17 +11,17 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 
 private const val TAG = "ogl-maplayer"
 
-class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val height: Int) {
+class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null
 
     var zoom = 4.0
-
     private val matrix = Matrix()
 
     fun onScroll(dx: Float, dy: Float) {
@@ -38,14 +38,24 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
 
     }
 
-    fun startDrawJob(bbox: BBoxDto, zoom: Double, renderDimension: Pair<Int, Int>, invalidate: () -> Unit): Job {
-        cancelJob()
+    suspend fun startDrawJob(
+        bbox: BBoxDto,
+        zoom: Double,
+        renderDimension: Pair<Int, Int>,
+        invalidate: () -> Unit
+    ): Job {
+        cancelAndJoin()
         Log.d(TAG, "Starting draw job coroutine")
         val coroutine = CoroutineScope(Dispatchers.IO).launch {
             drawLayerOverride(bbox, zoom, renderDimension, invalidate)
         }
         job = coroutine
         return coroutine
+    }
+
+    suspend fun cancelAndJoin() {
+        Log.d(TAG, "Canceling job $job")
+        job?.cancelAndJoin()
     }
 
     fun cancelJob() {
@@ -72,18 +82,26 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
             return null
         }
 
-        val matrix = Matrix(matrix)
-        if(!matrix.isIdentity) {
+        val matrixToApply = Matrix(matrix)
+        if (!matrixToApply.isIdentity) {
             bitmap?.let {
                 val newBitmap = createBitmap(it.width, it.height)
                 val canvas = Canvas(newBitmap)
-                canvas.drawBitmap(it, matrix, null)
+                canvas.drawBitmap(it, matrixToApply, null)
                 bitmap = newBitmap
                 it.recycle()
             }
         }
-        this.matrix.reset()
-        return matrix
+
+        applyInverseMatrix(matrixToApply)
+        return matrixToApply
+    }
+
+    private fun applyInverseMatrix(matrixToApply: Matrix) {
+        val appliedMatrixInverse = Matrix()
+        if (matrixToApply.invert(appliedMatrixInverse)) {
+            matrix.postConcat(appliedMatrixInverse)
+        }
     }
 
     private suspend fun drawLayerOverride(
@@ -98,19 +116,21 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer, val width: Int, val h
         bitmapRenderer.draw(
             bbox, zoom,
             renderDimension,
-            { bmp -> tmpBitmap = bmp },
+            { bmp ->
+                tmpBitmap = bmp
+            },
             {
+                Log.d(TAG, "RefreshView called with $bitmap")
                 bitmap?.let {
                     val canvas = Canvas(it)
                     tmpBitmap?.let { bm ->
                         canvas.drawBitmap(bm, 0F, 0F, null)
-                        invalidate
+                        invalidate()
                     }
                 } ?: run {
                     bitmap = tmpBitmap
-                    invalidate
+                    invalidate()
                 }
-                invalidate()
             }
         )?.let {
             bitmap = it
