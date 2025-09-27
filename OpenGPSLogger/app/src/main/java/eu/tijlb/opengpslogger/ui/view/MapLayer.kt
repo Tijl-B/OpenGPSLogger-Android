@@ -8,11 +8,7 @@ import android.view.ScaleGestureDetector
 import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 private const val TAG = "ogl-maplayer"
 
@@ -20,7 +16,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
 
     private var bitmap: Bitmap? = null
     private var job: Job? = null
-
     var zoom = 4.0
     private val matrix = Matrix()
 
@@ -35,30 +30,30 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
             detector.focusX,
             detector.focusY
         )
-
     }
 
     suspend fun startDrawJob(
+        scope: CoroutineScope,
         bbox: BBoxDto,
         zoom: Double,
         renderDimension: Pair<Int, Int>,
-        invalidate: () -> Unit
+        postInvalidate: () -> Unit
     ): Job {
         cancelAndJoin()
         Log.d(TAG, "Starting draw job coroutine")
-        val coroutine = CoroutineScope(Dispatchers.IO).launch {
+        val newJob = scope.launch(Dispatchers.IO) {
             try {
-                drawLayerOverride(bbox, zoom, renderDimension, invalidate)
+                drawLayerOverride(bbox, zoom, renderDimension, postInvalidate)
             } catch (e: Exception) {
                 Log.e(TAG, "Unexpected error while drawing bitmap", e)
             }
         }
-        job = coroutine
-        return coroutine
+        job = newJob
+        return newJob
     }
 
     suspend fun cancelAndJoin() {
-        Log.d(TAG, "Canceling job $job")
+        Log.d(TAG, "Canceling and joining job $job")
         job?.cancelAndJoin()
     }
 
@@ -67,28 +62,22 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         job?.cancel()
     }
 
-    fun requiresUpdate(visualZoom: Double): Boolean {
-        return zoom.toInt() != visualZoom.toInt()
-    }
-
     fun drawBitmapOnCanvas(canvas: Canvas, visualZoom: Double) {
-        try{
+        try {
             bitmap?.let {
                 if (!bitmapRenderer.redrawOnTranslation()) {
                     canvas.drawBitmap(it, 0f, 0f, null)
-                    return
+                } else {
+                    canvas.drawBitmap(it, matrix, null)
                 }
-                canvas.drawBitmap(it, matrix, null)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Unknown exception", e)
+            Log.e(TAG, "Unknown exception while drawing bitmap", e)
         }
     }
 
     fun commitPanAndZoom(): Matrix? {
-        if (!bitmapRenderer.redrawOnTranslation()) {
-            return null
-        }
+        if (!bitmapRenderer.redrawOnTranslation()) return null
 
         val matrixToApply = Matrix(matrix)
         if (!matrixToApply.isIdentity) {
@@ -100,7 +89,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                 it.recycle()
             }
         }
-
         applyInverseMatrix(matrixToApply)
         return matrixToApply
     }
@@ -124,9 +112,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         bitmapRenderer.draw(
             bbox, zoom,
             renderDimension,
-            { bmp ->
-                tmpBitmap = bmp
-            },
+            { bmp -> tmpBitmap = bmp },
             {
                 try {
                     Log.d(TAG, "RefreshView called with $bitmap")
@@ -141,7 +127,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                         postInvalidate()
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Unexpected exception", e)
+                    Log.e(TAG, "Unexpected exception during refresh", e)
                 }
             }
         )?.let {
