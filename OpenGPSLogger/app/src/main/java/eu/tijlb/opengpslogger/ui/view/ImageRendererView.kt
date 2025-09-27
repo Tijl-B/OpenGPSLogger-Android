@@ -280,7 +280,7 @@ class ImageRendererView(
             zoom.toDouble(),
             Pair(width, height),
             { bitmap -> densityMapBitMap = bitmap }
-        ) { invalidate() }
+        ) { postInvalidate() }
         onPointsLoadedListener?.onPointsLoaded()
     }
 
@@ -343,7 +343,7 @@ class ImageRendererView(
             ::lonToPxIdxConverter,
             Pair(pointsRenderWidth, pointsRenderHeight),
             { bitmap -> pointsBitMap = bitmap }
-        ) { invalidate() }
+        ) { postInvalidate() }
         onPointsLoadedListener?.onPointsLoaded()
     }
 
@@ -366,7 +366,7 @@ class ImageRendererView(
                 Pair(width, height),
                 { bitmap -> osmBitMap = bitmap }
             )
-            { invalidate() }
+            { postInvalidate() }
             onTilesLoadedListener?.onTilesLoaded()
             updateCopyrightNotice(bbox)
         }
@@ -378,7 +378,7 @@ class ImageRendererView(
             zoom.toDouble(),
             Pair(width, height),
             { bitmap -> copyrightBitMap = bitmap })
-        { invalidate() }
+        { postInvalidate() }
     }
 
     private fun calculateXYValues(bbox: BBoxDto) {

@@ -47,7 +47,11 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         cancelAndJoin()
         Log.d(TAG, "Starting draw job coroutine")
         val coroutine = CoroutineScope(Dispatchers.IO).launch {
-            drawLayerOverride(bbox, zoom, renderDimension, invalidate)
+            try {
+                drawLayerOverride(bbox, zoom, renderDimension, invalidate)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error while drawing bitmap", e)
+            }
         }
         job = coroutine
         return coroutine
@@ -68,12 +72,16 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     }
 
     fun drawBitmapOnCanvas(canvas: Canvas, visualZoom: Double) {
-        bitmap?.let {
-            if (!bitmapRenderer.redrawOnTranslation()) {
-                canvas.drawBitmap(it, 0f, 0f, null)
-                return
+        try{
+            bitmap?.let {
+                if (!bitmapRenderer.redrawOnTranslation()) {
+                    canvas.drawBitmap(it, 0f, 0f, null)
+                    return
+                }
+                canvas.drawBitmap(it, matrix, null)
             }
-            canvas.drawBitmap(it, matrix, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unknown exception", e)
         }
     }
 
@@ -108,7 +116,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
         bbox: BBoxDto,
         zoom: Double,
         renderDimension: Pair<Int, Int>,
-        invalidate: () -> Unit
+        postInvalidate: () -> Unit
     ) {
         this.zoom = zoom
         var tmpBitmap: Bitmap? = null
@@ -120,21 +128,25 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                 tmpBitmap = bmp
             },
             {
-                Log.d(TAG, "RefreshView called with $bitmap")
-                bitmap?.let {
-                    val canvas = Canvas(it)
-                    tmpBitmap?.let { bm ->
-                        canvas.drawBitmap(bm, 0F, 0F, null)
-                        invalidate()
+                try {
+                    Log.d(TAG, "RefreshView called with $bitmap")
+                    bitmap?.let {
+                        val canvas = Canvas(it)
+                        tmpBitmap?.let { bm ->
+                            canvas.drawBitmap(bm, 0F, 0F, null)
+                            postInvalidate()
+                        }
+                    } ?: run {
+                        bitmap = tmpBitmap
+                        postInvalidate()
                     }
-                } ?: run {
-                    bitmap = tmpBitmap
-                    invalidate()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Unexpected exception", e)
                 }
             }
         )?.let {
             bitmap = it
-            invalidate()
+            postInvalidate()
         }
     }
 }

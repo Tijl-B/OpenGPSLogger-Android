@@ -1,6 +1,7 @@
 package eu.tijlb.opengpslogger.ui.util
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancelAndJoin
@@ -60,10 +61,17 @@ object LockUtil {
                 e
             )
             return null
+        } catch (e: CancellationException) {
+            Log.d(
+                TAG,
+                "Waiting for or executing lock got canceled for owner $lockOwner",
+                e
+            )
+            return null
         } catch (e: Exception) {
             Log.e(
                 TAG,
-                "Unknown exception while waiting for or executing lock by owner $lockOwner",
+                "Unexpected exception while waiting for or executing lock by owner $lockOwner",
                 e
             )
             return null

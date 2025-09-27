@@ -184,7 +184,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
 
 
         AlertDialog.Builder(context)
-            .setTitle("Delete points by box")
+            .setTitle("Delete duplicate points")
             .setView(dialogView)
             .setPositiveButton("Delete selected points")
             { dialog, _ ->
