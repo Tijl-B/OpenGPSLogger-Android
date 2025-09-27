@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.util.Log
+import androidx.core.graphics.createBitmap
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -21,8 +22,10 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.text.clear
+import kotlin.text.get
+import kotlin.text.replace
 import kotlin.time.Duration.Companion.seconds
-import androidx.core.graphics.createBitmap
 
 private const val TAG = "ogl-osmimagebitmaprenderer"
 

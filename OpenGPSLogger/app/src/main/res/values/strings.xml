@@ -90,4 +90,6 @@
     <string name="delete_points_by_time">Delete points by time</string>
     <string name="delete_data">Delete data</string>
     <string name="export">Export</string>
+    <string name="file_import_progress">Importing file %1$d / %2$d</string>
+    <string name="processed_points_progress">Processed points: %1$d</string>
 </resources>
