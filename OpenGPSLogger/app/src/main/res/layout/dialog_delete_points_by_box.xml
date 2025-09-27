@@ -34,17 +34,11 @@
             app:layout_constraintTop_toBottomOf="@+id/constraint_imageRenderer">
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:text="@string/selected_points" />
-
-            <TextView
                 android:id="@+id/textview_selected_points_value"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="5dp"
-                android:text="@string/default_selected_points" />
+                android:text="@string/selected_points" />
         </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

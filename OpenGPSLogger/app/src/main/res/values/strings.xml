@@ -81,7 +81,7 @@
     <string name="continue_">Continue</string>
     <string name="from">From</string>
     <string name="to">To</string>
-    <string name="selected_points">Selected points:</string>
+    <string name="selected_points">Selected points: %1$s</string>
     <string name="default_selected_points">0</string>
     <string name="delete_selected_points">Delete selected points</string>
     <string name="confirm">confirm</string>
@@ -92,4 +92,5 @@
     <string name="export">Export</string>
     <string name="file_import_progress">Importing file %1$d / %2$d</string>
     <string name="processed_points_progress">Processed points: %1$d</string>
+    <string name="delete_duplicate_points">Delete duplicate points</string>
 </resources>

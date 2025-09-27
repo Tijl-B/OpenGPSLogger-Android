@@ -115,6 +115,9 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         binding.buttonDeleteByBox.setOnClickListener {
             openDeletePointsByBoxDialog()
         }
+        binding.buttonDeleteDuplicates.setOnClickListener {
+            openDeleteDuplicatesDialog()
+        }
 
         locationReceiver = LocationUpdateReceiver().apply {
             setOnLocationReceivedListener { location ->
@@ -142,6 +145,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         val selectedPointsTextView =
             dialogView.findViewById<TextView>(R.id.textview_selected_points_value)
         val selectedBbox = AtomicReference<BBoxDto?>(null)
+        selectedPointsTextView.text = getString(R.string.selected_points, "0")
         selectorFragment.callback = {
             selectedBbox.set(it)
             updateCount(selectedPointsTextView, it)
@@ -164,14 +168,54 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         return true
     }
 
+    private fun openDeleteDuplicatesDialog(): Boolean {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_delete_duplicate_points, null)
+        val selectedPointsTextView =
+            dialogView.findViewById<TextView>(R.id.textview_selectedpoints)
+        selectedPointsTextView.text =
+            getString(R.string.selected_points, "calculating...")
+        lifecycleScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                locationDbHelper.countDuplicatePoints()
+            }
+            selectedPointsTextView.text =
+                getString(R.string.selected_points, count.toString())
+        }
+
+
+        AlertDialog.Builder(context)
+            .setTitle("Delete points by box")
+            .setView(dialogView)
+            .setPositiveButton("Delete selected points")
+            { dialog, _ ->
+                lifecycleScope.launch {
+                    val count = withContext(Dispatchers.IO) {
+                        locationDbHelper.deleteDuplicatePoints()
+                    }
+                    Toast.makeText(
+                        context,
+                        "Deleted $count points",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .setNegativeButton("Discard")
+            { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+        return true
+    }
+
     private fun updateCount(
         countField: TextView,
         bbox: BBoxDto
     ) {
-        countField.text = "calculating..."
+        countField.text = getString(R.string.selected_points, "calculating...")
         val query = PointsQuery(bbox = bbox)
         calculatePointsCount(query) {
-            countField.text = it.toString()
+            countField.text = getString(R.string.selected_points, it.toString())
         }
     }
 
@@ -184,6 +228,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
             dialogView.findViewById<TextView>(R.id.textview_selected_points_value)
         val from: AtomicReference<ZonedDateTime?> = AtomicReference(null)
         val to: AtomicReference<ZonedDateTime?> = AtomicReference(null)
+        selectedPointsTextView.text = getString(R.string.selected_points, "0")
         fromButton.setOnClickListener {
             DateTimeUtil.pickDateTime(requireContext()) {
                 from.set(it)
@@ -232,13 +277,13 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         renderer.endTime = to
         renderer.pointsRenderWidth = 4000
         renderer.redrawPointsAndOsm()
-        countField.text = "calculating..."
+        countField.text = getString(R.string.selected_points, "calculating...")
         val query = PointsQuery(
             startDateMillis = from.toInstant().toEpochMilli(),
             endDateMillis = to.toInstant().toEpochMilli()
         )
         calculatePointsCount(query) {
-            countField.text = it.toString()
+            countField.text = getString(R.string.selected_points, it.toString())
         }
     }
 
