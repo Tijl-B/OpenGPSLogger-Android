@@ -2,6 +2,12 @@
 
 ## Releases
 
+### 1.11.0
+[apk](release/opengpslogger-1-11-0.apk)
+
+#### Features
+- Add button to delete duplicate points
+
 ### 1.10.0
 
 #### Features
@@ -13,7 +19,6 @@
 - Points no longer jump around when scrolling
 
 ### 1.9.2
-[apk](release/opengpslogger-1-9-2.apk)
 
 #### Improvements
 - Natural zooming

@@ -179,6 +179,83 @@ class LocationDbHelper(val context: Context) :
         return count
     }
 
+    fun countDuplicatePoints(): Int {
+        val db = readableDatabase
+        val query = """
+        SELECT SUM(cnt - 1) AS duplicates_to_delete
+        FROM (
+            SELECT COUNT(*) AS cnt
+            FROM ${LocationDbContract.TABLE_NAME}
+            GROUP BY
+                ${LocationDbContract.COLUMN_NAME_TIMESTAMP},
+                ${LocationDbContract.COLUMN_NAME_LATITUDE},
+                ${LocationDbContract.COLUMN_NAME_LONGITUDE}
+            HAVING cnt > 1
+        )
+    """.trimIndent()
+
+        db.rawQuery(query, null).use { cursor ->
+            return if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        }
+    }
+
+    fun deleteDuplicatePoints(batchSize: Int = 50000): Int {
+        val db = writableDatabase
+        var totalDeleted = 0
+
+        while (true) {
+            db.beginTransaction()
+            try {
+                val deleteQuery = """
+                DELETE FROM ${LocationDbContract.TABLE_NAME}
+                WHERE ${BaseColumns._ID} IN (
+                    SELECT l.${BaseColumns._ID}
+                    FROM ${LocationDbContract.TABLE_NAME} AS l
+                    JOIN (
+                        SELECT 
+                            ${LocationDbContract.COLUMN_NAME_TIMESTAMP} AS ts,
+                            ${LocationDbContract.COLUMN_NAME_LATITUDE} AS lat,
+                            ${LocationDbContract.COLUMN_NAME_LONGITUDE} AS lon,
+                            MAX(${BaseColumns._ID}) AS keep_id
+                        FROM ${LocationDbContract.TABLE_NAME}
+                        GROUP BY ts, lat, lon
+                        HAVING COUNT(*) > 1
+                    ) AS g
+                    ON  l.${LocationDbContract.COLUMN_NAME_TIMESTAMP} = g.ts
+                    AND l.${LocationDbContract.COLUMN_NAME_LATITUDE}  = g.lat
+                    AND l.${LocationDbContract.COLUMN_NAME_LONGITUDE} = g.lon
+                    AND l.${BaseColumns._ID} <> g.keep_id
+                    LIMIT $batchSize
+                )
+            """.trimIndent()
+
+                db.execSQL(deleteQuery)
+
+                val changes = android.database.DatabaseUtils.longForQuery(
+                    db, "SELECT changes()", null
+                ).toInt()
+
+                if (changes == 0) {
+                    db.setTransactionSuccessful()
+                    break
+                }
+
+                totalDeleted += changes
+                Log.d(
+                    TAG,
+                    "Deleting batch of duplicate points: batch $batchSize, total $totalDeleted"
+                )
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Thread.yield()
+        }
+        Log.i(TAG, "Vacuuming db")
+        db.execSQL("VACUUM")
+        return totalDeleted
+    }
+
     companion object {
         private const val DATABASE_VERSION = 10 // Increment on schema change
         private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000
