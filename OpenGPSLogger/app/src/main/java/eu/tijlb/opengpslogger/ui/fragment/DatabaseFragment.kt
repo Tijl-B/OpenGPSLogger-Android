@@ -293,9 +293,8 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
     ) {
         lifecycleScope.launch {
             val count = withContext(Dispatchers.IO) {
-                locationDbHelper.getPointsCursor(query).use {
-                    it.count
-                }
+                locationDbHelper.getPointsCursor(query)
+                    .use { it.count }
             }
             callback(count)
         }
@@ -327,21 +326,11 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         }
     }
 
-    private fun deletePointsFromDensityMap(query: PointsQuery) {
-        locationDbHelper.getPointsCursor(query).use { cursor ->
-            if (cursor.moveToFirst()) {
-                val latColumnIndex =
-                    cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
-                val longColumnIndex =
-                    cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
-                Log.d(TAG, "Got first point from cursor")
-                do {
-                    val longitude = cursor.getDouble(longColumnIndex)
-                    val latitude = cursor.getDouble(latColumnIndex)
-                    densityMapAdapter.deletePoint(latitude, longitude)
-                } while (cursor.moveToNext())
+    private suspend fun deletePointsFromDensityMap(query: PointsQuery) {
+        locationDbHelper.getPointsFlow(query)
+            .collect { point ->
+                densityMapAdapter.deletePoint(point.latitude, point.longitude)
             }
-        }
     }
 
     private fun addNewLocation(location: Location) {

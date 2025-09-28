@@ -10,6 +10,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.location.Location
+import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
@@ -24,12 +25,20 @@ import eu.tijlb.opengpslogger.model.database.locationbuffer.LocationBufferDbHelp
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.ui.activity.MainActivity
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.time.Duration.Companion.seconds
 import kotlin.math.pow
+import kotlin.time.Duration.Companion.seconds
 
 private const val STOP_SERVICE = "STOP_SERVICE"
 private const val TAG = "ogl-locationnotificationservice"
@@ -48,6 +57,7 @@ class LocationNotificationService : Service() {
     private var presetName = ""
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private lateinit var pollerThread: HandlerThread
 
     override fun onCreate() {
         Log.d(TAG, "Running onCreate of LocationNotificationService")
@@ -57,6 +67,8 @@ class LocationNotificationService : Service() {
         locationRequestSettingsHelper = LocationRequestSettingsHelper(applicationContext)
         trackingStatusHelper = TrackingStatusHelper(applicationContext)
         locationBufferDbHelper = LocationBufferDbHelper.getInstance(applicationContext)
+
+        pollerThread = HandlerThread("OpenGPSLogger-LocationThread").apply { start() }
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -151,6 +163,7 @@ class LocationNotificationService : Service() {
         trackingStatusHelper.setActive(false)
         stopLocationUpdates()
         serviceScope.cancel("Service destroyed")
+        pollerThread.quitSafely()
     }
 
     private fun startLocationUpdates() {
@@ -170,7 +183,11 @@ class LocationNotificationService : Service() {
                     stopLocationUpdates()
                     val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
                     presetName = preset
-                    fusedLocationClient.requestLocationUpdates(request, locationCallback, null)
+                    fusedLocationClient.requestLocationUpdates(
+                        request,
+                        locationCallback,
+                        pollerThread.looper
+                    )
                     Log.d(TAG, "Location updates started")
                     return@launch
                 } catch (e: Throwable) {

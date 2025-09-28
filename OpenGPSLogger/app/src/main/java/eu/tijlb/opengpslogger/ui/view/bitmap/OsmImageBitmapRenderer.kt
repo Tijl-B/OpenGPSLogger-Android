@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.coroutineContext
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.text.clear
-import kotlin.text.get
-import kotlin.text.replace
 import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "ogl-osmimagebitmaprenderer"

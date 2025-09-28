@@ -9,6 +9,7 @@ import android.provider.BaseColumns
 import android.util.Log
 import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbContract
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import eu.tijlb.opengpslogger.model.dto.SimplePointDto
 import kotlin.math.atan
 import kotlin.math.ln
 import kotlin.math.sinh
@@ -63,10 +64,10 @@ abstract class AbstractDensityMapDbHelper(
         Log.d("ogl-densitymapdbhelper", "Saved $location to database")
     }
 
-    fun addPoint(lat: Double, long: Double, time: Long) {
-        val (xIndex, yIndex) = toIndex(lat, long)
+    fun addPoint(point: SimplePointDto) {
+        val (xIndex, yIndex) = toIndex(point.latitude, point.longitude)
         val db = this.writableDatabase
-        addOrUpdateDensityPoint(db, xIndex, yIndex, time)
+        addOrUpdateDensityPoint(db, xIndex, yIndex, point.timestamp)
     }
 
     fun deletePoint(lat: Double, long: Double) {

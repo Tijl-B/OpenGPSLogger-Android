@@ -10,6 +10,7 @@ import eu.tijlb.opengpslogger.model.database.densitymap.impl.CountryDensityMapDb
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.StreetDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.WorldDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import eu.tijlb.opengpslogger.model.dto.SimplePointDto
 
 class DensityMapAdapter(context: Context) {
 
@@ -40,8 +41,8 @@ class DensityMapAdapter(context: Context) {
         getAllDbHelpers().forEach { dbHelper -> dbHelper.drop() }
     }
 
-    fun addPoint(latitude: Double, longitude: Double, time: Long) {
-        getAllDbHelpers().forEach { dbHelper -> dbHelper.addPoint(latitude, longitude, time) }
+    fun addPoint(point: SimplePointDto) {
+        getAllDbHelpers().forEach { dbHelper -> dbHelper.addPoint(point) }
     }
 
     fun deletePoint(latitude: Double, longitude: Double) {

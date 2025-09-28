@@ -10,8 +10,8 @@ import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 
 private const val TAG = "ogl-maplayer"
 

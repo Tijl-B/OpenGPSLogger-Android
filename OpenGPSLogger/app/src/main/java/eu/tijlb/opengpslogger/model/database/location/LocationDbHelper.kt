@@ -18,7 +18,12 @@ import eu.tijlb.opengpslogger.model.database.location.util.LocationDbFilterUtil.
 import eu.tijlb.opengpslogger.model.database.location.util.LocationDbNeighborsUtil
 import eu.tijlb.opengpslogger.model.database.location.util.LocationDbRangeUtil
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import eu.tijlb.opengpslogger.model.dto.SimplePointDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 import kotlin.math.cos
@@ -255,6 +260,36 @@ class LocationDbHelper(val context: Context) :
         db.execSQL("VACUUM")
         return totalDeleted
     }
+
+    fun getPointsFlow(
+        query: PointsQuery,
+        totalCountCallback: (Int) -> Unit = {}
+    ): Flow<SimplePointDto> = flow {
+        getPointsCursor(query).use { c ->
+            if (!c.moveToFirst()) return@use
+            if (!coroutineContext.isActive) return@use
+            Log.d(TAG, "Start iterating over points cursor")
+            val amountOfPointsToLoad = c.count
+            Log.d(TAG, "Count done $amountOfPointsToLoad")
+            totalCountCallback(amountOfPointsToLoad)
+
+            val latIndex = c.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
+            val lonIndex = c.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
+            val timeIndex = c.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
+
+            do {
+                if (!coroutineContext.isActive) return@use
+
+                val point = SimplePointDto(
+                    latitude = c.getDouble(latIndex),
+                    longitude = c.getDouble(lonIndex),
+                    timestamp = c.getLong(timeIndex)
+                )
+                emit(point)
+            } while (c.moveToNext())
+        }
+    }.flowOn(Dispatchers.IO)
+
 
     companion object {
         private const val DATABASE_VERSION = 10 // Increment on schema change

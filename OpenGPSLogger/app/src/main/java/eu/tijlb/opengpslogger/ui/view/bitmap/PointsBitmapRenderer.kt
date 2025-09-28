@@ -7,21 +7,19 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.Log
 import androidx.core.graphics.createBitmap
-import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.model.util.ColorUtil
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.coroutineContext
 
 private const val TAG = "ogl-pointsbitmaprenderer"
 
@@ -90,67 +88,45 @@ class PointsBitmapRenderer(
         var prevLat: Double? = null
         var prevLon: Double? = null
         var prevTime = 0L
-        var i = 0
+        var ind = 0
 
-        withContext(Dispatchers.IO) {
-            locationDbHelper.getPointsCursor(query).use { c ->
-                if (!coroutineContext.isActive) {
-                    Log.d(TAG, "Stop drawing points!")
-                    return@withContext
-                }
-                if (!c.moveToFirst()) return@withContext
-
-                Log.d(TAG, "Start iterating over points cursor")
-                val amountOfPointsToLoad = c.count
-                Log.d(TAG, "Count done $amountOfPointsToLoad")
-                onPointProgressUpdateListener?.onPointProgressMax(
-                    amountOfPointsToLoad
-                )
-
+        locationDbHelper.getPointsFlow(
+            query,
+            totalCountCallback = {
+                onPointProgressUpdateListener?.onPointProgressMax(it)
                 pointRadius = visualisationSettings.dotSize ?: when {
-                    amountOfPointsToLoad < 10_000 -> 10F
-                    amountOfPointsToLoad < 100_000 -> 5F
+                    it < 10_000 -> 10F
+                    it < 100_000 -> 5F
                     else -> 2F
                 }
-
                 linePaint.strokeWidth = visualisationSettings.lineSize ?: (pointRadius * 2)
+            })
+            .collectIndexed { i, point ->
+                currentTimeBucket = drawPoint(
+                    point.latitude,
+                    point.longitude,
+                    prevLat,
+                    prevLon,
+                    point.timestamp,
+                    prevTime,
+                    currentTimeBucket,
+                    canvas,
+                    latConverter,
+                    lonConverter
+                )
 
-                val latIndex = c.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
-                val lonIndex = c.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
-                val timeIndex = c.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
-
-                do {
-                    if (!coroutineContext.isActive) return@withContext
-                    val latitude = c.getDouble(latIndex)
-                    val longitude = c.getDouble(lonIndex)
-                    val time = c.getLong(timeIndex)
-
-                    currentTimeBucket = drawPoint(
-                        latitude,
-                        longitude,
-                        prevLat,
-                        prevLon,
-                        time,
-                        prevTime,
-                        currentTimeBucket,
-                        canvas,
-                        latConverter,
-                        lonConverter
-                    )
-
-                    prevLat = latitude
-                    prevLon = longitude
-                    prevTime = time
-                    if (++i % 10_000 == 0) {
-                        Log.d(TAG, "refreshing points bitmap $i")
-                        onPointProgressUpdateListener?.onPointProgressUpdate(i)
-                        refreshView()
-                    }
-                } while (c.moveToNext())
+                prevLat = point.latitude
+                prevLon = point.longitude
+                prevTime = point.timestamp
+                if (i % 10_000 == 0) {
+                    Log.d(TAG, "refreshing points bitmap $i")
+                    onPointProgressUpdateListener?.onPointProgressUpdate(i)
+                    refreshView()
+                }
+                ind = i
             }
-        }
         Log.d(TAG, "Done drawing points...")
-        onPointProgressUpdateListener?.onPointProgressUpdate(i)
+        onPointProgressUpdateListener?.onPointProgressUpdate(ind)
         refreshView()
     }
 
