@@ -27,8 +27,8 @@ class ImportActivity : AppCompatActivity() {
         Log.d(TAG, "ImportActivity.onCreate")
         super.onCreate(savedInstanceState)
 
-        locationDbHelper = LocationDbHelper.getInstance(this)
-        densityMapAdapter = DensityMapAdapter.getInstance(this)
+        locationDbHelper = LocationDbHelper.getInstance(this.applicationContext)
+        densityMapAdapter = DensityMapAdapter.getInstance(this.applicationContext)
 
         binding = ActivityImportBinding.inflate(layoutInflater)
         setContentView(binding.root)

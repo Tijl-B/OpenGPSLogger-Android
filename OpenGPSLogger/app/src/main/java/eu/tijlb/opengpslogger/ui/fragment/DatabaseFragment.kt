@@ -102,8 +102,8 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
 
         tableLayout = view.findViewById(R.id.table_recent_locations)
         locationDatabaseFileProvider = LocationDatabaseFileProvider()
-        locationDbHelper = LocationDbHelper.getInstance(requireContext())
-        densityMapAdapter = DensityMapAdapter.getInstance(requireContext())
+        locationDbHelper = LocationDbHelper.getInstance(requireContext().applicationContext)
+        densityMapAdapter = DensityMapAdapter.getInstance(requireContext().applicationContext)
 
         binding.buttonShare.setOnClickListener {
             locationDatabaseFileProvider.share(requireContext())
@@ -409,7 +409,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
 
     @SuppressLint("Range")
     private fun getLastEntities(): List<List<String>> {
-        val dbHelper = LocationDbHelper.getInstance(requireContext())
+        val dbHelper = LocationDbHelper.getInstance(requireContext().applicationContext)
         val db = dbHelper.readableDatabase
         val entities = mutableListOf<List<String>>()
 

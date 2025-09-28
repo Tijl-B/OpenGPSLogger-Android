@@ -31,7 +31,7 @@ private const val TAG = "ogl-osmimagebitmaprenderer"
 
 class OsmImageBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
-    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper.getInstance(context)
+    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper.getInstance(context.applicationContext)
 
     var onTileProgressUpdateListener: OnTileProgressUpdateListener? = null
 

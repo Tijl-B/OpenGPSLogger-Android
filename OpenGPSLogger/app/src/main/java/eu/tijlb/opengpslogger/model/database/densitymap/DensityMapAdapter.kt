@@ -14,19 +14,19 @@ import eu.tijlb.opengpslogger.model.dto.BBoxDto
 class DensityMapAdapter(context: Context) {
 
     private val worldDensityMapDbHelper: WorldDensityMapDbHelper =
-        WorldDensityMapDbHelper.getInstance(context)
+        WorldDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val continentDensityMapDbHelper: ContinentDensityMapDbHelper =
-        ContinentDensityMapDbHelper.getInstance(context)
+        ContinentDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val countryDensityMapDbHelper: CountryDensityMapDbHelper =
-        CountryDensityMapDbHelper.getInstance(context)
+        CountryDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val cityDensityMapDbHelper: CityDensityMapDbHelper =
-        CityDensityMapDbHelper.getInstance(context)
+        CityDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val streetDensityMapDbHelper: StreetDensityMapDbHelper =
-        StreetDensityMapDbHelper.getInstance(context)
+        StreetDensityMapDbHelper.getInstance(context.applicationContext)
 
     fun getPoints(bbox: BBoxDto, zoomLevel: Int): Cursor {
         return getDbHelper(zoomLevel).getPoints(bbox)

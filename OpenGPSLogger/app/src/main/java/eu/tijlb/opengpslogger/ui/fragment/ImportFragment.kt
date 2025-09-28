@@ -48,8 +48,8 @@ class ImportFragment : Fragment(R.layout.fragment_import) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        locationDbHelper = LocationDbHelper.getInstance(requireContext())
-        densityMapAdapter = DensityMapAdapter.getInstance(requireContext())
+        locationDbHelper = LocationDbHelper.getInstance(requireContext().applicationContext)
+        densityMapAdapter = DensityMapAdapter.getInstance(requireContext().applicationContext)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

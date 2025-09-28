@@ -52,10 +52,11 @@ class LocationNotificationService : Service() {
         Log.d(TAG, "Running onCreate of LocationNotificationService")
         super.onCreate()
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
-        trackingStatusHelper = TrackingStatusHelper(this)
-        locationBufferDbHelper = LocationBufferDbHelper.getInstance(this)
+        fusedLocationClient =
+            LocationServices.getFusedLocationProviderClient(this.applicationContext)
+        locationRequestSettingsHelper = LocationRequestSettingsHelper(this.applicationContext)
+        trackingStatusHelper = TrackingStatusHelper(this.applicationContext)
+        locationBufferDbHelper = LocationBufferDbHelper.getInstance(this.applicationContext)
 
         pollerThread = HandlerThread("OpenGPSLogger-LocationThread").apply { start() }
 

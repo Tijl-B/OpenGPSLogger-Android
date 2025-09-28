@@ -14,9 +14,9 @@ import kotlin.coroutines.coroutineContext
 private const val TAG = "ogl-locationbufferutil"
 
 class LocationBufferUtil(val context: Context) {
-    val densityMapAdapter = DensityMapAdapter.getInstance(context)
-    val locationDbHelper = LocationDbHelper.getInstance(context)
-    val locationBufferDbHelper = LocationBufferDbHelper.getInstance(context)
+    val densityMapAdapter = DensityMapAdapter.getInstance(context.applicationContext)
+    val locationDbHelper = LocationDbHelper.getInstance(context.applicationContext)
+    val locationBufferDbHelper = LocationBufferDbHelper.getInstance(context.applicationContext)
     val lastLocationHelper = LastLocationHelper(context)
     val densityMapUtil = DensityMapUtil(context)
 

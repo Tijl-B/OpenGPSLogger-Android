@@ -22,7 +22,7 @@ import kotlin.math.tan
 
 class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
 
-    private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(context)
+    private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(context.applicationContext)
 
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 

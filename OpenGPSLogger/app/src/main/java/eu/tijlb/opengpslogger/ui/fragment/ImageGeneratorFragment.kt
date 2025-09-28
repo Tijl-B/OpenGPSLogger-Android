@@ -111,8 +111,8 @@ class ImageGeneratorFragment : Fragment(), DatePickerFragment.OnDateSelectedList
     ): View {
         _binding = FragmentImageGeneratorBinding.inflate(inflater, container, false)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
-        locationDbHelper = LocationDbHelper.getInstance(requireContext())
-        boundingBoxDbHelper = BoundingBoxDbHelper.getInstance(requireContext())
+        locationDbHelper = LocationDbHelper.getInstance(requireContext().applicationContext)
+        boundingBoxDbHelper = BoundingBoxDbHelper.getInstance(requireContext().applicationContext)
 
         return binding.root
     }
