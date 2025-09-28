@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        locationDbHelper = LocationDbHelper.getInstance(this.applicationContext)
+        locationDbHelper = LocationDbHelper.getInstance(applicationContext)
         locationBufferUtil = LocationBufferUtil(this)
         trackingStatusHelper = TrackingStatusHelper(this)
 
