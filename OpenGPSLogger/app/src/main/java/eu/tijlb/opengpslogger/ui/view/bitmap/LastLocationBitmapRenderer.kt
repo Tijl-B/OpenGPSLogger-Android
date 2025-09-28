@@ -15,6 +15,7 @@ import eu.tijlb.opengpslogger.model.util.OsmGeometryUtil.lon2num
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.minutes
 
