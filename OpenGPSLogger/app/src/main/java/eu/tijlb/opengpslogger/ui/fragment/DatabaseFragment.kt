@@ -373,6 +373,11 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
     }
 
     private fun exportPoints(query: PointsQuery) {
+        Toast.makeText(
+            context,
+            "Export started. Please wait.",
+            Toast.LENGTH_SHORT
+        ).show()
         lifecycleScope.launch {
             val file = withContext(Dispatchers.IO) {
                 gpxExporter.export(query)
@@ -386,6 +391,11 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
     }
 
     private fun deletePoints(query: PointsQuery) {
+        Toast.makeText(
+            context,
+            "Deletion started. Please wait.",
+            Toast.LENGTH_SHORT
+        ).show()
         lifecycleScope.launch {
             val count = withContext(Dispatchers.IO) {
                 deletePointsFromDensityMap(query)
