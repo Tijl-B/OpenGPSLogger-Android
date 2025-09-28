@@ -32,6 +32,7 @@ import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
+import eu.tijlb.opengpslogger.model.exporter.GpxExporter
 import eu.tijlb.opengpslogger.ui.activity.ImportActivity
 import eu.tijlb.opengpslogger.ui.util.DateTimeUtil
 import eu.tijlb.opengpslogger.ui.view.ImageRendererView
@@ -53,6 +54,7 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
     private var _binding: FragmentDatabaseBinding? = null
     private lateinit var locationDbHelper: LocationDbHelper
     private lateinit var densityMapAdapter: DensityMapAdapter
+    private lateinit var gpxExporter: GpxExporter
     private lateinit var locationDatabaseFileProvider: LocationDatabaseFileProvider
     private lateinit var locationReceiver: LocationUpdateReceiver
 
@@ -104,11 +106,14 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         locationDatabaseFileProvider = LocationDatabaseFileProvider()
         locationDbHelper = LocationDbHelper.getInstance(requireContext().applicationContext)
         densityMapAdapter = DensityMapAdapter.getInstance(requireContext().applicationContext)
+        gpxExporter = GpxExporter(requireContext().applicationContext)
 
         binding.buttonShare.setOnClickListener {
             locationDatabaseFileProvider.share(requireContext())
         }
-
+        binding.buttonExport.setOnClickListener { 
+            openExportPointsByTimeDialog()
+        }
         binding.buttonDeleteByTime.setOnClickListener {
             openDeletePointsByTimeDialog()
         }
@@ -136,6 +141,53 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
             }
             populateTable(tableRows)
         }
+    }
+
+    private fun openExportPointsByTimeDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_export_points_by_time, null)
+        val fromButton = dialogView.findViewById<Button>(R.id.button_from)
+        val toButton = dialogView.findViewById<Button>(R.id.button_to)
+        val imageRendererView = dialogView.findViewById<ImageRendererView>(R.id.imageRendererView)
+        val selectedPointsTextView =
+            dialogView.findViewById<TextView>(R.id.textview_selected_points_value)
+        val from: AtomicReference<ZonedDateTime?> = AtomicReference(null)
+        val to: AtomicReference<ZonedDateTime?> = AtomicReference(null)
+        selectedPointsTextView.text = getString(R.string.selected_points, "0")
+        fromButton.setOnClickListener {
+            DateTimeUtil.pickDateTime(requireContext()) {
+                from.set(it)
+                fromButton.text = "From: ${it.format(ISO_LOCAL_DATE_TIME)}"
+                to.get()?.let { toTime ->
+                    updateCountAndRenderer(imageRendererView, selectedPointsTextView, it, toTime)
+                }
+            }
+        }
+        toButton.setOnClickListener {
+            DateTimeUtil.pickDateTime(requireContext()) {
+                to.set(it)
+                toButton.text = "To: ${it.format(ISO_LOCAL_DATE_TIME)}"
+                from.get()?.let { fromTime ->
+                    updateCountAndRenderer(imageRendererView, selectedPointsTextView, fromTime, it)
+                }
+            }
+        }
+
+        AlertDialog.Builder(context)
+            .setTitle("Export as GPX")
+            .setView(dialogView)
+            .setPositiveButton("Export selected points") { dialog, _ ->
+                if (to.get() == null || from.get()?.isAfter(to.get()) ?: true) {
+                    Log.d(TAG, "From $from or to $to is invalid, not exporting any points")
+                } else {
+                    Log.d(TAG, "exporting points from $from to $to")
+                    exportPoints(from.get()!!, to.get()!!)
+                }
+            }
+            .setNegativeButton("Discard") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
     }
 
     private fun openDeletePointsByBoxDialog(): Boolean {
@@ -310,6 +362,27 @@ class DatabaseFragment : Fragment(R.layout.fragment_database) {
         )
 
         deletePoints(query)
+    }
+
+    private fun exportPoints(from: ZonedDateTime, to: ZonedDateTime) {
+        val query = PointsQuery(
+            startDateMillis = from.toInstant().toEpochMilli(),
+            endDateMillis = to.toInstant().toEpochMilli()
+        )
+        exportPoints(query)
+    }
+
+    private fun exportPoints(query: PointsQuery) {
+        lifecycleScope.launch {
+            val file = withContext(Dispatchers.IO) {
+                gpxExporter.export(query)
+            }
+            Toast.makeText(
+                context,
+                "Created file $file in Downloads",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 
     private fun deletePoints(query: PointsQuery) {

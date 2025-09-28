@@ -3,6 +3,7 @@ package eu.tijlb.opengpslogger.ui.fragment
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -27,8 +28,8 @@ private const val MIME_TYPE_GPX = "application/gpx+xml"
 private const val MIME_TYPE_ZIP = "application/zip"
 private const val MIME_TYPE_JSON = "application/json"
 
-private const val EXTENSION_GPX = ".gpx"
-private const val EXTENSION_ZIP = ".zip"
+private const val EXTENSION_GPX = "gpx"
+private const val EXTENSION_ZIP = "zip"
 
 class ImportFragment : Fragment(R.layout.fragment_import) {
 
@@ -104,24 +105,45 @@ class ImportFragment : Fragment(R.layout.fragment_import) {
 
     private fun handleUri(uri: Uri, pointsCallback: (Int) -> Unit) {
         val fileType = requireContext().contentResolver.getType(uri)
-        var parser: ParserInterface? = null
-        if (fileType == MIME_TYPE_GPX || uri.toString()
-                .endsWith(EXTENSION_GPX, ignoreCase = true)
-        ) {
-            parser = GpxParser
-        } else if (fileType == MIME_TYPE_ZIP || uri.toString()
-                .endsWith(EXTENSION_ZIP, ignoreCase = true)
-        ) {
-            parser = ZippedGpxParser
-        } else if (fileType == MIME_TYPE_JSON) {
-            parser = JsonParser
-        } else {
-            Log.d(TAG, "Skipping unsupported file type: $uri")
+        val fileName = getFileNameFromUri(uri)
+        val fileExtension = fileName?.substringAfterLast('.', "") ?: ""
+        val parser = when {
+            fileType == MIME_TYPE_GPX || fileExtension.equals(EXTENSION_GPX, ignoreCase = true)
+                -> GpxParser
+
+            fileType == MIME_TYPE_ZIP || fileExtension.equals(EXTENSION_ZIP, ignoreCase = true)
+                -> ZippedGpxParser
+
+            fileType == MIME_TYPE_JSON -> JsonParser
+            else -> {
+                Log.d(
+                    TAG,
+                    "Skipping unsupported file type: $fileType for file $fileName with extension $fileExtension and uri $uri"
+                )
+                null
+            }
         }
+
         parser?.let {
             Log.d(TAG, "Processing file with parser ${parser.javaClass.simpleName}: $uri")
             parse(uri, parser, pointsCallback)
         }
+    }
+
+    private fun getFileNameFromUri(uri: Uri): String? {
+        requireContext().contentResolver.query(
+            uri,
+            arrayOf(MediaStore.MediaColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)
+                return cursor.getString(index)
+            }
+        }
+        return null
     }
 
     private fun parse(uri: Uri, parser: ParserInterface, pointsCallback: (Int) -> Unit) {
