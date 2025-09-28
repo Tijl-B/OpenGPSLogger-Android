@@ -2,6 +2,11 @@
 
 ## Releases
 
+### 1.12.0
+
+#### Features
+- Add GPX exporter
+
 ### 1.11.0
 [apk](release/opengpslogger-1-11-0.apk)
 
