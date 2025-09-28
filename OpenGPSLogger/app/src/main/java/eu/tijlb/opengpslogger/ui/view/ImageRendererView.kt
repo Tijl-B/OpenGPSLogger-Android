@@ -112,7 +112,7 @@ class ImageRendererView(
         CopyRightNoticeBitmapRenderer(context)
     private val pointsBitmapRenderer: PointsBitmapRenderer
 
-    private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext())
+    private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(getContext().applicationContext)
 
     private var osmBitMap: Bitmap? = null
     private var osmJob: Job? = null

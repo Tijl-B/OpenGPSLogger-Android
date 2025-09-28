@@ -9,10 +9,9 @@ import androidx.core.graphics.createBitmap
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.ui.view.bitmap.AbstractBitmapRenderer
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 
 private const val TAG = "ogl-maplayer"
 
@@ -45,7 +44,7 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
     ): Job {
         cancelAndJoin()
         Log.d(TAG, "Starting draw job coroutine")
-        val newJob = scope.launch(Dispatchers.IO) {
+        val newJob = scope.launch {
             try {
                 drawLayerOverride(bbox, zoom, renderDimension, postInvalidate)
             } catch (e: Exception) {
@@ -90,7 +89,6 @@ class MapLayer(val bitmapRenderer: AbstractBitmapRenderer) {
                 val canvas = Canvas(newBitmap)
                 canvas.drawBitmap(it, matrixToApply, null)
                 bitmap = newBitmap
-                it.recycle()
             }
         }
         applyInverseMatrix(matrixToApply)

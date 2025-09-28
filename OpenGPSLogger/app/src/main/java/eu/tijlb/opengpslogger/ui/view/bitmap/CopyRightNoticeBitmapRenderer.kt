@@ -14,7 +14,7 @@ import eu.tijlb.opengpslogger.model.dto.BBoxDto
 class CopyRightNoticeBitmapRenderer(val context: Context): AbstractBitmapRenderer() {
 
 
-    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper.getInstance(context)
+    private var tileServerDbHelper: TileServerDbHelper = TileServerDbHelper.getInstance(context.applicationContext)
 
     private val textPaint = Paint().apply {
         isAntiAlias = true

@@ -10,23 +10,24 @@ import eu.tijlb.opengpslogger.model.database.densitymap.impl.CountryDensityMapDb
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.StreetDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.database.densitymap.impl.WorldDensityMapDbHelper
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
+import eu.tijlb.opengpslogger.model.dto.SimplePointDto
 
 class DensityMapAdapter(context: Context) {
 
     private val worldDensityMapDbHelper: WorldDensityMapDbHelper =
-        WorldDensityMapDbHelper.getInstance(context)
+        WorldDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val continentDensityMapDbHelper: ContinentDensityMapDbHelper =
-        ContinentDensityMapDbHelper.getInstance(context)
+        ContinentDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val countryDensityMapDbHelper: CountryDensityMapDbHelper =
-        CountryDensityMapDbHelper.getInstance(context)
+        CountryDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val cityDensityMapDbHelper: CityDensityMapDbHelper =
-        CityDensityMapDbHelper.getInstance(context)
+        CityDensityMapDbHelper.getInstance(context.applicationContext)
 
     private val streetDensityMapDbHelper: StreetDensityMapDbHelper =
-        StreetDensityMapDbHelper.getInstance(context)
+        StreetDensityMapDbHelper.getInstance(context.applicationContext)
 
     fun getPoints(bbox: BBoxDto, zoomLevel: Int): Cursor {
         return getDbHelper(zoomLevel).getPoints(bbox)
@@ -40,8 +41,8 @@ class DensityMapAdapter(context: Context) {
         getAllDbHelpers().forEach { dbHelper -> dbHelper.drop() }
     }
 
-    fun addPoint(latitude: Double, longitude: Double, time: Long) {
-        getAllDbHelpers().forEach { dbHelper -> dbHelper.addPoint(latitude, longitude, time) }
+    fun addPoint(point: SimplePointDto) {
+        getAllDbHelpers().forEach { dbHelper -> dbHelper.addPoint(point) }
     }
 
     fun deletePoint(latitude: Double, longitude: Double) {

@@ -14,16 +14,20 @@ import eu.tijlb.opengpslogger.model.database.densitymap.continent.DensityMapDbCo
 import eu.tijlb.opengpslogger.model.dto.BBoxDto
 import eu.tijlb.opengpslogger.model.util.ColorUtil
 import eu.tijlb.opengpslogger.ui.view.bitmap.PointsBitmapRenderer.OnPointProgressUpdateListener
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.tan
 
-class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
+private const val TAG = "ogl-densitybitmaprenderer"
 
-    private val densityMapAdapter: DensityMapAdapter = DensityMapAdapter.getInstance(context)
+class DensityMapBitmapRenderer(context: Context) : AbstractBitmapRenderer() {
 
+    private val densityMapAdapter: DensityMapAdapter =
+        DensityMapAdapter.getInstance(context.applicationContext)
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 
     override suspend fun draw(
@@ -33,13 +37,13 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
         assignBitmap: (Bitmap) -> Unit,
         refreshView: () -> Any
     ): Bitmap? {
-        Log.d("ogl-imagerendererview", "Drawing density map...")
+        Log.d(TAG, "Drawing density map...")
         if (!coroutineContext.isActive) {
-            Log.d("ogl-imagerendererview", "Stop drawing density map!")
+            Log.d(TAG, "Stop drawing density map!")
             return null
         }
         if (renderDimension.first == 0 || renderDimension.second == 0) {
-            Log.d("ogl-imagerendererview", "renderDimension: $renderDimension")
+            Log.d(TAG, "renderDimension: $renderDimension")
             return null
         }
 
@@ -52,71 +56,60 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
         var i = 0
         densityMapAdapter.getPoints(bbox, zoom.toInt())
             .use { cursor ->
-                run {
+                if (!coroutineContext.isActive) return null
+                Log.d(TAG, "Start iterating over points cursor")
+                if (!cursor.moveToFirst()) return null
+                Log.d(TAG, "Starting count")
+                val amountOfPointsToLoad = cursor.count
+                Log.d(TAG, "Count done $amountOfPointsToLoad")
+                withContext(Dispatchers.Main) {
+                    onPointProgressUpdateListener?.onPointProgressMax(amountOfPointsToLoad)
+                }
+
+                val xIndexColumnIndex =
+                    cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_X_INDEX)
+                val yIndexColumnIndex =
+                    cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_Y_INDEX)
+                val timeColumnIndex =
+                    cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME)
+                val countColumnIndex =
+                    cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_AMOUNT)
+
+                do {
                     if (!coroutineContext.isActive) {
-                        Log.d("ogl-imagerendererview-point", "Stop drawing density map!")
+                        Log.d(TAG, "Stop drawing density map!")
                         return null
                     }
-                    Log.d("ogl-imagerendererview-point", "Start iterating over points cursor")
-                    if (cursor.moveToFirst()) {
-                        Log.d("ogl-imagerendererview-point", "Starting count")
-                        val amountOfPointsToLoad = cursor.count
-                        Log.d("ogl-imagerendererview-point", "Count done $amountOfPointsToLoad")
-                        onPointProgressUpdateListener?.onPointProgressMax(
-                            amountOfPointsToLoad
-                        )
 
-                        val xIndexColumnIndex =
-                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_X_INDEX)
-                        val yIndexColumnIndex =
-                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_Y_INDEX)
-                        val timeColumnIndex =
-                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_LAST_POINT_TIME)
-                        val countColumnIndex =
-                            cursor.getColumnIndex(DensityMapDbContract.COLUMN_NAME_AMOUNT)
+                    val xIndex = cursor.getFloat(xIndexColumnIndex)
+                    val yIndex = cursor.getFloat(yIndexColumnIndex)
+                    val time = cursor.getLong(timeColumnIndex)
+                    val amount = cursor.getLong(countColumnIndex)
 
-                        Log.d("ogl-imagerendererview-point", "Got first point from cursor")
-                        do {
-                            if (!coroutineContext.isActive) {
-                                Log.d("ogl-imagerendererview-point", "Stop drawing density map!")
-                                return null
-                            }
-
-                            val xIndex = cursor.getFloat(xIndexColumnIndex)
-                            val yIndex = cursor.getFloat(yIndexColumnIndex)
-                            val time = cursor.getLong(timeColumnIndex)
-                            val amount = cursor.getLong(countColumnIndex)
-
-                            val color = ColorUtil.toDensityColor(amount, 10_000L)
-                            if (xIndex >= 0 && xIndex <= sparseDensityMap.width
-                                && yIndex >= 0 && yIndex <= sparseDensityMap.height
-                                && amount > 0) {
-                                sparseDensityMap.put(xIndex, yIndex, color)
-                            }
-
-                            if ((++i) % 100000 == 0) {
-                                Log.d(
-                                    "ogl-imagerendererview-point",
-                                    "refreshing density map bitmap $i"
-                                )
-                                adaptedClusterBitmap = extractAndScaleBitmap(
-                                    sparseDensityMap,
-                                    adaptedClusterBitmap,
-                                    bbox
-                                )
-                                onPointProgressUpdateListener?.onPointProgressUpdate(i)
-                                refreshView()
-                            }
-
-                        } while (cursor.moveToNext())
+                    val color = ColorUtil.toDensityColor(amount, 10_000L)
+                    if (xIndex >= 0 && xIndex <= sparseDensityMap.width
+                        && yIndex >= 0 && yIndex <= sparseDensityMap.height
+                        && amount > 0
+                    ) {
+                        sparseDensityMap.put(xIndex, yIndex, color)
                     }
-                }
+
+                    if ((++i) % 100_000 == 0) {
+                        Log.d(TAG, "refreshing density map bitmap $i")
+                        adaptedClusterBitmap =
+                            extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
+                        withContext(Dispatchers.Main) {
+                            onPointProgressUpdateListener?.onPointProgressUpdate(i)
+                            refreshView()
+                        }
+                    }
+                } while (cursor.moveToNext())
             }
 
         adaptedClusterBitmap =
             extractAndScaleBitmap(sparseDensityMap, adaptedClusterBitmap, bbox)
         onPointProgressUpdateListener?.onPointProgressUpdate(i)
-        Log.d("ogl-imagerendererview-point", "Done drawing density map...")
+        Log.d(TAG, "Done drawing density map...")
         refreshView()
         return adaptedClusterBitmap
     }
@@ -127,7 +120,7 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
         bbox: BBoxDto
     ): Bitmap {
         Log.d(
-            "ogl-imagerendererview",
+            TAG,
             "Extracting and scaling sparse bitmap into full bitmap with bbox $bbox"
         )
         val worldWidth = sourceBitMap.width.toDouble()
@@ -179,7 +172,6 @@ class DensityMapBitmapRenderer(val context: Context) : AbstractBitmapRenderer() 
             if (x in leftFl..rightFl && y in topFl..bottomFl) {
                 val mappedX = (x - left) * widthRatio
                 val mappedY = (y - top) * heightRatio
-
                 paint.color = color
                 canvas.drawCircle(mappedX, mappedY, radius, paint)
             }

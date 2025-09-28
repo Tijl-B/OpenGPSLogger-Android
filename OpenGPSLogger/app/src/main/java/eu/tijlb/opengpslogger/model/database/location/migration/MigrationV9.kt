@@ -71,6 +71,6 @@ class MigrationV9(val context: Context) {
             .addTag("MigrationV9Worker")
             .build()
 
-        WorkManager.getInstance(context).enqueue(workRequest)
+        WorkManager.getInstance(context.applicationContext).enqueue(workRequest)
     }
 }

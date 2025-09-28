@@ -69,8 +69,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         advancedFiltersHelper = AdvancedFiltersHelper(context)
         visualisationSettingsHelper = VisualisationSettingsHelper(context)
         densityMapAdapter = DensityMapAdapter(context)
-        tileServerDbHelper = TileServerDbHelper.getInstance(context)
-        locationDbHelper = LocationDbHelper.getInstance(context)
+        tileServerDbHelper = TileServerDbHelper.getInstance(context.applicationContext)
+        locationDbHelper = LocationDbHelper.getInstance(context.applicationContext)
         trackingStatusHelper = TrackingStatusHelper(context)
         Log.d(TAG, "Done creating settings fragment")
     }

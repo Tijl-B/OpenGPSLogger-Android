@@ -18,7 +18,13 @@ import eu.tijlb.opengpslogger.ui.view.bitmap.CopyRightNoticeBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.DensityMapBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.LastLocationBitmapRenderer
 import eu.tijlb.opengpslogger.ui.view.bitmap.OsmImageBitmapRenderer
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
@@ -148,11 +154,11 @@ class LayeredMapView @JvmOverloads constructor(
         }
     }
 
-    private suspend fun loadLayers(): List<Job> {
+    private suspend fun loadLayers(): List<Job> = coroutineScope {
         Log.d(TAG, "Loading tiles $centerLat, $centerLon, $width, $height")
         val bbox = bboxFromCenter(centerLat, centerLon, visualZoomLevel, width, height)
-        return layers.map {
-            it.startDrawJob(scope, bbox, visualZoomLevel - 1, width to height) {
+        layers.map {
+            it.startDrawJob(this, bbox, visualZoomLevel - 1, width to height) {
                 postInvalidate()
             }
         }

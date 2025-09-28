@@ -27,8 +27,8 @@ class ImportActivity : AppCompatActivity() {
         Log.d(TAG, "ImportActivity.onCreate")
         super.onCreate(savedInstanceState)
 
-        locationDbHelper = LocationDbHelper.getInstance(this)
-        densityMapAdapter = DensityMapAdapter.getInstance(this)
+        locationDbHelper = LocationDbHelper.getInstance(applicationContext)
+        densityMapAdapter = DensityMapAdapter.getInstance(applicationContext)
 
         binding = ActivityImportBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -49,22 +49,21 @@ class ImportActivity : AppCompatActivity() {
 
     private fun handleIncomingIntent(intent: Intent?) {
         val uris: List<Uri> = when (intent?.action) {
-            Intent.ACTION_SEND -> {
-                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)?.let { listOf(it) } ?: emptyList()
-            }
-            Intent.ACTION_SEND_MULTIPLE -> {
-                intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java) ?: emptyList()
-            }
-            Intent.ACTION_VIEW -> {
-                intent.data?.let { listOf(it) } ?: emptyList()
-            }
+            Intent.ACTION_SEND ->
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    ?.let { listOf(it) } ?: emptyList()
+
+            Intent.ACTION_SEND_MULTIPLE ->
+                intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    ?: emptyList()
+
+            Intent.ACTION_VIEW -> intent.data?.let { listOf(it) } ?: emptyList()
             else -> emptyList()
         }
 
         if (uris.isNotEmpty()) {
-            val bundle = Bundle().apply {
-                putParcelableArrayList("importUris", ArrayList(uris))
-            }
+            Log.d(TAG, "Handling incoming URIs: $uris")
+            val bundle = Bundle().apply { putParcelableArrayList("importUris", ArrayList(uris)) }
 
             val navController = findNavController(R.id.nav_host_fragment_content_import)
             navController.navigate(R.id.fragment_import, bundle)
@@ -76,6 +75,4 @@ class ImportActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
-
-
 }

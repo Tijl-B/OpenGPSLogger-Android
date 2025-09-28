@@ -21,6 +21,7 @@ import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.model.service.LocationNotificationService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "ogl-mainactivity"
 
@@ -32,13 +33,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var locationReceiver: LocationUpdateReceiver
 
+    private val isReceiverRegistered = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d(TAG, "Running MainActivity onCreate")
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        locationDbHelper = LocationDbHelper.getInstance(this)
+        locationDbHelper = LocationDbHelper.getInstance(applicationContext)
         locationBufferUtil = LocationBufferUtil(this)
         trackingStatusHelper = TrackingStatusHelper(this)
 
@@ -53,23 +55,21 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        binding.root.post {
-            setupBottomNavigation()
-        }
+        binding.root.post { setupBottomNavigation() }
 
         lifecycleScope.launch(Dispatchers.IO) {
-            if (trackingStatusHelper.isActive()) {
-                startPollingLocation()
-            }
-
-            locationBufferUtil.flushBuffer()
-            locationDbHelper.updateDistAngleIfNeeded()
+            runCatching {
+                if (trackingStatusHelper.isActive()) startPollingLocation()
+                locationBufferUtil.flushBuffer()
+                locationDbHelper.updateDistAngleIfNeeded()
+            }.onFailure { Log.e(TAG, "Error during initial DB/buffer setup", it) }
         }
 
         locationReceiver = LocationUpdateReceiver().apply {
             setOnLocationReceivedListener { _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
-                    locationBufferUtil.flushBuffer()
+                    runCatching { locationBufferUtil.flushBuffer() }
+                        .onFailure { Log.e(TAG, "Error flushing buffer on location update", it) }
                 }
             }
         }
@@ -93,7 +93,8 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "Running MainActivity onRestart")
         registerLocationReceiver()
         lifecycleScope.launch(Dispatchers.IO) {
-            locationBufferUtil.flushBuffer()
+            runCatching { locationBufferUtil.flushBuffer() }
+                .onFailure { Log.e(TAG, "Error flushing buffer on restart", it) }
         }
         super.onRestart()
     }
@@ -111,23 +112,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun unregisterLocationReceiver() {
-        try {
-            unregisterReceiver(locationReceiver)
-            Log.d(TAG, "Unregistered location receiver in MainActivity")
-        } catch (e: IllegalArgumentException) {
-            Log.i(TAG, "Failed to unregistered location receiver in MainActivity", e)
+        if (isReceiverRegistered.compareAndSet(true, false)) {
+            try {
+                unregisterReceiver(locationReceiver)
+                Log.d(TAG, "Unregistered location receiver in MainActivity")
+            } catch (e: IllegalArgumentException) {
+                Log.i(TAG, "Failed to unregister location receiver", e)
+            }
         }
     }
 
     private fun registerLocationReceiver() {
-        val filter = IntentFilter("eu.tijlb.LOCATION_RECEIVED")
-        this.registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
-        Log.d(TAG, "Registered location receiver in MainActivity")
+        if (isReceiverRegistered.compareAndSet(false, true)) {
+            val filter = IntentFilter("eu.tijlb.LOCATION_RECEIVED")
+            registerReceiver(locationReceiver, filter, RECEIVER_NOT_EXPORTED)
+            Log.d(TAG, "Registered location receiver in MainActivity")
+        }
     }
 
     private fun startPollingLocation() {
         Log.d(TAG, "Start polling location")
-        val intent = Intent(this, LocationNotificationService::class.java)
-        ContextCompat.startForegroundService(this, intent)
+        try {
+            val intent = Intent(this, LocationNotificationService::class.java)
+            ContextCompat.startForegroundService(this, intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start LocationNotificationService", e)
+        }
     }
 }

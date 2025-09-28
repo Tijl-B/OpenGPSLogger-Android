@@ -10,7 +10,6 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.location.Location
-import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Log
@@ -26,12 +25,22 @@ import eu.tijlb.opengpslogger.model.database.locationbuffer.LocationBufferDbHelp
 import eu.tijlb.opengpslogger.model.database.settings.LocationRequestSettingsHelper
 import eu.tijlb.opengpslogger.model.database.settings.TrackingStatusHelper
 import eu.tijlb.opengpslogger.ui.activity.MainActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.pow
+import kotlin.time.Duration.Companion.seconds
 
 private const val STOP_SERVICE = "STOP_SERVICE"
-
 private const val TAG = "ogl-locationnotificationservice"
 
 class LocationNotificationService : Service() {
@@ -42,20 +51,22 @@ class LocationNotificationService : Service() {
     private lateinit var trackingStatusHelper: TrackingStatusHelper
     private lateinit var presetChangedListener: SharedPreferences.OnSharedPreferenceChangeListener
     private lateinit var locationBufferDbHelper: LocationBufferDbHelper
-    private lateinit var pollerThread: HandlerThread
-    private var presetName = ""
 
     private lateinit var notificationBuilder: NotificationCompat.Builder
     private var savedPoints = 0
+    private var presetName = ""
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private lateinit var pollerThread: HandlerThread
 
     override fun onCreate() {
         Log.d(TAG, "Running onCreate of LocationNotificationService")
         super.onCreate()
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        locationRequestSettingsHelper = LocationRequestSettingsHelper(this)
-        trackingStatusHelper = TrackingStatusHelper(this)
-        locationBufferDbHelper = LocationBufferDbHelper.getInstance(this)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+        locationRequestSettingsHelper = LocationRequestSettingsHelper(applicationContext)
+        trackingStatusHelper = TrackingStatusHelper(applicationContext)
+        locationBufferDbHelper = LocationBufferDbHelper.getInstance(applicationContext)
 
         pollerThread = HandlerThread("OpenGPSLogger-LocationThread").apply { start() }
 
@@ -63,11 +74,13 @@ class LocationNotificationService : Service() {
             override fun onLocationResult(locationResult: LocationResult) {
                 super.onLocationResult(locationResult)
                 try {
-                    val location = locationResult.lastLocation
-                    if (location != null) {
-                        Log.d(TAG, "Location from service: $location")
-                        saveToDb(location)
-                        broadCastLocationReceived(location)
+                    locationResult.lastLocation?.let {
+                        serviceScope.launch {
+                            runCatching { saveLocation(it) }
+                                .onFailure { e ->
+                                    Log.e(TAG, "Unexpected error", e)
+                                }
+                        }
                     }
                 } catch (e: Throwable) {
                     Log.e(TAG, "Error while handling location result:", e)
@@ -75,19 +88,31 @@ class LocationNotificationService : Service() {
             }
         }
 
-        Handler(pollerThread.looper).post {
+        serviceScope.launch {
             presetChangedListener =
                 locationRequestSettingsHelper.registerPresetChangedListener { updateLocationRequest() }
         }
     }
 
+    private fun saveLocation(location: Location): Job = serviceScope.launch {
+        withTimeoutOrNull(5.seconds) {
+            Log.d(TAG, "Location from service: $location")
+            runCatching { saveToDb(location) }
+            withContext(Dispatchers.Main) { broadCastLocationReceived(location) }
+        } ?: run { Log.e(TAG, "Saving location $location timed out") }
+    }
+
     private fun updateLocationRequest() {
-        Handler(pollerThread.looper).post {
-            Log.d(TAG, "Updating location request of LocationNotificationService")
-            stopLocationUpdates()
-            notificationBuilder = createNotificationBuilder()
-            startForegroundNotification()
-            startLocationUpdates()
+        serviceScope.launch {
+            try {
+                Log.d(TAG, "Updating location request of LocationNotificationService")
+                stopLocationUpdates()
+                notificationBuilder = createNotificationBuilder()
+                withContext(Dispatchers.Main) { startForegroundNotification() }
+                startLocationUpdates()
+            } catch (e: Throwable) {
+                Log.e(TAG, "Error updating location request", e)
+            }
         }
     }
 
@@ -103,15 +128,17 @@ class LocationNotificationService : Service() {
         notificationBuilder = createNotificationBuilder()
         startForegroundNotification()
 
-        Handler(pollerThread.looper).post {
+        serviceScope.launch {
             if (ActivityCompat.checkSelfPermission(
-                    this,
+                    this@LocationNotificationService,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
                 Log.e(TAG, "Permission not granted for notifications.")
-                toast("Permission not granted for notifications, not tracking.")
-                return@post
+                withContext(Dispatchers.Main) {
+                    toast("Permission not granted for notifications, not tracking.")
+                }
+                return@launch
             }
 
             Log.d(TAG, "Setting active to true")
@@ -128,58 +155,68 @@ class LocationNotificationService : Service() {
         stop()
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
+    override fun onBind(intent: Intent?): IBinder? = null
 
     private fun stop() {
         locationRequestSettingsHelper.deregisterPresetChangedListener(presetChangedListener)
         Log.d(TAG, "Setting active to false")
         trackingStatusHelper.setActive(false)
         stopLocationUpdates()
+        serviceScope.cancel("Service destroyed")
         pollerThread.quitSafely()
     }
 
     private fun startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.e(TAG, "Permission not granted for location updates.")
-            toast("Permission not granted for location updates, not tracking.")
-            return
+        serviceScope.launch {
+            repeat(5) { attempt ->
+                try {
+                    if (ActivityCompat.checkSelfPermission(
+                            this@LocationNotificationService,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        Log.e(TAG, "Permission not granted for location updates.")
+                        toast("Permission not granted for location updates, not tracking.")
+                        return@launch
+                    }
+
+                    stopLocationUpdates()
+                    val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
+                    presetName = preset
+                    fusedLocationClient.requestLocationUpdates(
+                        request,
+                        locationCallback,
+                        pollerThread.looper
+                    )
+                    Log.d(TAG, "Location updates started")
+                    return@launch
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Failed to start location updates, attempt $attempt", e)
+                    delay((2.0.pow(attempt) * 1000).toLong())
+                }
+            }
         }
-
-        stopLocationUpdates()
-        val (preset, request) = locationRequestSettingsHelper.getTrackingSettings()
-        presetName = preset
-
-        fusedLocationClient.requestLocationUpdates(
-            request,
-            locationCallback,
-            pollerThread.looper
-        )
     }
 
     private fun toast(text: String) {
-        Toast.makeText(
-            this,
-            text,
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
     }
 
     private fun broadCastLocationReceived(location: Location) {
-        val intent = Intent("eu.tijlb.LOCATION_RECEIVED")
-        intent.putExtra("location", location)
-        intent.setPackage(applicationContext.packageName)
+        val intent = Intent("eu.tijlb.LOCATION_RECEIVED").apply {
+            putExtra("location", location)
+            setPackage(applicationContext.packageName)
+        }
         Log.d(TAG, "Broadcast location $location")
         sendBroadcast(intent)
     }
 
     private fun stopLocationUpdates() {
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        try {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        } catch (e: Throwable) {
+            Log.e(TAG, "Failed to remove location updates", e)
+        }
     }
 
     private fun createNotificationBuilder(): NotificationCompat.Builder {
@@ -190,8 +227,8 @@ class LocationNotificationService : Service() {
             "Location Service",
             NotificationManager.IMPORTANCE_MIN
         )
-        val manager = getSystemService(NotificationManager::class.java)
-        manager?.createNotificationChannel(channel)
+        getSystemService(NotificationManager::class.java)
+            ?.createNotificationChannel(channel)
 
         val stopIntent = Intent(this, LocationNotificationService::class.java)
             .apply { action = STOP_SERVICE }
@@ -201,7 +238,6 @@ class LocationNotificationService : Service() {
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-
         val openAppPendingIntent = PendingIntent.getActivity(
             this,
             0,
@@ -209,7 +245,7 @@ class LocationNotificationService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
+        return NotificationCompat.Builder(this, notificationChannelId)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getNotificationContent())
             .setSmallIcon(R.drawable.ic_notification)
@@ -217,33 +253,25 @@ class LocationNotificationService : Service() {
             .setContentIntent(openAppPendingIntent)
             .setAutoCancel(false)
             .setOngoing(true)
-            .addAction(
-                R.drawable.ic_notification,
-                "Stop Tracking",
-                stopPendingIntent
-            )
-
-        return notificationBuilder
+            .addAction(R.drawable.ic_notification, "Stop Tracking", stopPendingIntent)
     }
 
-    private fun saveToDb(location: Location) {
-        locationBufferDbHelper.save(location, "app::OpenGpsLogger")
-        savedPoints++
+    private suspend fun saveToDb(location: Location) {
+        withContext(Dispatchers.IO) {
+            locationBufferDbHelper.save(location, "app::OpenGpsLogger")
+            savedPoints++
 
-        val formattedTime = Instant.ofEpochMilli(System.currentTimeMillis())
-            .atZone(ZoneId.systemDefault())
-            .toLocalDateTime()
-            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            val formattedTime = Instant.ofEpochMilli(System.currentTimeMillis())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
-
-        notificationBuilder.setContentText(getNotificationContent())
-        notificationBuilder.setStyle(
-            NotificationCompat.BigTextStyle().bigText(
-                getNotificationBigText(formattedTime)
+            notificationBuilder.setContentText(getNotificationContent())
+            notificationBuilder.setStyle(
+                NotificationCompat.BigTextStyle().bigText(getNotificationBigText(formattedTime))
             )
-        )
-
-        startForegroundNotification()
+            withContext(Dispatchers.Main) { startForegroundNotification() }
+        }
     }
 
     private fun startForegroundNotification() {

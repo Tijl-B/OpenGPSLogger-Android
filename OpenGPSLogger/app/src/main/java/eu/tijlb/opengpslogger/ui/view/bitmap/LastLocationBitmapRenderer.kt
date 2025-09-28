@@ -19,10 +19,11 @@ import kotlin.time.Duration.Companion.minutes
 
 private const val TAG = "ogl-lastlocationbitmaprenderer"
 
-class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer() {
+class LastLocationBitmapRenderer(context: Context) : AbstractBitmapRenderer() {
 
-    private var lastLocationHelper = LastLocationHelper(context)
-    private var visualisationSettingsHelper = VisualisationSettingsHelper(context)
+    private val lastLocationHelper = LastLocationHelper(context.applicationContext)
+    private val visualisationSettingsHelper =
+        VisualisationSettingsHelper(context.applicationContext)
 
     override suspend fun draw(
         bbox: BBoxDto,
@@ -80,14 +81,10 @@ class LastLocationBitmapRenderer(val context: Context) : AbstractBitmapRenderer(
             canvas.drawCircle(mappedX.toFloat(), mappedY.toFloat(), outerRadius, paint)
 
             val pointAge = System.currentTimeMillis() - it.time
-
             val innerRadius = 14F
             paint.apply {
                 clearShadowLayer()
-                color = if (pointAge < 5.minutes.inWholeMilliseconds)
-                    Color.BLUE
-                else Color.GRAY
-
+                color = if (pointAge < 5.minutes.inWholeMilliseconds) Color.BLUE else Color.GRAY
             }
             canvas.drawCircle(mappedX.toFloat(), mappedY.toFloat(), innerRadius, paint)
             Log.d(TAG, "Drawing last known location to x $mappedX, y $mappedY...")

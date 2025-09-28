@@ -1,6 +1,5 @@
 package eu.tijlb.opengpslogger.ui.view.bitmap
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -8,12 +7,12 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.Log
 import androidx.core.graphics.createBitmap
-import eu.tijlb.opengpslogger.model.database.location.LocationDbContract
 import eu.tijlb.opengpslogger.model.database.location.LocationDbHelper
 import eu.tijlb.opengpslogger.model.database.settings.ColorMode
 import eu.tijlb.opengpslogger.model.dto.VisualisationSettingsDto
 import eu.tijlb.opengpslogger.model.dto.query.PointsQuery
 import eu.tijlb.opengpslogger.model.util.ColorUtil
+import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.isActive
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
@@ -31,17 +30,11 @@ class PointsBitmapRenderer(
 
     var onPointProgressUpdateListener: OnPointProgressUpdateListener? = null
 
-    private val locationDbHelper: LocationDbHelper = LocationDbHelper.getInstance(context)
+    private val locationDbHelper: LocationDbHelper =
+        LocationDbHelper.getInstance(context.applicationContext)
 
-    private val dotPaint = Paint().apply {
-        isAntiAlias = true
-        color = Color.RED
-    }
-
-    private val linePaint = Paint().apply {
-        isAntiAlias = true
-        color = Color.RED
-    }
+    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.RED }
+    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.RED }
 
     private val millisPerHour = 60 * 60 * 1000
     private val millisPerDay = 24 * millisPerHour
@@ -66,7 +59,6 @@ class PointsBitmapRenderer(
             }
         }
 
-    @SuppressLint("Range")
     suspend fun draw(
         query: PointsQuery,
         latConverter: (Double) -> Double,
@@ -84,92 +76,59 @@ class PointsBitmapRenderer(
             return
         }
 
-        if(renderDimension.first <= 0 || renderDimension.second <= 0) {
+        if (renderDimension.first <= 0 || renderDimension.second <= 0) {
             Log.e(TAG, "Invalid render dimension, cannot render points bitmap: $renderDimension.")
             return
         }
         val clusterBitmap = createBitmap(renderDimension.first, renderDimension.second)
         val canvas = Canvas(clusterBitmap)
         assignBitmap(clusterBitmap)
-        var currentTimeBucket: Long = 0
 
+        var currentTimeBucket: Long = 0
         var prevLat: Double? = null
         var prevLon: Double? = null
         var prevTime = 0L
+        var ind = 0
 
-        var i = 0
-
-        locationDbHelper.getPointsCursor(query)
-            .use { cursor ->
-                run {
-                    if (!coroutineContext.isActive) {
-                        Log.d(TAG, "Stop drawing points!")
-                        return
-                    }
-                    Log.d(TAG, "Start iterating over points cursor")
-                    if (cursor.moveToFirst()) {
-                        Log.d("00000", "Starting count")
-                        val amountOfPointsToLoad = cursor.count
-                        Log.d("00000", "Count done $amountOfPointsToLoad")
-                        onPointProgressUpdateListener?.onPointProgressMax(
-                            amountOfPointsToLoad
-                        )
-                        pointRadius = visualisationSettings.dotSize ?: when {
-                            amountOfPointsToLoad < 10000 -> 10F
-                            amountOfPointsToLoad < 100000 -> 5F
-                            else -> 2F
-                        }
-
-                        linePaint.strokeWidth = visualisationSettings.lineSize ?: (pointRadius * 2)
-
-                        val latColumnIndex =
-                            cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LATITUDE)
-                        val longColumnIndex =
-                            cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_LONGITUDE)
-                        val timeColumnIndex =
-                            cursor.getColumnIndex(LocationDbContract.COLUMN_NAME_TIMESTAMP)
-                        Log.d(TAG, "Got first point from cursor")
-                        do {
-                            if (!coroutineContext.isActive) {
-                                Log.d(TAG, "Stop drawing points!")
-                                return@run
-                            }
-
-                            val longitude = cursor.getDouble(longColumnIndex)
-                            val latitude = cursor.getDouble(latColumnIndex)
-                            val time = cursor.getLong(timeColumnIndex)
-
-
-                            currentTimeBucket = drawPoint(
-                                latitude,
-                                longitude,
-                                prevLat,
-                                prevLon,
-                                time,
-                                prevTime,
-                                currentTimeBucket,
-                                canvas,
-                                latConverter,
-                                lonConverter
-                            )
-                            prevLat = latitude
-                            prevLon = longitude
-                            prevTime = time
-                            if ((++i) % 10000 == 0) {
-                                Log.d(TAG, "refreshing points bitmap $i")
-                                onPointProgressUpdateListener?.onPointProgressUpdate(i)
-                                refreshView()
-                            }
-
-                        } while (cursor.moveToNext())
-                    }
+        locationDbHelper.getPointsFlow(
+            query,
+            totalCountCallback = {
+                onPointProgressUpdateListener?.onPointProgressMax(it)
+                pointRadius = visualisationSettings.dotSize ?: when {
+                    it < 10_000 -> 10F
+                    it < 100_000 -> 5F
+                    else -> 2F
                 }
+                linePaint.strokeWidth = visualisationSettings.lineSize ?: (pointRadius * 2)
+            })
+            .collectIndexed { i, point ->
+                currentTimeBucket = drawPoint(
+                    point.latitude,
+                    point.longitude,
+                    prevLat,
+                    prevLon,
+                    point.timestamp,
+                    prevTime,
+                    currentTimeBucket,
+                    canvas,
+                    latConverter,
+                    lonConverter
+                )
+
+                prevLat = point.latitude
+                prevLon = point.longitude
+                prevTime = point.timestamp
+                if (i % 10_000 == 0) {
+                    Log.d(TAG, "refreshing points bitmap $i")
+                    onPointProgressUpdateListener?.onPointProgressUpdate(i)
+                    refreshView()
+                }
+                ind = i
             }
-        onPointProgressUpdateListener?.onPointProgressUpdate(i)
         Log.d(TAG, "Done drawing points...")
+        onPointProgressUpdateListener?.onPointProgressUpdate(ind)
         refreshView()
     }
-
 
     private fun drawPoint(
         latitude: Double,
@@ -193,7 +152,7 @@ class PointsBitmapRenderer(
         var timeBucket = currentTimeBucket
         if (newTimeBucket != currentTimeBucket) {
             timeBucket = newTimeBucket
-            val opacity = (visualisationSettings.opacityPercentage * (255.0 / 100.0)).roundToInt()
+            val opacity = (visualisationSettings.opacityPercentage * 255 / 100.0).roundToInt()
             val newColor =
                 ColorUtil.generateColor(newTimeBucket + visualisationSettings.colorSeed, opacity)
             dotPaint.color = newColor
@@ -208,7 +167,7 @@ class PointsBitmapRenderer(
         val x = lonConverter(longitude).toFloat()
         val y = latConverter(latitude).toFloat()
 
-        if (x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height) {
+        if (x in 0f..canvas.width.toFloat() && y in 0f..canvas.height.toFloat()) {
             canvas.drawCircle(x, y, pointRadius, dotPaint)
         }
 
@@ -228,7 +187,6 @@ class PointsBitmapRenderer(
 
     interface OnPointProgressUpdateListener {
         fun onPointProgressMax(max: Int)
-
         fun onPointProgressUpdate(progress: Int)
     }
 }
